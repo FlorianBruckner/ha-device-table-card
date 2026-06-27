@@ -1,0 +1,1 @@
+# ha-device-table-card
