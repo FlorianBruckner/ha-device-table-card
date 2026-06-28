@@ -1,0 +1,5 @@
+{
+  "name": "Device Table Card",
+  "description": "Show devices as a table with selectable properties and sorting.",
+  "render_status": true
+}
