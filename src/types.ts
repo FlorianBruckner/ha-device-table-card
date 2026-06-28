@@ -30,6 +30,6 @@ export interface DeviceData {
   id: string;
   name: string;
   area: string;
-  entities: Record<string, any>;
-  last_seen?: number;
+  [key: string]: any; // To allow dynamic column keys
+  _entities: Record<string, any>; // Store actual state objects for internal use
 }
