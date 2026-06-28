@@ -1,0 +1,35 @@
+{
+  "name": "ha-device-table-card",
+  "version": "1.0.0",
+  "description": "A Home Assistant dashboard card to show devices as a table using DataTables.net",
+  "main": "dist/device-table-card.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "home-assistant",
+    "hacs",
+    "custom-card",
+    "datatables"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "datatables.net": "^2.1.8",
+    "datatables.net-dt": "^2.1.8",
+    "datatables.net-responsive-dt": "^3.0.3",
+    "jquery": "^3.7.1",
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-typescript": "^12.1.1",
+    "eslint": "^9.13.0",
+    "rollup": "^4.24.0",
+    "typescript": "^5.6.3"
+  }
+}
