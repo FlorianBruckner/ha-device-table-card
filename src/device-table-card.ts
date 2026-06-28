@@ -33,6 +33,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return 3;
   }
 
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._updateTimeout) {
+      clearTimeout(this._updateTimeout);
+    }
+    if (this._dataTable) {
+      this._dataTable.destroy();
+      this._dataTable = null;
+    }
+  }
+
   protected firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
     this._initDataTable();
@@ -89,11 +100,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (this._dataTable) {
       this._dataTable.destroy();
       this._dataTable = null;
-      // Clear the table element content to be safe
-      const tableElement = this.renderRoot.querySelector('#deviceTable');
-      if (tableElement) {
-        tableElement.innerHTML = '<thead><tr></tr></thead><tbody></tbody>';
-      }
+    }
+    // Clear the table element content to be safe and remove any DataTables-injected elements
+    const tableElement = this.renderRoot.querySelector('#deviceTable');
+    if (tableElement) {
+      tableElement.innerHTML = '';
     }
     this._initDataTable();
     this._updateDataTable();
@@ -223,15 +234,24 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (tableElement && !this._dataTable) {
       this._dataTable = new DataTable(tableElement as HTMLElement, {
         responsive: true,
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true,
         data: [],
         columns: this._getColumns(),
+        autoWidth: false,
+        dom: 'lfrtip', // Standard DataTables layout
       });
     }
   }
 
   private _getColumns(): any[] {
-    if (!this._config?.columns) {
-      return [{ title: 'No columns configured', data: null }];
+    if (!this._config?.columns || this._config.columns.length === 0) {
+      return [
+        { title: 'Device', data: 'name', defaultContent: '-' },
+        { title: 'Area', data: 'area', defaultContent: '-' }
+      ];
     }
     return this._config.columns.map((col, index) => ({
       title: col.label || col.prop || col.device_class || 'Unknown',
@@ -249,12 +269,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       <ha-card .header=${this._config.title}>
         <div class="card-content">
           <table id="deviceTable" class="display responsive nowrap" style="width:100%">
-            <thead>
-              <tr>
-                ${this._getColumns().map((col) => html`<th>${col.title}</th>`)}
-              </tr>
-            </thead>
-            <tbody></tbody>
           </table>
         </div>
       </ha-card>
