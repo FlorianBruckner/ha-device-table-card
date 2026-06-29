@@ -1,6 +1,6 @@
 import { LitElement, html, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { LovelaceCard } from 'custom-card-helpers';
+import { LovelaceCard, fireEvent, navigate } from 'custom-card-helpers';
 import DataTable from 'datatables.net-dt';
 import 'datatables.net-responsive-dt';
 
@@ -254,9 +254,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _initDataTable(): void {
-    const tableElement = this.renderRoot.querySelector('#deviceTable');
+    const tableElement = this.renderRoot.querySelector('#deviceTable') as HTMLElement;
     if (tableElement && !this._dataTable) {
-      this._dataTable = new DataTable(tableElement as HTMLElement, {
+      this._dataTable = new DataTable(tableElement, {
         responsive: true,
         paging: true,
         searching: true,
@@ -267,14 +267,48 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         autoWidth: false,
         dom: 'lfrtip', // Standard DataTables layout
       });
+
+      tableElement.addEventListener('click', (e: Event) => {
+        const target = e.target as HTMLElement;
+        const cell = target.closest('td');
+        if (!cell) return;
+
+        if (cell.classList.contains('cell-entity')) {
+          const entityId = cell.getAttribute('data-entity-id');
+          if (entityId) {
+            fireEvent(this, 'hass-more-info', { entityId });
+          }
+        } else if (cell.classList.contains('cell-device')) {
+          const deviceId = cell.getAttribute('data-device-id');
+          if (deviceId) {
+            navigate(this, `/config/devices/device/${deviceId}`);
+          }
+        }
+      });
     }
   }
 
   private _getColumns(): any[] {
     if (!this._config?.columns || this._config.columns.length === 0) {
       return [
-        { title: 'Device', data: 'name', defaultContent: '-' },
-        { title: 'Area', data: 'area', defaultContent: '-' }
+        {
+          title: 'Device',
+          data: 'name',
+          defaultContent: '-',
+          className: 'cell-device',
+          createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+            td.setAttribute('data-device-id', rowData.id);
+          }
+        },
+        {
+          title: 'Area',
+          data: 'area',
+          defaultContent: '-',
+          className: 'cell-device',
+          createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+            td.setAttribute('data-device-id', rowData.id);
+          }
+        }
       ];
     }
     return this._config.columns.map((col, index) => {
@@ -283,6 +317,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         title: col.label || col.prop || col.device_class || 'Unknown',
         data: colKey,
         defaultContent: '-',
+        className: col.type === 'entity' ? 'cell-entity' : 'cell-device',
+        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+          if (col.type === 'entity') {
+            const stateObj = rowData._entities[colKey];
+            if (stateObj) {
+              td.setAttribute('data-entity-id', stateObj.entity_id);
+            }
+          } else if (col.type === 'device') {
+            td.setAttribute('data-device-id', rowData.id);
+          }
+        },
         render: (data: any, type: any, row: any) => {
           if (data === '-' || type === 'sort' || type === 'type') return data;
 
