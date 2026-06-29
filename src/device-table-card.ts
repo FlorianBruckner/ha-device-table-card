@@ -17,6 +17,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
   private _dataTable: any = null;
   private _updateTimeout?: any;
+  private _refreshInterval?: any;
 
   public static getStyles() {
     return styles;
@@ -33,14 +34,38 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return 3;
   }
 
+  public connectedCallback(): void {
+    super.connectedCallback();
+    if (this._config) {
+      this._startRefreshInterval();
+    }
+  }
+
   public disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._stopRefreshInterval();
     if (this._updateTimeout) {
       clearTimeout(this._updateTimeout);
     }
     if (this._dataTable) {
       this._dataTable.destroy();
       this._dataTable = null;
+    }
+  }
+
+  private _startRefreshInterval(): void {
+    this._stopRefreshInterval();
+    this._refreshInterval = setInterval(() => {
+      if (this._dataTable) {
+        this._dataTable.draw(false);
+      }
+    }, 30000);
+  }
+
+  private _stopRefreshInterval(): void {
+    if (this._refreshInterval) {
+      clearInterval(this._refreshInterval);
+      this._refreshInterval = undefined;
     }
   }
 
@@ -56,6 +81,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
 
     if (changedProperties.has('_config')) {
+      this._startRefreshInterval();
       this._reinitDataTable();
     } else if (changedProperties.has('hass') ||
                changedProperties.has('_devices') ||
@@ -213,9 +239,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               .filter((t) => !isNaN(t));
 
             if (updates.length > 0) {
-              const lastUpdated = Math.max(...updates);
-              const minutesAgo = Math.floor((Date.now() - lastUpdated) / 60000);
-              deviceData[key] = `${minutesAgo} min ago`;
+              deviceData[key] = Math.max(...updates);
             } else {
               deviceData[key] = '-';
             }
@@ -253,11 +277,67 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         { title: 'Area', data: 'area', defaultContent: '-' }
       ];
     }
-    return this._config.columns.map((col, index) => ({
-      title: col.label || col.prop || col.device_class || 'Unknown',
-      data: `col_${index}`,
-      defaultContent: '-',
-    }));
+    return this._config.columns.map((col, index) => {
+      const colKey = `col_${index}`;
+      return {
+        title: col.label || col.prop || col.device_class || 'Unknown',
+        data: colKey,
+        defaultContent: '-',
+        render: (data: any, type: any, row: any) => {
+          if (data === '-' || type === 'sort' || type === 'type') return data;
+
+          // Simple HTML escaping
+          const escape = (str: string) => String(str).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+          }[m] || m));
+
+          let displayValue = escape(data);
+          let color = '';
+
+          if (col.type === 'entity') {
+            const stateObj = row._entities[colKey];
+            if (stateObj) {
+              const uom = stateObj.attributes.unit_of_measurement;
+              if (uom) {
+                displayValue = `${escape(data)} ${escape(uom)}`;
+              }
+
+              // Highlighting
+              if (col.highlight) {
+                const numericValue = parseFloat(data);
+                if (!isNaN(numericValue)) {
+                  for (const rule of col.highlight) {
+                    if (rule.below !== undefined && numericValue < rule.below) {
+                      color = rule.color;
+                    } else if (rule.above !== undefined && numericValue > rule.above) {
+                      color = rule.color;
+                    }
+                  }
+                }
+              }
+            }
+          } else if (col.type === 'meta' && col.prop === 'last_changed') {
+            const minutesAgo = Math.floor((Date.now() - data) / 60000);
+            displayValue = `${minutesAgo} min ago`;
+
+            if (col.highlight) {
+              for (const rule of col.highlight) {
+                if (rule.below !== undefined && minutesAgo < rule.below) {
+                  color = rule.color;
+                } else if (rule.above !== undefined && minutesAgo > rule.above) {
+                  color = rule.color;
+                }
+              }
+            }
+          }
+
+          if (color) {
+            return `<span style="color: ${escape(color)}; font-weight: bold;">${displayValue}</span>`;
+          }
+          return displayValue;
+        }
+      };
+    });
   }
 
   protected render() {
