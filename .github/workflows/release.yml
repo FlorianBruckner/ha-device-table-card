@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.0)'
+        required: true
+      branch:
+        description: 'Branch to release from'
+        required: true
+        default: 'main'
+      summary:
+        description: 'Summary of changes for the changelog'
+        required: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Update Version in package.json
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Update Changelog
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          SUMMARY="${{ github.event.inputs.summary }}"
+          DATE=$(date +%Y-%m-%d)
+
+          # Replace [Unreleased] with the new version and date
+          sed -i "s/## \[Unreleased\]/## [$VERSION] - $DATE/" CHANGELOG.md
+
+          # Add a new [Unreleased] section after the header description
+          sed -i "/adheres to \[Semantic Versioning\]/a \\\n## [Unreleased]\n### Added\n-" CHANGELOG.md
+
+          # If summary is provided, add it under the version header
+          if [ -n "$SUMMARY" ]; then
+            # Escape newlines for sed
+            ESCAPED_SUMMARY=$(echo "$SUMMARY" | sed 's/$/\\/')
+            sed -i "/## \[$VERSION\] - $DATE/a $ESCAPED_SUMMARY" CHANGELOG.md
+          fi
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "Release v${{ github.event.inputs.version }}"
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Create Tag
+        run: |
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
+
+      - name: Zip build
+        run: |
+          cd dist
+          zip -r ../release.zip .
+          cd ..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
+          body: |
+            ## Changes in ${{ github.event.inputs.version }}
+            ${{ github.event.inputs.summary }}
+          files: |
+            dist/device-table-card.js
+            release.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
