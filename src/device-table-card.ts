@@ -83,17 +83,23 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (changedProperties.has('_config')) {
       this._startRefreshInterval();
       this._reinitDataTable();
-    } else if (changedProperties.has('hass') ||
-               changedProperties.has('_devices') ||
-               changedProperties.has('_entities') ||
-               changedProperties.has('_areas')) {
+    } else if (
+      changedProperties.has('hass') ||
+      changedProperties.has('_devices') ||
+      changedProperties.has('_entities') ||
+      changedProperties.has('_areas')
+    ) {
       this._debouncedUpdate();
     }
   }
 
   private _fetchingRegistries = false;
   private async _fetchRegistries(): Promise<void> {
-    if (!this.hass || this._fetchingRegistries || (this._devices.length > 0 && this._entities.length > 0)) {
+    if (
+      !this.hass ||
+      this._fetchingRegistries ||
+      (this._devices.length > 0 && this._entities.length > 0)
+    ) {
       return;
     }
 
@@ -155,8 +161,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     const states = this.hass.states || {};
 
     // Create lookups for faster processing
-    const deviceLookup = Object.fromEntries(this._devices.map(d => [d.id, d]));
-    const areaLookup = Object.fromEntries(this._areas.map(a => [a.area_id, a]));
+    const deviceLookup = Object.fromEntries(this._devices.map((d) => [d.id, d]));
+    const areaLookup = Object.fromEntries(this._areas.map((a) => [a.area_id, a]));
 
     const deviceMap: Record<string, any[]> = {};
 
@@ -298,7 +304,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-          }
+          },
         },
         {
           title: 'Area',
@@ -307,8 +313,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-          }
-        }
+          },
+        },
       ];
     }
     return this._config.columns.map((col, index) => {
@@ -332,9 +338,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (data === '-' || type === 'sort' || type === 'type') return data;
 
           // Simple HTML escaping
-          const escape = (str: string) => String(str).replace(/[&<>"']/g, (m) => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-          }[m] || m));
+          const escape = (str: string) =>
+            String(str).replace(
+              /[&<>"']/g,
+              (m) =>
+                ({
+                  '&': '&amp;',
+                  '<': '&lt;',
+                  '>': '&gt;',
+                  '"': '&quot;',
+                  "'": '&#39;',
+                })[m] || m,
+            );
 
           let displayValue = escape(data);
           let color = '';
@@ -380,7 +395,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             return `<span style="color: ${escape(color)}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
-        }
+        },
       };
     });
   }
@@ -393,8 +408,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return html`
       <ha-card .header=${this._config.title}>
         <div class="card-content">
-          <table id="deviceTable" class="display responsive nowrap" style="width:100%">
-          </table>
+          <table id="deviceTable" class="display responsive nowrap" style="width:100%"></table>
         </div>
       </ha-card>
     `;
