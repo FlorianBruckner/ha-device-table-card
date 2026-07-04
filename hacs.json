@@ -2,6 +2,5 @@
   "name": "Device Table Card",
   "description": "Show devices as a table with selectable properties and sorting.",
   "render_status": true,
-  "zip_release": true,
-  "filename": "device-table-card.js"
+  "filename": "ha-device-table-card.js"
 }

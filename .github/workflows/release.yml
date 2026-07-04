@@ -92,7 +92,7 @@ jobs:
             ## Changes in ${{ github.event.inputs.version }}
             ${{ github.event.inputs.summary }}
           files: |
-            dist/device-table-card.js
+            dist/ha-device-table-card.js
             release.zip
           draft: false
           prerelease: false

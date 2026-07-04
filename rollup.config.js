@@ -7,7 +7,7 @@ import css from 'rollup-plugin-import-css';
 export default {
   input: 'src/device-table-card.ts',
   output: {
-    file: 'dist/device-table-card.js',
+    file: 'dist/ha-device-table-card.js',
     format: 'es',
     sourcemap: true,
   },
