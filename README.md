@@ -2,8 +2,7 @@
 
 A Home Assistant dashboard card that displays devices in a table format using [DataTables.net](https://datatables.net/).
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
-[![HACS Search](https://img.shields.io/badge/HACS-Search-41BDF5.svg?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?repository=ha-device-table-card&category=plugin)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FlorianBruckner&repository=ha-device-table-card&category=plugin)
 
 ## Features
 
@@ -95,4 +94,4 @@ columns:
 
 ---
 
-*This project was fully implemented with the assistance of [Jules](https://github.com/google-cursor/jules).*
+*This project was fully implemented with the assistance of Jules.*
