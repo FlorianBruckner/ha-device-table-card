@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -
 
+## [0.0.5] - 2026-07-04
+Attempt to fix HACS download
+### Added
+-
+
 ## [0.0.4] - 2026-07-04
 ### Added
 -
