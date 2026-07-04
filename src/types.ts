@@ -9,6 +9,7 @@ export interface DeviceTableCardConfig extends LovelaceCardConfig {
 export interface FilterConfig {
   area?: string;
   anchor_entity_class?: string;
+  integration?: string;
 }
 
 export interface ColumnConfig {

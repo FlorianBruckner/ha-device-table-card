@@ -4,8 +4,10 @@ import { LovelaceCard, fireEvent, navigate } from 'custom-card-helpers';
 import DataTable from 'datatables.net-dt';
 import 'datatables.net-responsive-dt';
 
-import { DeviceTableCardConfig, DeviceData } from './types';
+import { DeviceTableCardConfig } from './types';
 import { styles } from './styles';
+import { processDevices } from './data-processor';
+import './ha-device-table-card-editor';
 
 @customElement('ha-device-table-card')
 export class DeviceTableCard extends LitElement implements LovelaceCard {
@@ -18,9 +20,25 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _dataTable: any = null;
   private _updateTimeout?: any;
   private _refreshInterval?: any;
+  private _unsubs: Array<Promise<() => void>> = [];
 
   public static getStyles() {
     return styles;
+  }
+
+  public static getConfigElement() {
+    return document.createElement('ha-device-table-card-editor');
+  }
+
+  public static getStubConfig() {
+    return {
+      title: 'Device Table',
+      filter: {
+        area: '',
+        anchor_entity_class: '',
+      },
+      columns: [],
+    };
   }
 
   public setConfig(config: DeviceTableCardConfig): void {
@@ -39,6 +57,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (this._config) {
       this._startRefreshInterval();
     }
+    this._subscribeRegistryUpdates();
   }
 
   public disconnectedCallback(): void {
@@ -51,6 +70,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._dataTable.destroy();
       this._dataTable = null;
     }
+    this._unsubscribeRegistryUpdates();
   }
 
   private _startRefreshInterval(): void {
@@ -78,6 +98,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     super.updated(changedProperties);
     if (changedProperties.has('hass') && this.hass) {
       this._fetchRegistries();
+      this._subscribeRegistryUpdates();
     }
 
     if (changedProperties.has('_config')) {
@@ -92,8 +113,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _fetchingRegistries = false;
-  private async _fetchRegistries(): Promise<void> {
-    if (!this.hass || this._fetchingRegistries || (this._devices.length > 0 && this._entities.length > 0)) {
+  private async _fetchRegistries(force = false): Promise<void> {
+    if (!this.hass || this._fetchingRegistries) {
+      return;
+    }
+
+    if (!force && this._devices.length > 0 && this._entities.length > 0) {
       return;
     }
 
@@ -112,6 +137,27 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       console.error('Failed to fetch Home Assistant registries', e);
     } finally {
       this._fetchingRegistries = false;
+    }
+  }
+
+  private _subscribeRegistryUpdates(): void {
+    if (!this.hass || !this.hass.connection || this._unsubs.length > 0) {
+      return;
+    }
+
+    const callback = () => this._fetchRegistries(true);
+
+    this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'device_registry_updated'));
+    this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'entity_registry_updated'));
+    this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'area_registry_updated'));
+  }
+
+  private _unsubscribeRegistryUpdates(): void {
+    while (this._unsubs.length) {
+      const unsub = this._unsubs.pop();
+      if (unsub) {
+        unsub.then((u) => u());
+      }
     }
   }
 
@@ -141,116 +187,16 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    const data = this._processDevices();
+    const data = processDevices(
+      this.hass,
+      this._config,
+      this._devices,
+      this._entities,
+      this._areas
+    );
     this._dataTable.clear();
     this._dataTable.rows.add(data);
     this._dataTable.draw(false); // Use false to keep current paging
-  }
-
-  private _processDevices(): DeviceData[] {
-    if (!this.hass || !this._config || this._devices.length === 0) {
-      return [];
-    }
-
-    const states = this.hass.states || {};
-
-    // Create lookups for faster processing
-    const deviceLookup = Object.fromEntries(this._devices.map(d => [d.id, d]));
-    const areaLookup = Object.fromEntries(this._areas.map(a => [a.area_id, a]));
-
-    const deviceMap: Record<string, any[]> = {};
-
-    // Group entities by device using registries first
-    this._entities.forEach((entityRegistry) => {
-      const entityId = entityRegistry.entity_id;
-      const stateObj = states[entityId];
-      const deviceId = entityRegistry.device_id;
-
-      if (deviceId && stateObj) {
-        if (!deviceMap[deviceId]) {
-          deviceMap[deviceId] = [];
-        }
-        deviceMap[deviceId].push({
-          entity_id: entityId,
-          state: stateObj,
-          registry: entityRegistry,
-        });
-      }
-    });
-
-    const result: DeviceData[] = [];
-
-    Object.keys(deviceMap).forEach((deviceId) => {
-      const deviceEntities = deviceMap[deviceId];
-      const device = deviceLookup[deviceId];
-      const deviceAreaId = device?.area_id;
-      const area = deviceAreaId ? areaLookup[deviceAreaId]?.name || deviceAreaId : 'No Area';
-
-      // Apply Area Filter
-      if (this._config?.filter?.area && area !== this._config.filter.area) {
-        return;
-      }
-
-      // Apply Anchor Entity Filter
-      if (this._config?.filter?.anchor_entity_class) {
-        const hasAnchor = deviceEntities.some((e) => {
-          return e.state.attributes.device_class === this._config?.filter?.anchor_entity_class;
-        });
-        if (!hasAnchor) {
-          return;
-        }
-      }
-
-      const deviceData: DeviceData = {
-        id: deviceId,
-        name: device?.name_by_user || device?.name || 'Unknown Device',
-        area: area,
-        _entities: {},
-      };
-
-      // Resolve Columns
-      this._config?.columns?.forEach((col, index) => {
-        const key = `col_${index}`;
-        if (col.type === 'device') {
-          if (col.prop === 'name') deviceData[key] = deviceData.name;
-          else if (col.prop === 'area') deviceData[key] = deviceData.area;
-          else deviceData[key] = (device as any)?.[col.prop as string] || '-';
-        } else if (col.type === 'entity') {
-          const found = deviceEntities.find((e) => {
-            if (col.device_class) {
-              return e.state.attributes.device_class === col.device_class;
-            }
-            if (col.suffix) {
-              return e.entity_id.endsWith(col.suffix);
-            }
-            return false;
-          });
-
-          if (found) {
-            deviceData[key] = found.state.state;
-            deviceData._entities[key] = found.state;
-          } else {
-            deviceData[key] = '-';
-          }
-        } else if (col.type === 'meta') {
-          if (col.prop === 'last_changed') {
-            const updates = deviceEntities
-              .map((e) => new Date(e.state.last_updated).getTime())
-              .filter((t) => !isNaN(t));
-
-            if (updates.length > 0) {
-              deviceData[key] = Math.max(...updates);
-            } else {
-              deviceData[key] = '-';
-            }
-          }
-        }
-      });
-
-      result.push(deviceData);
-    });
-
-    return result;
   }
 
   private _initDataTable(): void {
@@ -362,10 +308,21 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               }
             }
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            const minutesAgo = Math.floor((Date.now() - data) / 60000);
-            displayValue = `${minutesAgo} min ago`;
+            if (typeof data !== 'number' || isNaN(data)) return data;
+            const secondsAgo = Math.floor((Date.now() - data) / 1000);
+
+            if (secondsAgo < 60) {
+              displayValue = `${secondsAgo}s`;
+            } else if (secondsAgo < 3600) {
+              displayValue = `${Math.floor(secondsAgo / 60)}m`;
+            } else if (secondsAgo < 86400) {
+              displayValue = `${Math.floor(secondsAgo / 3600)}h`;
+            } else {
+              displayValue = `${Math.floor(secondsAgo / 86400)}d`;
+            }
 
             if (col.highlight) {
+              const minutesAgo = Math.floor(secondsAgo / 60);
               for (const rule of col.highlight) {
                 if (rule.below !== undefined && minutesAgo < rule.below) {
                   color = rule.color;
