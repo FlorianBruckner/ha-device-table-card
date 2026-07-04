@@ -1,97 +1,116 @@
 # Device Table Card
 
-A Home Assistant dashboard card that displays devices in a table format using [DataTables.net](https://datatables.net/).
+A Home Assistant dashboard card that displays devices in a responsive table format using [DataTables.net](https://datatables.net/).
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FlorianBruckner&repository=ha-device-table-card&category=plugin)
 
 ## Features
 
-- **Device-centric view**: One row per device.
-- **Selectable columns**: Choose which properties or entities to display.
-- **Meta-properties**: Display information like "last updated" (time since last change of any device entity).
-- **Threshold Highlighting**: Color-code numeric values based on configurable thresholds.
-- **Sorting & Search**: Built-in DataTables functionality.
-- **Responsive**: Mobile-friendly view with the Responsive extension.
-- **Visual Editor**: Easy configuration of title and filters via the dashboard UI.
+- **Device-centric view**: Each row represents a single Home Assistant device, making it easy to manage groups of similar hardware (e.g., soil moisture sensors, smart plugs).
+- **Flexible Column Mapping**: Display device-level properties (Name, Area, Integration) or state/attributes from specific entities belonging to that device.
+- **Smart Filtering**: Populate the table by area, integration, or "anchor" entities (e.g., "show all devices that have a moisture sensor").
+- **Meta-properties**: Display derived data like "Last Seen", calculated as the most recent update across all entities associated with the device.
+- **Threshold Highlighting**: Visually highlight numeric values (e.g., low battery or high temperature) using configurable colors and bold weights.
+- **Sorting & Search**: Full client-side sorting and searching capabilities.
+- **Responsive Design**: Mobile-friendly layout using the DataTables Responsive extension.
+- **HA Integration**: Deep links to "More Info" dialogs for entities and the Device Settings page for devices.
 
 ## Installation
 
-### HACS (Recommended)
+1. Download `device-table-card.js` from the latest release.
+2. Place it in your Home Assistant `www/` directory.
+3. Add the resource to your dashboard.
 
-1. Ensure [HACS](https://hacs.xyz/) is installed.
-2. Go to **HACS** -> **Frontend**.
-3. Click the three dots in the top right corner and select **Custom repositories**.
-4. Paste the URL of this repository: `https://github.com/FlorianBruckner/ha-device-table-card`
-5. Select **Lovelace** (or **Plugin**) as the category and click **Add**.
-6. Find **Device Table Card** in the list and click **Download**.
-7. Reload your browser.
-
-### Manual
-
-1. Download the `device-table-card.js` from the [latest release](https://github.com/FlorianBruckner/ha-device-table-card/releases/latest).
-2. Copy the file into your `<config>/www/` directory.
-3. Add the resource in Home Assistant:
-   - Go to **Settings** -> **Dashboards**.
-   - Click the three dots in the top right and select **Resources**.
-   - Click **Add Resource**.
-   - Set **URL** to `/local/device-table-card.js` and **Resource type** to `JavaScript Module`.
+Alternatively, add this repository to HACS as a custom repository.
 
 ## Configuration
 
-The card can be configured via the visual editor or manually in YAML.
+### Main Options
 
-### YAML Example
+| Name | Type | Requirement | Description |
+| :--- | :--- | :--- | :--- |
+| `type` | string | **Required** | `custom:ha-device-table-card` |
+| `title` | string | Optional | Title of the card. |
+| `filter` | object | Optional | Filtering criteria for devices. |
+| `columns` | list | Optional | List of column definitions. |
+
+### Filter Object
+
+| Name | Type | Description |
+| :--- | :--- | :--- |
+| `area` | string | Only show devices in this area. |
+| `integration` | string | Only show devices from this integration (manufacturer/model). |
+| `anchor_entity_class` | string | Only show devices that have an entity with this `device_class`. |
+
+### Column Object
+
+| Name | Type | Description |
+| :--- | :--- | :--- |
+| `type` | string | `device`, `entity`, or `meta`. |
+| `label` | string | Header text for the column. |
+| `prop` | string | Property name for `device` (e.g., `name`, `area`, `integration`) or `meta` (e.g., `last_changed`). |
+| `device_class` | string | Used for `entity` type to find an entity by its device class (e.g., `battery`, `moisture`). |
+| `suffix` | string | Used for `entity` type to find an entity by its entity ID suffix (e.g., `_voltage`). |
+| `highlight` | list | List of highlighting rules. |
+
+### Highlight Rule
+
+| Name | Type | Description |
+| :--- | :--- | :--- |
+| `below` | number | Highlight if the value is below this number. |
+| `above` | number | Highlight if the value is above this number. |
+| `color` | string | CSS color to apply. |
+
+## Example Configuration
 
 ```yaml
 type: custom:ha-device-table-card
-title: My Sensors
+title: "Garden Sensors"
 filter:
   area: "Garden"
   anchor_entity_class: "moisture"
-  integration: "Zigbee2MQTT"
 columns:
   - type: device
     prop: name
-    label: "Name"
+    label: "Sensor Name"
   - type: entity
     device_class: "moisture"
-    label: "Moisture"
+    label: "Moisture (%)"
     highlight:
       - below: 20
+        color: "var(--error-color)"
+      - below: 50
+        color: "var(--warning-color)"
+  - type: entity
+    device_class: "battery"
+    label: "Battery"
+    highlight:
+      - below: 15
         color: "red"
   - type: meta
     prop: last_changed
-    label: "Seen"
+    label: "Last Seen"
 ```
 
-### Configuration Options
+## Development
 
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `type` | string | **Required** | `custom:ha-device-table-card` |
-| `title` | string | Optional | Card title. |
-| `filter` | object | Optional | Filtering options (see below). |
-| `columns` | list | Optional | List of column definitions. |
+### Setup
+```bash
+npm install
+```
 
-#### Filter Options
+### Build
+```bash
+npm run build
+```
 
-| Option | Type | Description |
-| :--- | :--- | :--- |
-| `area` | string | Filter devices by area name. |
-| `anchor_entity_class` | string | Only show devices that have an entity with this `device_class`. |
-| `integration` | string | Filter by manufacturer or model. |
+### Testing
+```bash
+npm test
+```
 
-#### Column Definitions
-
-| Option | Type | Description |
-| :--- | :--- | :--- |
-| `type` | string | `device`, `entity`, or `meta`. |
-| `prop` | string | For `device`: `name`, `area`, `integration`, or other registry props. For `meta`: `last_changed`. |
-| `device_class` | string | For `entity`: Match by `device_class`. |
-| `suffix` | string | For `entity`: Match by `entity_id` suffix (e.g., `_voltage`). |
-| `label` | string | Column header text. |
-| `highlight` | list | Threshold highlighting rules. |
-
----
-
-*This project was fully implemented with the assistance of [Jules](https://jules.google.com).*
+### Linting & Formatting
+```bash
+npm run lint
+npm run format:check
+```

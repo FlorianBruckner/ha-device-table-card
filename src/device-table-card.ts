@@ -104,10 +104,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (changedProperties.has('_config')) {
       this._startRefreshInterval();
       this._reinitDataTable();
-    } else if (changedProperties.has('hass') ||
-               changedProperties.has('_devices') ||
-               changedProperties.has('_entities') ||
-               changedProperties.has('_areas')) {
+    } else if (
+      changedProperties.has('hass') ||
+      changedProperties.has('_devices') ||
+      changedProperties.has('_entities') ||
+      changedProperties.has('_areas')
+    ) {
       this._debouncedUpdate();
     }
   }
@@ -192,7 +194,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._config,
       this._devices,
       this._entities,
-      this._areas
+      this._areas,
     );
     this._dataTable.clear();
     this._dataTable.rows.add(data);
@@ -244,7 +246,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-          }
+          },
         },
         {
           title: 'Area',
@@ -253,8 +255,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-          }
-        }
+          },
+        },
       ];
     }
     return this._config.columns.map((col, index) => {
@@ -278,9 +280,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (data === '-' || type === 'sort' || type === 'type') return data;
 
           // Simple HTML escaping
-          const escape = (str: string) => String(str).replace(/[&<>"']/g, (m) => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-          }[m] || m));
+          const escape = (str: string) =>
+            String(str).replace(
+              /[&<>"']/g,
+              (m) =>
+                ({
+                  '&': '&amp;',
+                  '<': '&lt;',
+                  '>': '&gt;',
+                  '"': '&quot;',
+                  "'": '&#39;',
+                })[m] || m,
+            );
 
           let displayValue = escape(data);
           let color = '';
@@ -337,7 +348,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             return `<span style="color: ${escape(color)}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
-        }
+        },
       };
     });
   }
@@ -350,8 +361,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return html`
       <ha-card .header=${this._config.title}>
         <div class="card-content">
-          <table id="deviceTable" class="display responsive nowrap" style="width:100%">
-          </table>
+          <table id="deviceTable" class="display responsive nowrap" style="width:100%"></table>
         </div>
       </ha-card>
     `;
