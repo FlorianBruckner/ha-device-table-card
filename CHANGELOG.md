@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -
 
+## [0.0.4] - 2026-07-04
+### Added
+-
+
 ## [0.0.3] - 2026-07-04
 add config editor
 ### Added
