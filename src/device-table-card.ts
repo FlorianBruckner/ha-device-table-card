@@ -214,6 +214,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         columns: this._getColumns(),
         autoWidth: false,
         dom: 'lfrtip', // Standard DataTables layout
+        lengthMenu: [
+          [10, 25, 50, 100, -1],
+          [10, 25, 50, 100, 'All'],
+        ],
       });
 
       tableElement.addEventListener('click', (e: Event) => {
@@ -277,7 +281,20 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
         },
         render: (data: any, type: any, row: any) => {
-          if (data === '-' || type === 'sort' || type === 'type') return data;
+          if (type === 'sort') {
+            if (data === '-') return Infinity;
+            if (col.type === 'entity') {
+              const num = parseFloat(data);
+              return isNaN(num) ? Infinity : num;
+            }
+            if (col.type === 'meta' && col.prop === 'last_changed') {
+              const num = parseFloat(data);
+              return isNaN(num) ? Infinity : num;
+            }
+            return data;
+          }
+
+          if (data === '-' || type === 'type') return data;
 
           // Simple HTML escaping
           const escape = (str: string) =>
