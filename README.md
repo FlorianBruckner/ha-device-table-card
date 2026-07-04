@@ -17,7 +17,7 @@ A Home Assistant dashboard card that displays devices in a responsive table form
 
 ## Installation
 
-1. Download `device-table-card.js` from the latest release.
+1. Download `ha-device-table-card.js` from the latest release.
 2. Place it in your Home Assistant `www/` directory.
 3. Add the resource to your dashboard.
 
