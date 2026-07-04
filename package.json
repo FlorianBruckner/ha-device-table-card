@@ -5,9 +5,12 @@
   "type": "module",
   "main": "dist/device-table-card.js",
   "scripts": {
-    "build": "rollup -c",
+    "build": "npm run lint && npm run format:check && rollup -c",
     "watch": "rollup -c -w",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format:fix": "prettier --write \"src/**/*.ts\"",
+    "test": "wtr"
   },
   "keywords": [
     "home-assistant",
@@ -18,23 +21,37 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "datatables.net": "^2.1.8",
-    "datatables.net-dt": "^2.1.8",
-    "datatables.net-responsive-dt": "^3.0.3",
+    "datatables.net": "^2.3.8",
+    "datatables.net-dt": "^2.3.8",
+    "datatables.net-responsive-dt": "^3.0.8",
     "lit": "^3.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@rollup/plugin-commonjs": "^28.0.1",
+    "@open-wc/testing": "^4.0.0",
+    "@rollup/plugin-commonjs": "^28.0.9",
     "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-replace": "^6.0.3",
     "@rollup/plugin-typescript": "^12.1.1",
     "@types/datatables.net": "^1.10.28",
     "@types/jquery": "^4.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/sinon": "^22.0.0",
+    "@web/dev-server-esbuild": "^1.0.5",
+    "@web/dev-server-rollup": "^0.6.4",
+    "@web/test-runner": "^0.20.2",
+    "@web/test-runner-playwright": "^0.11.1",
+    "@web/test-runner-visual-regression": "^0.10.0",
     "custom-card-helpers": "^1.9.0",
     "eslint": "^9.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "playwright": "^1.61.1",
+    "prettier": "^3.9.4",
     "rollup": "^4.24.0",
     "rollup-plugin-import-css": "^4.2.1",
+    "sinon": "^22.0.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.11.0"
   }

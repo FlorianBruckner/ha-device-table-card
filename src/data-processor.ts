@@ -5,7 +5,7 @@ export function processDevices(
   config: DeviceTableCardConfig,
   devices: any[],
   entities: any[],
-  areas: any[]
+  areas: any[],
 ): DeviceData[] {
   if (!hass || !config || devices.length === 0) {
     return [];

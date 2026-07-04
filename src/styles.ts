@@ -39,11 +39,13 @@ export const styles = css`
     background-color: var(--secondary-background-color) !important;
   }
 
-  .cell-entity, .cell-device {
+  .cell-entity,
+  .cell-device {
     cursor: pointer;
   }
 
-  .cell-entity:hover, .cell-device:hover {
+  .cell-entity:hover,
+  .cell-device:hover {
     text-decoration: underline;
   }
 
