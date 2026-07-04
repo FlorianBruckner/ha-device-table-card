@@ -52,11 +52,28 @@ export const styles = css`
     text-decoration: underline;
   }
 
+  /* DataTables 2.x Layout styling */
+  .dt-container {
+    padding: 8px 0;
+  }
+
+  .dt-layout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .dt-layout-cell.dt-end {
+    margin-left: auto;
+  }
+
   .dataTables_wrapper .dataTables_filter {
     float: right;
     margin-bottom: 16px;
   }
 
+  .dt-search input,
   .dataTables_wrapper .dataTables_filter input {
     color: var(--primary-text-color);
     background-color: var(--secondary-background-color);
@@ -79,6 +96,7 @@ export const styles = css`
     color: var(--secondary-text-color);
   }
 
+  .dt-length select,
   .dataTables_wrapper .dataTables_length select {
     color: var(--primary-text-color);
     background-color: var(--secondary-background-color);
@@ -90,6 +108,7 @@ export const styles = css`
     outline: none;
   }
 
+  .dt-info,
   .dataTables_wrapper .dataTables_info {
     float: left;
     color: var(--secondary-text-color) !important;
@@ -97,12 +116,14 @@ export const styles = css`
     font-size: 0.9em;
   }
 
+  .dt-paging,
   .dataTables_wrapper .dataTables_paginate {
     float: right;
     color: var(--secondary-text-color) !important;
     padding-top: 12px;
   }
 
+  .dt-paging-button,
   .dataTables_wrapper .dataTables_paginate .paginate_button {
     color: var(--primary-text-color) !important;
     border: 1px solid transparent !important;
@@ -113,19 +134,23 @@ export const styles = css`
     background: transparent !important;
   }
 
+  .dt-paging-button.current,
   .dataTables_wrapper .dataTables_paginate .paginate_button.current {
     background: var(--primary-color) !important;
     color: var(--text-primary-color) !important;
     border: 1px solid var(--primary-color) !important;
   }
 
+  .dt-paging-button:hover,
   .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
     background: var(--secondary-background-color) !important;
     color: var(--primary-text-color) !important;
     border: 1px solid var(--divider-color) !important;
   }
 
+  .dt-paging-button.disabled,
   .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+  .dt-paging-button.disabled:hover,
   .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
     color: var(--disabled-text-color) !important;
     cursor: default;
