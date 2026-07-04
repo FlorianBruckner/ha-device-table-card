@@ -94,4 +94,4 @@ columns:
 
 ---
 
-*This project was fully implemented with the assistance of Jules.*
+*This project was fully implemented with the assistance of [Jules](https://jules.google.com).*
