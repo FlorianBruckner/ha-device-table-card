@@ -92,3 +92,7 @@ columns:
 | `suffix` | string | For `entity`: Match by `entity_id` suffix (e.g., `_voltage`). |
 | `label` | string | Column header text. |
 | `highlight` | list | Threshold highlighting rules. |
+
+---
+
+*This project was fully implemented with the assistance of [Jules](https://github.com/google-cursor/jules).*
