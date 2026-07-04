@@ -22,7 +22,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
 
-  public static getStyles() {
+  static get styles() {
     return styles;
   }
 
@@ -269,6 +269,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         title: col.label || col.prop || col.device_class || 'Unknown',
         data: colKey,
         defaultContent: '-',
+        type:
+          col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
+            ? 'num'
+            : 'string',
         className: col.type === 'entity' ? 'cell-entity' : 'cell-device',
         createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
           if (col.type === 'entity') {
