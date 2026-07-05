@@ -5,11 +5,6 @@ import responsiveStyles from 'datatables.net-responsive-dt/css/responsive.dataTa
 export const styles = css`
   :host {
     display: block;
-    padding: 16px;
-    min-height: 100px;
-  }
-  ha-card {
-    padding: 16px;
   }
   ${unsafeCSS(dtStyles)}
   ${unsafeCSS(responsiveStyles)}
@@ -22,20 +17,39 @@ export const styles = css`
     font-family: var(--paper-font-body1_-_font-family, inherit);
   }
 
+  .card-content {
+    padding: 16px;
+  }
+
+  #table-container {
+    width: 100%;
+    overflow: hidden;
+  }
+
   table.dataTable thead th {
     border-bottom: 1px solid var(--divider-color);
     color: var(--secondary-text-color);
-    text-align: left;
+    text-align: left !important;
     font-weight: 500;
-    padding: 16px 8px;
+    padding: 16px 24px 16px 8px !important;
     font-size: 0.9em;
     text-transform: uppercase;
+    position: relative;
+  }
+
+  table.dataTable thead th.dt-type-numeric {
+    text-align: right !important;
+    padding: 16px 24px 16px 8px !important;
   }
 
   table.dataTable td {
     border-bottom: 1px solid var(--divider-color);
     padding: 16px 8px;
     vertical-align: middle;
+  }
+
+  table.dataTable td.dt-type-numeric {
+    text-align: right;
   }
 
   table.dataTable tbody tr:hover {
@@ -54,23 +68,42 @@ export const styles = css`
 
   /* DataTables 2.x Layout styling */
   .dt-container {
-    padding: 8px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
   }
 
   .dt-layout-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .dt-layout-row.dt-layout-table {
+    display: block;
+    margin: 16px 0;
+  }
+
+  .dt-layout-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .dt-layout-cell.dt-start {
+    justify-content: flex-start;
   }
 
   .dt-layout-cell.dt-end {
-    margin-left: auto;
+    justify-content: flex-end;
   }
 
+  .dt-search,
   .dataTables_wrapper .dataTables_filter {
-    float: right;
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    color: var(--secondary-text-color);
   }
 
   .dt-search input,
@@ -84,15 +117,19 @@ export const styles = css`
     margin-left: 8px;
     outline: none;
     transition: border-bottom-color 0.2s;
+    height: 40px;
+    box-sizing: border-box;
   }
 
+  .dt-search input:focus,
   .dataTables_wrapper .dataTables_filter input:focus {
     border-bottom: 2px solid var(--primary-color);
   }
 
+  .dt-length,
   .dataTables_wrapper .dataTables_length {
-    float: left;
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
     color: var(--secondary-text-color);
   }
 
@@ -110,17 +147,17 @@ export const styles = css`
 
   .dt-info,
   .dataTables_wrapper .dataTables_info {
-    float: left;
     color: var(--secondary-text-color) !important;
-    padding-top: 16px;
     font-size: 0.9em;
+    padding: 0;
   }
 
   .dt-paging,
   .dataTables_wrapper .dataTables_paginate {
-    float: right;
     color: var(--secondary-text-color) !important;
-    padding-top: 12px;
+    padding: 0;
+    display: flex;
+    align-items: center;
   }
 
   .dt-paging-button,
@@ -158,22 +195,36 @@ export const styles = css`
     border: 1px solid transparent !important;
   }
 
-  /* Clearfix for DataTables wrapper */
-  .dataTables_wrapper::after {
-    content: '';
-    display: block;
-    clear: both;
+  /* Override DataTables 2.x default sorting icons positioning */
+  table.dataTable thead th .dt-column-order {
+    right: 4px !important;
+    left: auto !important;
+  }
+
+  table.dataTable thead th::before,
+  table.dataTable thead th::after {
+    right: 8px !important;
+    left: auto !important;
   }
 
   /* Responsive styling adjustments */
   @media screen and (max-width: 600px) {
+    .dt-layout-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dt-layout-cell {
+      justify-content: center !important;
+      width: 100%;
+    }
+
     .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_info,
     .dataTables_wrapper .dataTables_paginate {
       float: none;
       text-align: center;
-      margin-bottom: 8px;
     }
     .dataTables_wrapper .dataTables_filter input {
       margin-left: 0;
