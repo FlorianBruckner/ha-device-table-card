@@ -39,7 +39,8 @@ Alternatively, add this repository to HACS as a custom repository.
 | Name | Type | Description |
 | :--- | :--- | :--- |
 | `area` | string | Only show devices in this area. |
-| `integration` | string | Only show devices from this integration (manufacturer/model). |
+| `integration` | string | Only show devices from this integration (domain, e.g. `zha`, `mqtt`). |
+| `manufacturer` | string | Only show devices from this manufacturer (e.g. `LUMI`, `Sonoff`). |
 | `anchor_entity_class` | string | Only show devices that have an entity with this `device_class`. |
 
 ### Column Object
@@ -48,7 +49,7 @@ Alternatively, add this repository to HACS as a custom repository.
 | :--- | :--- | :--- |
 | `type` | string | `device`, `entity`, or `meta`. |
 | `label` | string | Header text for the column. |
-| `prop` | string | Property name for `device` (e.g., `name`, `area`, `integration`) or `meta` (e.g., `last_changed`). |
+| `prop` | string | Property name for `device` (e.g., `name`, `area`, `integration`, `manufacturer`) or `meta` (e.g., `last_changed`). |
 | `device_class` | string | Used for `entity` type to find an entity by its device class (e.g., `battery`, `moisture`). |
 | `suffix` | string | Used for `entity` type to find an entity by its entity ID suffix (e.g., `_voltage`). |
 | `highlight` | list | List of highlighting rules. |
@@ -63,6 +64,7 @@ Alternatively, add this repository to HACS as a custom repository.
 
 ## Example Configuration
 
+### Basic Example
 ```yaml
 type: custom:ha-device-table-card
 title: "Garden Sensors"
@@ -87,6 +89,32 @@ columns:
     highlight:
       - below: 15
         color: "red"
+  - type: meta
+    prop: last_changed
+    label: "Last Seen"
+```
+
+### Advanced Filtering & Columns
+Show all ZHA devices, including their area and manufacturer.
+
+```yaml
+type: custom:ha-device-table-card
+title: "Zigbee Devices"
+filter:
+  integration: "zha"
+columns:
+  - type: device
+    prop: name
+    label: "Device"
+  - type: device
+    prop: area
+    label: "Location"
+  - type: device
+    prop: manufacturer
+    label: "Brand"
+  - type: entity
+    device_class: "battery"
+    label: "Battery"
   - type: meta
     prop: last_changed
     label: "Last Seen"
