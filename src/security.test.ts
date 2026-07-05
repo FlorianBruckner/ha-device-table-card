@@ -10,9 +10,9 @@ describe('ha-device-table-card security', () => {
         entity_id: 'sensor.test',
         state: '25',
         attributes: {
-            friendly_name: 'Test Sensor',
-            device_class: 'temperature',
-            unit_of_measurement: '°C'
+          friendly_name: 'Test Sensor',
+          device_class: 'temperature',
+          unit_of_measurement: '°C',
         },
         last_updated: new Date().toISOString(),
       },
@@ -43,9 +43,13 @@ describe('ha-device-table-card security', () => {
           device_class: 'temperature',
           label: 'Temp',
           highlight: [
-            { above: 20, color: 'red; display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999;' }
-          ]
-        }
+            {
+              above: 20,
+              color:
+                'red; display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999;',
+            },
+          ],
+        },
       ],
     };
 
@@ -57,10 +61,10 @@ describe('ha-device-table-card security', () => {
     const columns = (el as any)._getColumns();
     const renderFn = columns[0].render;
     const rowData = {
-        col_0: '25',
-        _entities: {
-            col_0: mockHass.states['sensor.test']
-        }
+      col_0: '25',
+      _entities: {
+        col_0: mockHass.states['sensor.test'],
+      },
     };
 
     const rendered = renderFn('25', 'display', rowData);
@@ -71,7 +75,7 @@ describe('ha-device-table-card security', () => {
   });
 
   it('escapes HTML special characters in display data', async () => {
-     const el = await fixture<DeviceTableCard>(html`
+    const el = await fixture<DeviceTableCard>(html`
       <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
     `);
 

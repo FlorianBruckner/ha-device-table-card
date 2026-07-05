@@ -220,7 +220,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     // Allow alphanumeric, #, spaces, parens, commas, dots, percentages, dashes, underscores, and forward slashes.
     // This covers most CSS colors including hex, rgb, rgba, hsl, hsla and var().
     // We explicitly exclude characters like ; and { } that could be used for CSS injection.
-    const safeColorRegex = /^[a-zA-Z0-9#\s\(\),.%_\-\/]+$/;
+    const safeColorRegex = /^[a-zA-Z0-9#\s(),.%_\-/]+$/;
     if (safeColorRegex.test(color)) {
       return color;
     }
