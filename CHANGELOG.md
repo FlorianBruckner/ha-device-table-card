@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -
 
+## [0.0.8] - 2026-07-05
+allow for integration (domain, platform)
+### Added
+-
+
 ## [0.0.7] - 2026-07-04
 fix sorting
 ### Added
