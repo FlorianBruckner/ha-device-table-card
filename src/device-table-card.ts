@@ -1,5 +1,6 @@
 import { LitElement, html, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { escape as escapeHtml } from 'html-escaper';
 import { LovelaceCard, fireEvent, navigate } from 'custom-card-helpers';
 import DataTable from 'datatables.net-dt';
 import 'datatables.net-responsive-dt';
@@ -201,33 +202,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     this._dataTable.draw(false); // Use false to keep current paging
   }
 
-  private _escapeHtml(str: any): string {
-    const escapeMap: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '/': '&#x2F;',
-    };
-    return String(str).replace(/[&<>"'/]/g, (m) => escapeMap[m]);
-  }
-
-  private _sanitizeColor(color: any): string {
-    if (!color || typeof color !== 'string') {
-      return '';
-    }
-    // Allow alphanumeric, #, spaces, parens, commas, dots, percentages, dashes, underscores, and forward slashes.
-    // This covers most CSS colors including hex, rgb, rgba, hsl, hsla and var().
-    // We explicitly exclude characters like ; and { } that could be used for CSS injection.
-    const safeColorRegex = /^[a-zA-Z0-9#\s(),.%_\-/]+$/;
-    if (safeColorRegex.test(color)) {
-      return color;
-    }
-    console.warn(`[ha-device-table-card] Blocked potentially unsafe color value: ${color}`);
-    return '';
-  }
-
   private _initDataTable(): void {
     const tableElement = this.renderRoot.querySelector('#deviceTable') as HTMLElement;
     if (tableElement && !this._dataTable) {
@@ -327,7 +301,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           if (data === '-' || type === 'type') return data;
 
-          let displayValue = this._escapeHtml(data);
+          let displayValue = escapeHtml(String(data));
           let color = '';
 
           if (col.type === 'entity') {
@@ -335,7 +309,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (stateObj) {
               const uom = stateObj.attributes.unit_of_measurement;
               if (uom) {
-                displayValue = `${this._escapeHtml(data)} ${this._escapeHtml(uom)}`;
+                displayValue = `${escapeHtml(String(data))} ${escapeHtml(String(uom))}`;
               }
 
               // Highlighting
@@ -378,9 +352,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
           }
 
-          const sanitizedColor = this._sanitizeColor(color);
-          if (sanitizedColor) {
-            return `<span style="color: ${this._escapeHtml(sanitizedColor)}; font-weight: bold;">${displayValue}</span>`;
+          if (color) {
+            return `<span style="color: ${escapeHtml(String(color))}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },

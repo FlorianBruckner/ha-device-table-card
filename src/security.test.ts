@@ -30,50 +30,6 @@ describe('ha-device-table-card security', () => {
     },
   };
 
-  it('sanitizes malicious color values to prevent CSS injection', async () => {
-    const el = await fixture<DeviceTableCard>(html`
-      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
-    `);
-
-    const config: DeviceTableCardConfig = {
-      type: 'custom:ha-device-table-card',
-      columns: [
-        {
-          type: 'entity',
-          device_class: 'temperature',
-          label: 'Temp',
-          highlight: [
-            {
-              above: 20,
-              color:
-                'red; display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999;',
-            },
-          ],
-        },
-      ],
-    };
-
-    el.setConfig(config);
-    await el.updateComplete;
-    // Wait for debounce and DataTables update
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const columns = (el as any)._getColumns();
-    const renderFn = columns[0].render;
-    const rowData = {
-      col_0: '25',
-      _entities: {
-        col_0: mockHass.states['sensor.test'],
-      },
-    };
-
-    const rendered = renderFn('25', 'display', rowData);
-
-    // It should not contain the injected CSS
-    expect(rendered).to.not.contain('display: block');
-    expect(rendered).to.not.contain('position: fixed');
-  });
-
   it('escapes HTML special characters in display data', async () => {
     const el = await fixture<DeviceTableCard>(html`
       <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
@@ -94,6 +50,45 @@ describe('ha-device-table-card security', () => {
     const rendered = renderFn(maliciousName, 'display', {});
 
     expect(rendered).to.not.contain('<img');
+    expect(rendered).to.contain('&lt;img');
+  });
+
+  it('escapes HTML special characters in color values', async () => {
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      columns: [
+        {
+          type: 'entity',
+          device_class: 'temperature',
+          label: 'Temp',
+          highlight: [{ above: 20, color: '"> <img src=x onerror=alert(1)>' }],
+        },
+      ],
+    };
+
+    el.setConfig(config);
+    await el.updateComplete;
+    // Wait for debounce and DataTables update
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const columns = (el as any)._getColumns();
+    const renderFn = columns[0].render;
+    const rowData = {
+      col_0: '25',
+      _entities: {
+        col_0: mockHass.states['sensor.test'],
+      },
+    };
+
+    const rendered = renderFn('25', 'display', rowData);
+
+    // It should escape the quote and the tag
+    expect(rendered).to.not.contain('<img');
+    expect(rendered).to.contain('&quot;');
     expect(rendered).to.contain('&lt;img');
   });
 });

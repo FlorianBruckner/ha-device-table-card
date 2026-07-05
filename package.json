@@ -24,6 +24,7 @@
     "datatables.net": "^2.3.8",
     "datatables.net-dt": "^2.3.8",
     "datatables.net-responsive-dt": "^3.0.8",
+    "html-escaper": "^3.0.3",
     "lit": "^3.2.1"
   },
   "devDependencies": {
@@ -35,6 +36,7 @@
     "@rollup/plugin-replace": "^6.0.3",
     "@rollup/plugin-typescript": "^12.1.1",
     "@types/datatables.net": "^1.10.28",
+    "@types/html-escaper": "^3.0.4",
     "@types/jquery": "^4.0.1",
     "@types/mocha": "^10.0.10",
     "@types/sinon": "^22.0.0",
