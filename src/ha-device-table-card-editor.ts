@@ -23,6 +23,7 @@ export class DeviceTableCardEditor extends LitElement {
           label="Title"
           .value=${this._config.title || ''}
           .configValue=${'title'}
+          maxlength="100"
           @input=${this._valueChanged}
         ></ha-textfield>
 
@@ -31,6 +32,7 @@ export class DeviceTableCardEditor extends LitElement {
           label="Area"
           .value=${this._config.filter?.area || ''}
           .configValue=${'filter.area'}
+          maxlength="100"
           @input=${this._valueChanged}
         ></ha-textfield>
 
@@ -38,6 +40,7 @@ export class DeviceTableCardEditor extends LitElement {
           label="Anchor Entity Device Class"
           .value=${this._config.filter?.anchor_entity_class || ''}
           .configValue=${'filter.anchor_entity_class'}
+          maxlength="100"
           @input=${this._valueChanged}
         ></ha-textfield>
 
@@ -45,6 +48,7 @@ export class DeviceTableCardEditor extends LitElement {
           label="Integration (e.g. zha, mqtt, hue)"
           .value=${this._config.filter?.integration || ''}
           .configValue=${'filter.integration'}
+          maxlength="100"
           @input=${this._valueChanged}
         ></ha-textfield>
 
@@ -52,6 +56,7 @@ export class DeviceTableCardEditor extends LitElement {
           label="Manufacturer (e.g. LUMI, Sonoff)"
           .value=${this._config.filter?.manufacturer || ''}
           .configValue=${'filter.manufacturer'}
+          maxlength="100"
           @input=${this._valueChanged}
         ></ha-textfield>
 
