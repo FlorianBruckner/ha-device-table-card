@@ -43,16 +43,26 @@ export function processDevices(
     const deviceEntities = deviceMap[deviceId];
     const device = deviceLookup[deviceId];
     const deviceAreaId = device?.area_id;
-    const area = deviceAreaId ? areaLookup[deviceAreaId]?.name || deviceAreaId : 'No Area';
-    const integration = device?.manufacturer || device?.model || 'Unknown';
+    const areaName = deviceAreaId ? areaLookup[deviceAreaId]?.name || deviceAreaId : 'No Area';
+    const integration = deviceEntities[0]?.registry?.platform || 'Unknown';
+    const manufacturer = device?.manufacturer || 'Unknown';
 
-    // Apply Area Filter
-    if (config?.filter?.area && area !== config.filter.area) {
+    // Apply Area Filter (Match by Name or ID)
+    if (
+      config?.filter?.area &&
+      areaName !== config.filter.area &&
+      deviceAreaId !== config.filter.area
+    ) {
       return;
     }
 
     // Apply Integration Filter
     if (config?.filter?.integration && integration !== config.filter.integration) {
+      return;
+    }
+
+    // Apply Manufacturer Filter
+    if (config?.filter?.manufacturer && manufacturer !== config.filter.manufacturer) {
       return;
     }
 
@@ -69,8 +79,9 @@ export function processDevices(
     const deviceData: DeviceData = {
       id: deviceId,
       name: device?.name_by_user || device?.name || 'Unknown Device',
-      area: area,
+      area: areaName,
       integration: integration,
+      manufacturer: manufacturer,
       _entities: {},
     };
 
@@ -81,6 +92,7 @@ export function processDevices(
         if (col.prop === 'name') deviceData[key] = deviceData.name;
         else if (col.prop === 'area') deviceData[key] = deviceData.area;
         else if (col.prop === 'integration') deviceData[key] = deviceData.integration;
+        else if (col.prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
         else deviceData[key] = (device as any)?.[col.prop as string] || '-';
       } else if (col.type === 'entity') {
         const found = deviceEntities.find((e) => {

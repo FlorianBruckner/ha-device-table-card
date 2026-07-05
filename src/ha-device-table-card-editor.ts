@@ -42,9 +42,16 @@ export class DeviceTableCardEditor extends LitElement {
         ></ha-textfield>
 
         <ha-textfield
-          label="Integration (Manufacturer/Model)"
+          label="Integration (e.g. zha, mqtt, hue)"
           .value=${this._config.filter?.integration || ''}
           .configValue=${'filter.integration'}
+          @input=${this._valueChanged}
+        ></ha-textfield>
+
+        <ha-textfield
+          label="Manufacturer (e.g. LUMI, Sonoff)"
+          .value=${this._config.filter?.manufacturer || ''}
+          .configValue=${'filter.manufacturer'}
           @input=${this._valueChanged}
         ></ha-textfield>
 

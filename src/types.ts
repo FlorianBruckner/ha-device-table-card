@@ -10,6 +10,7 @@ export interface FilterConfig {
   area?: string;
   anchor_entity_class?: string;
   integration?: string;
+  manufacturer?: string;
 }
 
 export interface ColumnConfig {
@@ -31,6 +32,8 @@ export interface DeviceData {
   id: string;
   name: string;
   area: string;
+  integration: string;
+  manufacturer: string;
   [key: string]: any; // To allow dynamic column keys
   _entities: Record<string, any>; // Store actual state objects for internal use
 }
