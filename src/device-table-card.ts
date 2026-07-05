@@ -218,6 +218,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           [10, 25, 50, 100, -1],
           [10, 25, 50, 100, 'All'],
         ],
+        language: {
+          search: '',
+          searchPlaceholder: 'Search devices...',
+        },
+        initComplete: () => {
+          const searchInput = this.renderRoot.querySelector(
+            '.dt-search input, .dataTables_filter input',
+          );
+          if (searchInput) {
+            searchInput.setAttribute('aria-label', 'Search devices');
+          }
+        },
       });
 
       tableElement.addEventListener('click', (e: Event) => {
@@ -250,6 +262,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
+            td.title = 'Navigate to device details';
           },
         },
         {
@@ -259,6 +272,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
+            td.title = 'Navigate to device details';
           },
         },
       ];
@@ -274,14 +288,20 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             ? 'num'
             : 'string',
         className: col.type === 'entity' ? 'cell-entity' : 'cell-device',
-        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+        createdCell: (td: HTMLElement, cellData: any, rowData: any) => {
           if (col.type === 'entity') {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
+              td.title = 'View entity details';
             }
           } else if (col.type === 'device') {
             td.setAttribute('data-device-id', rowData.id);
+            td.title = 'Navigate to device details';
+          } else if (col.type === 'meta' && col.prop === 'last_changed') {
+            if (typeof cellData === 'number') {
+              td.title = new Date(cellData).toLocaleString();
+            }
           }
         },
         render: (data: any, type: any, row: any) => {
