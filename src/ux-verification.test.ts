@@ -81,5 +81,40 @@ describe('ha-device-table-card UX', () => {
     expect(searchInput).to.exist;
     expect(searchInput?.getAttribute('aria-label')).to.equal('Search devices');
     expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices...');
+
+    const lengthSelect = el.shadowRoot?.querySelector(
+      '.dt-length select, .dataTables_wrapper .dataTables_length select',
+    );
+    expect(lengthSelect).to.exist;
+    expect(lengthSelect?.getAttribute('aria-label')).to.equal('Items per page');
+  });
+
+  it('has correct keyboard accessibility attributes on interactive cells', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [
+        { type: 'device', prop: 'name', label: 'Device' },
+        { type: 'entity', device_class: 'battery', label: 'Battery' },
+      ],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const rows = el.shadowRoot?.querySelectorAll('tbody tr');
+    const cells = rows![0].querySelectorAll('td');
+
+    // Column 0: Device Name
+    expect(cells[0].tabIndex).to.equal(0);
+    expect(cells[0].getAttribute('role')).to.equal('button');
+
+    // Column 1: Battery Entity
+    expect(cells[1].tabIndex).to.equal(0);
+    expect(cells[1].getAttribute('role')).to.equal('button');
   });
 });

@@ -66,6 +66,13 @@ export const styles = css`
     text-decoration: underline;
   }
 
+  .cell-entity:focus-visible,
+  .cell-device:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+    text-decoration: underline;
+  }
+
   /* DataTables 2.x Layout styling */
   .dt-container {
     padding: 0;

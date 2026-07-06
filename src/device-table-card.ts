@@ -230,7 +230,27 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (searchInput) {
             searchInput.setAttribute('aria-label', 'Search devices');
           }
+
+          const lengthSelect = this.renderRoot.querySelector(
+            '.dt-length select, .dataTables_wrapper .dataTables_length select',
+          );
+          if (lengthSelect) {
+            lengthSelect.setAttribute('aria-label', 'Items per page');
+          }
         },
+      });
+
+      tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const target = e.target as HTMLElement;
+          if (
+            target.tagName === 'TD' &&
+            (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
+          ) {
+            e.preventDefault();
+            target.click();
+          }
+        }
       });
 
       tableElement.addEventListener('click', (e: Event) => {
@@ -264,6 +284,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
             td.title = 'Navigate to device details';
+            td.tabIndex = 0;
+            td.setAttribute('role', 'button');
           },
         },
         {
@@ -274,6 +296,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
             td.title = 'Navigate to device details';
+            td.tabIndex = 0;
+            td.setAttribute('role', 'button');
           },
         },
       ];
@@ -289,7 +313,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             ? 'num'
             : 'string',
         className:
-          (col.type === 'entity' ? 'cell-entity' : 'cell-device') +
+          (col.type === 'entity' ? 'cell-entity' : col.type === 'device' ? 'cell-device' : '') +
           (col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
             ? ' dt-type-numeric'
             : ''),
@@ -299,13 +323,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
               td.title = 'View entity details';
+              td.tabIndex = 0;
+              td.setAttribute('role', 'button');
             }
           } else if (col.type === 'device') {
             td.setAttribute('data-device-id', rowData.id);
             td.title = 'Navigate to device details';
+            td.tabIndex = 0;
+            td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            if (typeof cellData === 'number') {
-              td.title = new Date(cellData).toLocaleString();
+            if (typeof _cellData === 'number') {
+              td.title = new Date(_cellData).toLocaleString();
             }
           }
         },
