@@ -38,41 +38,45 @@ export function processDevices(
   });
 
   const result: DeviceData[] = [];
+  const columns = config?.columns || [];
+  const filter = config?.filter || {};
 
-  Object.keys(deviceMap).forEach((deviceId) => {
+  // Cache column metadata
+  const columnMetadata = columns.map((col, index) => ({
+    col,
+    key: `col_${index}`,
+  }));
+
+  for (const deviceId in deviceMap) {
     const deviceEntities = deviceMap[deviceId];
     const device = deviceLookup[deviceId];
+
+    // 1. Early filter by Manufacturer
+    const manufacturer = device?.manufacturer || 'Unknown';
+    if (filter.manufacturer && manufacturer !== filter.manufacturer) {
+      continue;
+    }
+
+    // 2. Early filter by Area
     const deviceAreaId = device?.area_id;
     const areaName = deviceAreaId ? areaLookup[deviceAreaId]?.name || deviceAreaId : 'No Area';
+    if (filter.area && areaName !== filter.area && deviceAreaId !== filter.area) {
+      continue;
+    }
+
+    // 3. Early filter by Integration
     const integration = deviceEntities[0]?.registry?.platform || 'Unknown';
-    const manufacturer = device?.manufacturer || 'Unknown';
-
-    // Apply Area Filter (Match by Name or ID)
-    if (
-      config?.filter?.area &&
-      areaName !== config.filter.area &&
-      deviceAreaId !== config.filter.area
-    ) {
-      return;
+    if (filter.integration && integration !== filter.integration) {
+      continue;
     }
 
-    // Apply Integration Filter
-    if (config?.filter?.integration && integration !== config.filter.integration) {
-      return;
-    }
-
-    // Apply Manufacturer Filter
-    if (config?.filter?.manufacturer && manufacturer !== config.filter.manufacturer) {
-      return;
-    }
-
-    // Apply Anchor Entity Filter
-    if (config?.filter?.anchor_entity_class) {
-      const hasAnchor = deviceEntities.some((e) => {
-        return e.state.attributes.device_class === config?.filter?.anchor_entity_class;
-      });
+    // 4. Anchor Entity Filter (requires entity scan)
+    if (filter.anchor_entity_class) {
+      const hasAnchor = deviceEntities.some(
+        (e) => e.state.attributes.device_class === filter.anchor_entity_class,
+      );
       if (!hasAnchor) {
-        return;
+        continue;
       }
     }
 
@@ -85,9 +89,26 @@ export function processDevices(
       _entities: {},
     };
 
+    // Index entities by device_class for faster column resolution
+    const entitiesByClass: Record<string, any> = {};
+    let lastChanged: number | null = null;
+
+    for (let i = 0; i < deviceEntities.length; i++) {
+      const e = deviceEntities[i];
+      const dClass = e.state.attributes.device_class;
+      if (dClass && !entitiesByClass[dClass]) {
+        entitiesByClass[dClass] = e;
+      }
+
+      const time = new Date(e.state.last_updated).getTime();
+      if (!isNaN(time) && (lastChanged === null || time > lastChanged)) {
+        lastChanged = time;
+      }
+    }
+
     // Resolve Columns
-    config?.columns?.forEach((col, index) => {
-      const key = `col_${index}`;
+    for (let i = 0; i < columnMetadata.length; i++) {
+      const { col, key } = columnMetadata[i];
       if (col.type === 'device') {
         if (col.prop === 'name') deviceData[key] = deviceData.name;
         else if (col.prop === 'area') deviceData[key] = deviceData.area;
@@ -95,15 +116,18 @@ export function processDevices(
         else if (col.prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
         else deviceData[key] = (device as any)?.[col.prop as string] || '-';
       } else if (col.type === 'entity') {
-        const found = deviceEntities.find((e) => {
-          if (col.device_class) {
-            return e.state.attributes.device_class === col.device_class;
+        let found = null;
+        if (col.device_class) {
+          found = entitiesByClass[col.device_class];
+        } else if (col.suffix) {
+          const suffix = col.suffix;
+          for (let j = 0; j < deviceEntities.length; j++) {
+            if (deviceEntities[j].entity_id.endsWith(suffix)) {
+              found = deviceEntities[j];
+              break;
+            }
           }
-          if (col.suffix) {
-            return e.entity_id.endsWith(col.suffix);
-          }
-          return false;
-        });
+        }
 
         if (found) {
           deviceData[key] = found.state.state;
@@ -113,21 +137,13 @@ export function processDevices(
         }
       } else if (col.type === 'meta') {
         if (col.prop === 'last_changed') {
-          const updates = deviceEntities
-            .map((e) => new Date(e.state.last_updated).getTime())
-            .filter((t) => !isNaN(t));
-
-          if (updates.length > 0) {
-            deviceData[key] = Math.max(...updates);
-          } else {
-            deviceData[key] = '-';
-          }
+          deviceData[key] = lastChanged !== null ? lastChanged : '-';
         }
       }
-    });
+    }
 
     result.push(deviceData);
-  });
+  }
 
   return result;
 }
