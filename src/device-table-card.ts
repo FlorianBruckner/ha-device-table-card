@@ -214,7 +214,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         data: [],
         columns: this._getColumns(),
         autoWidth: false,
-        dom: 'lfrtip', // Standard DataTables layout
+        layout: {
+          topStart: 'pageLength',
+          topEnd: 'search',
+          bottomStart: 'info',
+          bottomEnd: 'paging',
+        },
         stateSave: true,
         lengthMenu: [
           [10, 25, 50, 100, -1],

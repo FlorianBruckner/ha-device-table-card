@@ -44,12 +44,13 @@ export const styles = css`
 
   table.dataTable td {
     border-bottom: 1px solid var(--divider-color);
-    padding: 16px 8px;
+    padding: 16px 24px 16px 8px !important;
     vertical-align: middle;
   }
 
   table.dataTable td.dt-type-numeric {
-    text-align: right;
+    text-align: right !important;
+    padding: 16px 24px 16px 8px !important;
   }
 
   table.dataTable tbody tr:hover {
@@ -212,6 +213,7 @@ export const styles = css`
   table.dataTable thead th::after {
     right: 8px !important;
     left: auto !important;
+    position: absolute;
   }
 
   /* Responsive styling adjustments */
