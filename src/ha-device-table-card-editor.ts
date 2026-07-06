@@ -24,6 +24,7 @@ export class DeviceTableCardEditor extends LitElement {
           .value=${this._config.title || ''}
           .configValue=${'title'}
           @input=${this._valueChanged}
+          maxlength="100"
         ></ha-textfield>
 
         <h3>Filters</h3>
@@ -32,6 +33,7 @@ export class DeviceTableCardEditor extends LitElement {
           .value=${this._config.filter?.area || ''}
           .configValue=${'filter.area'}
           @input=${this._valueChanged}
+          maxlength="100"
         ></ha-textfield>
 
         <ha-textfield
@@ -39,6 +41,7 @@ export class DeviceTableCardEditor extends LitElement {
           .value=${this._config.filter?.anchor_entity_class || ''}
           .configValue=${'filter.anchor_entity_class'}
           @input=${this._valueChanged}
+          maxlength="100"
         ></ha-textfield>
 
         <ha-textfield
@@ -46,6 +49,7 @@ export class DeviceTableCardEditor extends LitElement {
           .value=${this._config.filter?.integration || ''}
           .configValue=${'filter.integration'}
           @input=${this._valueChanged}
+          maxlength="100"
         ></ha-textfield>
 
         <ha-textfield
@@ -53,6 +57,7 @@ export class DeviceTableCardEditor extends LitElement {
           .value=${this._config.filter?.manufacturer || ''}
           .configValue=${'filter.manufacturer'}
           @input=${this._valueChanged}
+          maxlength="100"
         ></ha-textfield>
 
         <p><i>More advanced configuration (columns, thresholds) is still managed via YAML.</i></p>
