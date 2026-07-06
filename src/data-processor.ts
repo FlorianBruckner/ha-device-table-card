@@ -14,13 +14,23 @@ export function processDevices(
   const states = hass.states || {};
 
   // Create lookups for faster processing
-  const deviceLookup = Object.fromEntries(devices.map((d) => [d.id, d]));
-  const areaLookup = Object.fromEntries(areas.map((a) => [a.area_id, a]));
+  const deviceLookup: Record<string, any> = {};
+  for (let i = 0; i < devices.length; i++) {
+    const d = devices[i];
+    deviceLookup[d.id] = d;
+  }
+
+  const areaLookup: Record<string, any> = {};
+  for (let i = 0; i < areas.length; i++) {
+    const a = areas[i];
+    areaLookup[a.area_id] = a;
+  }
 
   const deviceMap: Record<string, any[]> = {};
 
   // Group entities by device using registries first
-  entities.forEach((entityRegistry) => {
+  for (let i = 0; i < entities.length; i++) {
+    const entityRegistry = entities[i];
     const entityId = entityRegistry.entity_id;
     const stateObj = states[entityId];
     const deviceId = entityRegistry.device_id;
@@ -35,7 +45,7 @@ export function processDevices(
         registry: entityRegistry,
       });
     }
-  });
+  }
 
   const result: DeviceData[] = [];
   const columns = config?.columns || [];
@@ -70,15 +80,40 @@ export function processDevices(
       continue;
     }
 
-    // 4. Anchor Entity Filter (requires entity scan)
-    if (filter.anchor_entity_class) {
-      const hasAnchor = deviceEntities.some(
-        (e) => e.state.attributes.device_class === filter.anchor_entity_class,
-      );
-      if (!hasAnchor) {
-        continue;
+    // Index entities by device_class for faster column resolution
+    // AND find latest last_updated (using lexicographical string comparison)
+    // AND check for anchor entity filter
+    const entitiesByClass: Record<string, any> = {};
+    let latestIso: string | null = null;
+    let hasAnchor = filter.anchor_entity_class ? false : true;
+
+    for (let i = 0; i < deviceEntities.length; i++) {
+      const e = deviceEntities[i];
+      const stateObj = e.state;
+      const dClass = stateObj.attributes.device_class;
+
+      if (dClass) {
+        if (!entitiesByClass[dClass]) {
+          entitiesByClass[dClass] = e;
+        }
+        if (!hasAnchor && dClass === filter.anchor_entity_class) {
+          hasAnchor = true;
+        }
+      }
+
+      const iso = stateObj.last_updated;
+      if (iso && (latestIso === null || iso > latestIso)) {
+        latestIso = iso;
       }
     }
+
+    // 4. Anchor Entity Filter check
+    if (!hasAnchor) {
+      continue;
+    }
+
+    // Parse the final latest timestamp only once
+    const lastChanged = latestIso ? Date.parse(latestIso) : null;
 
     const deviceData: DeviceData = {
       id: deviceId,
@@ -88,23 +123,6 @@ export function processDevices(
       manufacturer: manufacturer,
       _entities: {},
     };
-
-    // Index entities by device_class for faster column resolution
-    const entitiesByClass: Record<string, any> = {};
-    let lastChanged: number | null = null;
-
-    for (let i = 0; i < deviceEntities.length; i++) {
-      const e = deviceEntities[i];
-      const dClass = e.state.attributes.device_class;
-      if (dClass && !entitiesByClass[dClass]) {
-        entitiesByClass[dClass] = e;
-      }
-
-      const time = new Date(e.state.last_updated).getTime();
-      if (!isNaN(time) && (lastChanged === null || time > lastChanged)) {
-        lastChanged = time;
-      }
-    }
 
     // Resolve Columns
     for (let i = 0; i < columnMetadata.length; i++) {
