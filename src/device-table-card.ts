@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { LovelaceCard, fireEvent, navigate } from 'custom-card-helpers';
 import DataTable from 'datatables.net-dt';
 import 'datatables.net-responsive-dt';
+import { escape } from 'html-escaper';
 
 import { DeviceTableCardConfig } from './types';
 import { styles } from './styles';
@@ -317,7 +318,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           (col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
             ? ' dt-type-numeric'
             : ''),
-        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+        createdCell: (td: HTMLElement, cellData: any, rowData: any) => {
           if (col.type === 'entity') {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
@@ -353,21 +354,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           if (data === '-' || type === 'type') return data;
 
-          // Simple HTML escaping
-          const escape = (str: string) =>
-            String(str).replace(
-              /[&<>"']/g,
-              (m) =>
-                ({
-                  '&': '&amp;',
-                  '<': '&lt;',
-                  '>': '&gt;',
-                  '"': '&quot;',
-                  "'": '&#39;',
-                })[m] || m,
-            );
-
-          let displayValue = escape(data);
+          let displayValue = escape(String(data));
           let color = '';
 
           if (col.type === 'entity') {
