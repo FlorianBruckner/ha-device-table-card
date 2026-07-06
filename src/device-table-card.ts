@@ -304,8 +304,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.setAttribute('data-device-id', rowData.id);
             td.title = 'Navigate to device details';
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            if (typeof cellData === 'number') {
-              td.title = new Date(cellData).toLocaleString();
+            const timestamp = rowData[colKey] ?? cellData;
+            if (typeof timestamp === 'number' && !isNaN(timestamp)) {
+              td.title = new Date(timestamp).toLocaleString();
             }
           }
         },
