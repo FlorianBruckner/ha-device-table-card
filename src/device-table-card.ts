@@ -214,7 +214,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         columns: this._getColumns(),
         autoWidth: false,
         dom: 'lfrtip', // Standard DataTables layout
-        stateSave: true,
         lengthMenu: [
           [10, 25, 50, 100, -1],
           [10, 25, 50, 100, 'All'],
@@ -288,12 +287,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
             ? 'num'
             : 'string',
-        className:
-          (col.type === 'entity' ? 'cell-entity' : 'cell-device') +
-          (col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
-            ? ' dt-type-numeric'
-            : ''),
-        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+        className: col.type === 'entity' ? 'cell-entity' : 'cell-device',
+        createdCell: (td: HTMLElement, cellData: any, rowData: any) => {
           if (col.type === 'entity') {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
@@ -407,9 +402,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return html`
       <ha-card .header=${this._config.title}>
         <div class="card-content">
-          <div id="table-container">
-            <table id="deviceTable" class="display responsive nowrap" style="width:100%"></table>
-          </div>
+          <table id="deviceTable" class="display responsive nowrap" style="width:100%"></table>
         </div>
       </ha-card>
     `;
