@@ -54,10 +54,10 @@ describe('ha-device-table-card UX', () => {
     const cells = rows![0].querySelectorAll('td');
 
     // Column 0: Device Name
-    expect(cells[0].title).to.equal('Navigate to device details');
+    expect(cells[0].title).to.equal('Navigate to Device 1 details');
 
     // Column 1: Battery Entity
-    expect(cells[1].title).to.equal('View entity details');
+    expect(cells[1].title).to.equal('View sensor.battery details');
 
     // Column 2: Last Seen Meta
     expect(cells[2].title).to.not.be.empty;
@@ -81,6 +81,7 @@ describe('ha-device-table-card UX', () => {
     expect(searchInput).to.exist;
     expect(searchInput?.getAttribute('aria-label')).to.equal('Search devices');
     expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices...');
+    expect(searchInput?.getAttribute('type')).to.equal('search');
 
     const lengthSelect = el.shadowRoot?.querySelector(
       '.dt-length select, .dataTables_wrapper .dataTables_length select',
