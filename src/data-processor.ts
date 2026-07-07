@@ -12,85 +12,95 @@ export function processDevices(
   }
 
   const states = hass.states || {};
+  const filter = config.filter || {};
+  const columns = config.columns || [];
 
-  // Create lookups for faster processing
-  const deviceLookup: Record<string, any> = {};
+  // Create area lookup
+  const areaLookup: Record<string, string> = {};
+  for (let i = 0; i < areas.length; i++) {
+    areaLookup[areas[i].area_id] = areas[i].name;
+  }
+
+  // Pre-filter devices by Manufacturer and Area to avoid processing their entities
+  const filteredDevices: Record<string, { d: any; areaName: string }> = {};
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
-    deviceLookup[d.id] = d;
-  }
 
-  const areaLookup: Record<string, any> = {};
-  for (let i = 0; i < areas.length; i++) {
-    const a = areas[i];
-    areaLookup[a.area_id] = a;
-  }
-
-  const deviceMap: Record<string, any[]> = {};
-
-  // Group entities by device using registries first
-  for (let i = 0; i < entities.length; i++) {
-    const entityRegistry = entities[i];
-    const entityId = entityRegistry.entity_id;
-    const stateObj = states[entityId];
-    const deviceId = entityRegistry.device_id;
-
-    if (deviceId && stateObj) {
-      if (!deviceMap[deviceId]) {
-        deviceMap[deviceId] = [];
-      }
-      deviceMap[deviceId].push({
-        entity_id: entityId,
-        state: stateObj,
-        registry: entityRegistry,
-      });
-    }
-  }
-
-  const result: DeviceData[] = [];
-  const columns = config?.columns || [];
-  const filter = config?.filter || {};
-
-  // Cache column metadata
-  const columnMetadata = columns.map((col, index) => ({
-    col,
-    key: `col_${index}`,
-  }));
-
-  for (const deviceId in deviceMap) {
-    const deviceEntities = deviceMap[deviceId];
-    const device = deviceLookup[deviceId];
-
-    // 1. Early filter by Manufacturer
-    const manufacturer = device?.manufacturer || 'Unknown';
+    // 1. Manufacturer filter
+    const manufacturer = d.manufacturer || 'Unknown';
     if (filter.manufacturer && manufacturer !== filter.manufacturer) {
       continue;
     }
 
-    // 2. Early filter by Area
-    const deviceAreaId = device?.area_id;
-    const areaName = deviceAreaId ? areaLookup[deviceAreaId]?.name || deviceAreaId : 'No Area';
-    if (filter.area && areaName !== filter.area && deviceAreaId !== filter.area) {
+    // 2. Area filter
+    const areaId = d.area_id;
+    const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
+    if (filter.area && areaName !== filter.area && areaId !== filter.area) {
       continue;
     }
 
-    // 3. Early filter by Integration
-    const integration = deviceEntities[0]?.registry?.platform || 'Unknown';
-    if (filter.integration && integration !== filter.integration) {
+    filteredDevices[d.id] = { d, areaName };
+  }
+
+  const deviceMap: Record<string, any[]> = {};
+  const devicePlatform: Record<string, string> = {};
+  const rejectedDevices = new Set<string>();
+
+  // Group entities by device, applying integration filter early
+  for (let i = 0; i < entities.length; i++) {
+    const ent = entities[i];
+    const deviceId = ent.device_id;
+
+    if (!deviceId || !filteredDevices[deviceId] || rejectedDevices.has(deviceId)) {
       continue;
     }
 
-    // Index entities by device_class for faster column resolution
-    // AND find latest last_updated (using lexicographical string comparison)
-    // AND check for anchor entity filter
+    const stateObj = states[ent.entity_id];
+    if (!stateObj) continue;
+
+    const platform = ent.platform || 'Unknown';
+    if (!deviceMap[deviceId]) {
+      // This is the "primary" entity for this device in our processing
+      if (filter.integration && platform !== filter.integration) {
+        rejectedDevices.add(deviceId);
+        continue;
+      }
+      deviceMap[deviceId] = [];
+      devicePlatform[deviceId] = platform;
+    }
+
+    deviceMap[deviceId].push({
+      entity_id: ent.entity_id,
+      state: stateObj,
+      registry: ent, // Keep registry for device_class
+    });
+  }
+
+  // Pre-categorize columns to avoid repeated checks in the loop
+  const entityCols = [];
+  const deviceCols = [];
+  const metaCols = [];
+  for (let i = 0; i < columns.length; i++) {
+    const m = { col: columns[i], key: `col_${i}` };
+    if (m.col.type === 'entity') entityCols.push(m);
+    else if (m.col.type === 'device') deviceCols.push(m);
+    else if (m.col.type === 'meta') metaCols.push(m);
+  }
+
+  const result: DeviceData[] = [];
+  for (const deviceId in deviceMap) {
+    const deviceEntities = deviceMap[deviceId];
+    const { d, areaName } = filteredDevices[deviceId];
+
+    // Single pass: index entities by device_class, find latest update, and check anchor filter
     const entitiesByClass: Record<string, any> = {};
     let latestIso: string | null = null;
-    let hasAnchor = filter.anchor_entity_class ? false : true;
+    let hasAnchor = !filter.anchor_entity_class;
 
     for (let i = 0; i < deviceEntities.length; i++) {
       const e = deviceEntities[i];
       const stateObj = e.state;
-      const dClass = stateObj.attributes.device_class;
+      const dClass = stateObj.attributes.device_class || e.registry.device_class;
 
       if (dClass) {
         if (!entitiesByClass[dClass]) {
@@ -107,56 +117,59 @@ export function processDevices(
       }
     }
 
-    // 4. Anchor Entity Filter check
-    if (!hasAnchor) {
-      continue;
-    }
+    if (!hasAnchor) continue;
 
-    // Parse the final latest timestamp only once
     const lastChanged = latestIso ? Date.parse(latestIso) : null;
+    const integration = devicePlatform[deviceId];
 
     const deviceData: DeviceData = {
       id: deviceId,
-      name: device?.name_by_user || device?.name || 'Unknown Device',
+      name: d.name_by_user || d.name || 'Unknown Device',
       area: areaName,
       integration: integration,
-      manufacturer: manufacturer,
+      manufacturer: d.manufacturer || 'Unknown',
       _entities: {},
     };
 
-    // Resolve Columns
-    for (let i = 0; i < columnMetadata.length; i++) {
-      const { col, key } = columnMetadata[i];
-      if (col.type === 'device') {
-        if (col.prop === 'name') deviceData[key] = deviceData.name;
-        else if (col.prop === 'area') deviceData[key] = deviceData.area;
-        else if (col.prop === 'integration') deviceData[key] = deviceData.integration;
-        else if (col.prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-        else deviceData[key] = (device as any)?.[col.prop as string] || '-';
-      } else if (col.type === 'entity') {
-        let found = null;
-        if (col.device_class) {
-          found = entitiesByClass[col.device_class];
-        } else if (col.suffix) {
-          const suffix = col.suffix;
-          for (let j = 0; j < deviceEntities.length; j++) {
-            if (deviceEntities[j].entity_id.endsWith(suffix)) {
-              found = deviceEntities[j];
-              break;
-            }
+    // Resolve Device Columns
+    for (let i = 0; i < deviceCols.length; i++) {
+      const { col, key } = deviceCols[i];
+      if (col.prop === 'name') deviceData[key] = deviceData.name;
+      else if (col.prop === 'area') deviceData[key] = deviceData.area;
+      else if (col.prop === 'integration') deviceData[key] = deviceData.integration;
+      else if (col.prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
+      else deviceData[key] = (d as any)?.[col.prop as string] || '-';
+    }
+
+    // Resolve Entity Columns
+    for (let i = 0; i < entityCols.length; i++) {
+      const { col, key } = entityCols[i];
+      let found = null;
+      if (col.device_class) {
+        found = entitiesByClass[col.device_class];
+      } else if (col.suffix) {
+        const suffix = col.suffix;
+        for (let j = 0; j < deviceEntities.length; j++) {
+          if (deviceEntities[j].entity_id.endsWith(suffix)) {
+            found = deviceEntities[j];
+            break;
           }
         }
+      }
 
-        if (found) {
-          deviceData[key] = found.state.state;
-          deviceData._entities[key] = found.state;
-        } else {
-          deviceData[key] = '-';
-        }
-      } else if (col.type === 'meta') {
-        if (col.prop === 'last_changed') {
-          deviceData[key] = lastChanged !== null ? lastChanged : '-';
-        }
+      if (found) {
+        deviceData[key] = found.state.state;
+        deviceData._entities[key] = found.state;
+      } else {
+        deviceData[key] = '-';
+      }
+    }
+
+    // Resolve Meta Columns
+    for (let i = 0; i < metaCols.length; i++) {
+      const { col, key } = metaCols[i];
+      if (col.prop === 'last_changed') {
+        deviceData[key] = lastChanged !== null ? lastChanged : '-';
       }
     }
 
