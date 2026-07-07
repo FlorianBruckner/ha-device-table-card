@@ -60,19 +60,19 @@ export function processDevices(
 
     const platform = ent.platform || 'Unknown';
     if (!deviceMap[deviceId]) {
-        // This is the "primary" entity for this device in our processing
-        if (filter.integration && platform !== filter.integration) {
-            rejectedDevices.add(deviceId);
-            continue;
-        }
-        deviceMap[deviceId] = [];
-        devicePlatform[deviceId] = platform;
+      // This is the "primary" entity for this device in our processing
+      if (filter.integration && platform !== filter.integration) {
+        rejectedDevices.add(deviceId);
+        continue;
+      }
+      deviceMap[deviceId] = [];
+      devicePlatform[deviceId] = platform;
     }
 
     deviceMap[deviceId].push({
       entity_id: ent.entity_id,
       state: stateObj,
-      registry: ent // Keep registry for device_class
+      registry: ent, // Keep registry for device_class
     });
   }
 
