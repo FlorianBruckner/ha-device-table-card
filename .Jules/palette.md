@@ -1,7 +1,7 @@
-## 2025-05-15 - [Initial UX Review]
-**Learning:** Micro-interactions like tooltips on relative timestamps and hover titles on clickable cells significantly improve the discoverability and accessibility of information in a data-heavy table.
-**Action:** Always provide full context (like absolute timestamps) when displaying relative times, and use descriptive titles for interactive elements that don't have explicit labels.
+## 2025-05-15 - [Descriptive Context in Tooltips]
+**Learning:** Generic tooltips like "View entity details" are less helpful than specific ones like "View [Entity Name] details". Providing the specific name in the tooltip improves accessibility for screen reader users and discoverability for mouse users.
+**Action:** When creating interactive elements for specific data objects, always include the object's name or a unique identifier in the `title` or `aria-label`.
 
-## 2025-05-15 - [Keyboard Accessibility in Custom Cards]
-**Learning:** For custom Home Assistant cards using third-party DOM-manipulating libraries like DataTables, manual injection of `tabindex`, `role="button"`, and keyboard event listeners is necessary to ensure interactive cells remain accessible within the Shadow DOM.
-**Action:** Always verify that elements with click handlers are reachable via keyboard and have appropriate ARIA roles, especially when using libraries that bypass standard Lit/React event binding.
+## 2025-05-15 - [Domain-Specific Language in Third-Party Components]
+**Learning:** Default terms in libraries (like "entries" in DataTables) can feel out of place in a specialized application like Home Assistant. Customizing these strings to use domain terms ("devices") makes the UI feel more integrated and professional.
+**Action:** Always review and customize the language/localization settings of third-party UI components to match the application's vocabulary.

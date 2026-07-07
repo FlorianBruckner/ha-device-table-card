@@ -228,13 +228,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         language: {
           search: '',
           searchPlaceholder: 'Search devices...',
+          info: 'Showing _START_ to _END_ of _TOTAL_ devices',
+          infoEmpty: 'Showing 0 to 0 of 0 devices',
+          infoFiltered: '(filtered from _MAX_ total devices)',
+          lengthMenu: 'Show _MENU_ devices',
         },
         initComplete: () => {
           const searchInput = this.renderRoot.querySelector(
             '.dt-search input, .dataTables_filter input',
-          );
+          ) as HTMLInputElement | null;
           if (searchInput) {
             searchInput.setAttribute('aria-label', 'Search devices');
+            searchInput.setAttribute('type', 'search');
           }
 
           const lengthSelect = this.renderRoot.querySelector(
@@ -289,7 +294,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = 'Navigate to device details';
+            td.title = `Navigate to ${rowData.name} details`;
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
@@ -301,7 +306,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = 'Navigate to device details';
+            td.title = `Navigate to ${rowData.name} details`;
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
@@ -328,13 +333,13 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
-              td.title = 'View entity details';
+              td.title = `View ${stateObj.attributes.friendly_name || stateObj.entity_id} details`;
               td.tabIndex = 0;
               td.setAttribute('role', 'button');
             }
           } else if (col.type === 'device') {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = 'Navigate to device details';
+            td.title = `Navigate to ${rowData.name} details`;
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
