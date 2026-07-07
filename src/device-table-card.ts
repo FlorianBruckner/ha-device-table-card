@@ -293,6 +293,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
+          render: (data: any, type: any) =>
+            type === 'display' && data && data !== '-' ? escape(String(data)) : data,
         },
         {
           title: 'Area',
@@ -305,13 +307,15 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
+          render: (data: any, type: any) =>
+            type === 'display' && data && data !== '-' ? escape(String(data)) : data,
         },
       ];
     }
     return this._config.columns.map((col, index) => {
       const colKey = `col_${index}`;
       return {
-        title: col.label || col.prop || col.device_class || 'Unknown',
+        title: escape(col.label || col.prop || col.device_class || 'Unknown'),
         data: colKey,
         defaultContent: '-',
         type:
