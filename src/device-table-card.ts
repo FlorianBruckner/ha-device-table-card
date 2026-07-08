@@ -419,8 +419,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
           }
 
-          if (color) {
-            return `<span style="color: ${escape(color)}; font-weight: bold;">${displayValue}</span>`;
+          if (color && type === 'display') {
+            // Sanitize color to prevent CSS injection - allow only alphanumeric and #
+            const sanitizedColor = color.replace(/[^a-zA-Z0-9#]/g, '');
+            return `<span style="color: ${escape(sanitizedColor)}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },

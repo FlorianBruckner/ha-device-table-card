@@ -83,14 +83,29 @@ export class DeviceTableCardEditor extends LitElement {
       const parts = configValue.split('.');
       let current: any = newConfig;
       for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) {
-          current[parts[i]] = {};
+        const key = parts[i];
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          return;
         }
-        current[parts[i]] = { ...current[parts[i]] };
-        current = current[parts[i]];
+        if (!current[key]) {
+          current[key] = {};
+        }
+        current[key] = { ...current[key] };
+        current = current[key];
       }
-      current[parts[parts.length - 1]] = value;
+      const lastKey = parts[parts.length - 1];
+      if (lastKey === '__proto__' || lastKey === 'constructor' || lastKey === 'prototype') {
+        return;
+      }
+      current[lastKey] = value;
     } else {
+      if (
+        configValue === '__proto__' ||
+        configValue === 'constructor' ||
+        configValue === 'prototype'
+      ) {
+        return;
+      }
       newConfig[configValue] = value;
     }
 

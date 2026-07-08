@@ -41,4 +41,33 @@ describe('ha-device-table-card-editor', () => {
     );
     expect((manufacturerField as any).value).to.equal('LUMI');
   });
+
+  it('prevents prototype pollution via nested configValue', async () => {
+    const el = await fixture<DeviceTableCardEditor>(html`
+      <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+
+    let eventDetail: any = null;
+    el.addEventListener('config-changed', (ev: any) => {
+      eventDetail = ev.detail;
+    });
+
+    const textField = el.shadowRoot?.querySelector('ha-textfield');
+    expect(textField).to.exist;
+
+    // Simulate malicious input
+    const maliciousEv = {
+      target: {
+        value: 'polluted',
+        configValue: 'filter.__proto__.polluted',
+      },
+    };
+
+    (el as any)._valueChanged(maliciousEv);
+
+    expect(eventDetail).to.be.null;
+    expect((Object.prototype as any).polluted).to.be.undefined;
+  });
 });
