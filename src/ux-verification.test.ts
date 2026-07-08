@@ -118,4 +118,31 @@ describe('ha-device-table-card UX', () => {
     expect(cells[1].tabIndex).to.equal(0);
     expect(cells[1].getAttribute('role')).to.equal('button');
   });
+
+  it('has custom empty state language strings', async () => {
+    const mockHassEmpty = {
+      ...mockHass,
+      callWS: async (msg: any) => {
+        if (msg.type === 'config/device_registry/list') return [];
+        return [];
+      },
+    };
+
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'Empty Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHassEmpty}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const emptyCell = el.shadowRoot?.querySelector('.dt-empty');
+    expect(emptyCell).to.exist;
+    expect(emptyCell?.textContent).to.equal('No devices available');
+  });
 });

@@ -53,6 +53,10 @@ export const styles = css`
     padding: 16px 24px 16px 8px !important;
   }
 
+  table.dataTable tbody tr {
+    transition: background-color 0.2s;
+  }
+
   table.dataTable tbody tr:hover {
     background-color: var(--secondary-background-color) !important;
   }
@@ -191,6 +195,12 @@ export const styles = css`
     background: var(--secondary-background-color) !important;
     color: var(--primary-text-color) !important;
     border: 1px solid var(--divider-color) !important;
+  }
+
+  .dt-paging-button:focus-visible,
+  .dataTables_wrapper .dataTables_paginate .paginate_button:focus-visible {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: -2px;
   }
 
   .dt-paging-button.disabled,

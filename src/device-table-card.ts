@@ -232,6 +232,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           infoEmpty: 'Showing 0 to 0 of 0 devices',
           infoFiltered: '(filtered from _MAX_ total devices)',
           lengthMenu: 'Show _MENU_ devices',
+          zeroRecords: 'No matching devices found',
+          emptyTable: 'No devices available',
         },
         initComplete: () => {
           const searchInput = this.renderRoot.querySelector(
