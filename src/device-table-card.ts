@@ -17,6 +17,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   @state() private _devices: any[] = [];
   @state() private _entities: any[] = [];
   @state() private _areas: any[] = [];
+  private _entitiesByDevice = new Map<string, any[]>();
 
   private _dataTable: any = null;
   private _updateTimeout?: any;
@@ -136,6 +137,16 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._devices = devices as any[];
       this._entities = entities as any[];
       this._areas = areas as any[];
+
+      this._entitiesByDevice.clear();
+      for (const ent of this._entities) {
+        const deviceId = ent.device_id;
+        if (!deviceId) continue;
+        if (!this._entitiesByDevice.has(deviceId)) {
+          this._entitiesByDevice.set(deviceId, []);
+        }
+        this._entitiesByDevice.get(deviceId)!.push(ent);
+      }
     } catch (e) {
       console.error('Failed to fetch Home Assistant registries', e);
     } finally {
@@ -194,7 +205,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this.hass,
       this._config,
       this._devices,
-      this._entities,
+      this._entitiesByDevice,
       this._areas,
     );
     this._dataTable.clear();

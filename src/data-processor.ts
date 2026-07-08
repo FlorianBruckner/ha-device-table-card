@@ -4,7 +4,7 @@ export function processDevices(
   hass: any,
   config: DeviceTableCardConfig,
   devices: any[],
-  entities: any[],
+  entities: any[] | Map<string, any[]>,
   areas: any[],
 ): DeviceData[] {
   if (!hass || !config || devices.length === 0) {
@@ -44,36 +44,74 @@ export function processDevices(
 
   const deviceMap: Record<string, any[]> = {};
   const devicePlatform: Record<string, string> = {};
-  const rejectedDevices = new Set<string>();
 
-  // Group entities by device, applying integration filter early
-  for (let i = 0; i < entities.length; i++) {
-    const ent = entities[i];
-    const deviceId = ent.device_id;
+  if (entities instanceof Map) {
+    // Optimized path: Use the pre-grouped Map
+    for (const deviceId in filteredDevices) {
+      const registryEntities = entities.get(deviceId);
+      if (!registryEntities) continue;
 
-    if (!deviceId || !filteredDevices[deviceId] || rejectedDevices.has(deviceId)) {
-      continue;
+      let platform = null;
+      const deviceEntities = [];
+
+      for (let i = 0; i < registryEntities.length; i++) {
+        const ent = registryEntities[i];
+        const stateObj = states[ent.entity_id];
+        if (!stateObj) continue;
+
+        if (platform === null) {
+          platform = ent.platform || 'Unknown';
+          if (filter.integration && platform !== filter.integration) {
+            break;
+          }
+        }
+
+        deviceEntities.push({
+          entity_id: ent.entity_id,
+          state: stateObj,
+          registry: ent,
+        });
+      }
+
+      if (deviceEntities.length > 0 && platform !== null) {
+        if (filter.integration && platform !== filter.integration) {
+          continue;
+        }
+        deviceMap[deviceId] = deviceEntities;
+        devicePlatform[deviceId] = platform;
+      }
     }
+  } else {
+    // Legacy path: Group entities by device
+    const rejectedDevices = new Set<string>();
+    for (let i = 0; i < entities.length; i++) {
+      const ent = entities[i];
+      const deviceId = ent.device_id;
 
-    const stateObj = states[ent.entity_id];
-    if (!stateObj) continue;
-
-    const platform = ent.platform || 'Unknown';
-    if (!deviceMap[deviceId]) {
-      // This is the "primary" entity for this device in our processing
-      if (filter.integration && platform !== filter.integration) {
-        rejectedDevices.add(deviceId);
+      if (!deviceId || !filteredDevices[deviceId] || rejectedDevices.has(deviceId)) {
         continue;
       }
-      deviceMap[deviceId] = [];
-      devicePlatform[deviceId] = platform;
-    }
 
-    deviceMap[deviceId].push({
-      entity_id: ent.entity_id,
-      state: stateObj,
-      registry: ent, // Keep registry for device_class
-    });
+      const stateObj = states[ent.entity_id];
+      if (!stateObj) continue;
+
+      const platform = ent.platform || 'Unknown';
+      if (!deviceMap[deviceId]) {
+        // This is the "primary" entity for this device in our processing
+        if (filter.integration && platform !== filter.integration) {
+          rejectedDevices.add(deviceId);
+          continue;
+        }
+        deviceMap[deviceId] = [];
+        devicePlatform[deviceId] = platform;
+      }
+
+      deviceMap[deviceId].push({
+        entity_id: ent.entity_id,
+        state: stateObj,
+        registry: ent, // Keep registry for device_class
+      });
+    }
   }
 
   // Pre-categorize columns to avoid repeated checks in the loop
