@@ -5,3 +5,7 @@
 ## 2026-07-06 - [Lexicographical string comparison for ISO timestamps]
 **Learning:** Comparing ISO 8601 strings lexicographically (`iso1 > iso2`) is significantly faster (up to 100x) than parsing each into a `Date` object and comparing numeric values. This is especially effective in hot loops where you only need to find the "latest" or "earliest" entry. Parsing should be deferred until after the loop.
 **Action:** Use string comparison for finding min/max ISO timestamps in high-frequency data processing loops.
+
+## 2026-07-09 - [Shifting grouping costs to low-frequency paths]
+**Learning:** For cards that display data from multiple registries (devices, entities), pre-grouping entities by `device_id` into a Map during the registry fetch (low-frequency) avoids repeating an $O(N_{entities})$ grouping operation during every state update (high-frequency). This is especially effective when the card needs to resolve multiple entities per device.
+**Action:** Move expensive data indexing or grouping operations from the high-frequency `render` or state-update path to the low-frequency registry-update path.
