@@ -77,6 +77,15 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
 
+    // Security: Prevent prototype pollution
+    if (
+      configValue.includes('__proto__') ||
+      configValue.includes('constructor') ||
+      configValue.includes('prototype')
+    ) {
+      return;
+    }
+
     const newConfig = { ...this._config };
 
     if (configValue.includes('.')) {

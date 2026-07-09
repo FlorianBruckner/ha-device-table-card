@@ -391,6 +391,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                     }
                   }
                 }
+                // Security: Sanitize color to prevent CSS injection.
+                // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash.
+                if (color) {
+                  color = color.replace(/[^a-zA-Z0-9#\(\), \-\.\/]/g, '');
+                }
               }
             }
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
@@ -415,6 +420,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 } else if (rule.above !== undefined && minutesAgo > rule.above) {
                   color = rule.color;
                 }
+              }
+              // Security: Sanitize color to prevent CSS injection.
+              // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash.
+              if (color) {
+                color = color.replace(/[^a-zA-Z0-9#\(\), \-\.\/]/g, '');
               }
             }
           }
