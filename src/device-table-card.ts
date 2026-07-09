@@ -392,9 +392,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                   }
                 }
                 // Security: Sanitize color to prevent CSS injection.
-                // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash.
+                // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash, percent.
                 if (color) {
-                  color = color.replace(/[^a-zA-Z0-9#\(\), \-\.\/]/g, '');
+                  color = color.replace(/[^a-zA-Z0-9#(), \-./%]/g, '');
                 }
               }
             }
@@ -422,9 +422,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 }
               }
               // Security: Sanitize color to prevent CSS injection.
-              // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash.
+              // Whitelist: Alphanumeric, #, (), comma, space, dash, dot, forward slash, percent.
               if (color) {
-                color = color.replace(/[^a-zA-Z0-9#\(\), \-\.\/]/g, '');
+                color = color.replace(/[^a-zA-Z0-9#(), \-./%]/g, '');
               }
             }
           }

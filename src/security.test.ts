@@ -40,25 +40,25 @@ describe('Security Fixes', () => {
     });
 
     it('blocks configuration updates with constructor key', async () => {
-        const el = await fixture<DeviceTableCardEditor>(html`
-          <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
-        `);
-        el.setConfig(config);
-        await el.updateComplete;
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
 
-        const fireEventSpy = sinon.spy();
-        el.addEventListener('config-changed', fireEventSpy);
+      const fireEventSpy = sinon.spy();
+      el.addEventListener('config-changed', fireEventSpy);
 
-        const event = {
-          target: {
-            value: 'malicious',
-            configValue: 'constructor.polluted',
-          },
-        };
-        (el as any)._valueChanged(event);
+      const event = {
+        target: {
+          value: 'malicious',
+          configValue: 'constructor.polluted',
+        },
+      };
+      (el as any)._valueChanged(event);
 
-        expect(fireEventSpy.called).to.be.false;
-      });
+      expect(fireEventSpy.called).to.be.false;
+    });
   });
 
   describe('device-table-card CSS injection', () => {
@@ -68,8 +68,8 @@ describe('Security Fixes', () => {
           entity_id: 'sensor.battery',
           state: '10',
           attributes: {
-              device_class: 'battery',
-              unit_of_measurement: '%'
+            device_class: 'battery',
+            unit_of_measurement: '%',
           },
           last_updated: new Date().toISOString(),
         },
@@ -92,13 +92,11 @@ describe('Security Fixes', () => {
         type: 'custom:ha-device-table-card',
         columns: [
           {
-              type: 'entity',
-              device_class: 'battery',
-              label: 'Battery',
-              highlight: [
-                  { below: 20, color: 'red; background: url("http://malicious.com")' }
-              ]
-          }
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 20, color: 'red; background: url("http://malicious.com")' }],
+          },
         ],
       };
 
@@ -108,7 +106,7 @@ describe('Security Fixes', () => {
       el.setConfig(config);
       await el.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const span = el.shadowRoot?.querySelector('span[style*="color"]');
       expect(span).to.exist;
@@ -122,61 +120,84 @@ describe('Security Fixes', () => {
     });
 
     it('allows valid CSS variables', async () => {
-        const config: DeviceTableCardConfig = {
-          type: 'custom:ha-device-table-card',
-          columns: [
-            {
-                type: 'entity',
-                device_class: 'battery',
-                label: 'Battery',
-                highlight: [
-                    { below: 20, color: 'var(--error-color)' }
-                ]
-            }
-          ],
-        };
+      const config: DeviceTableCardConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 20, color: 'var(--error-color)' }],
+          },
+        ],
+      };
 
-        const el = await fixture<DeviceTableCard>(html`
-          <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
-        `);
-        el.setConfig(config);
-        await el.updateComplete;
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
 
-        await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-        const span = el.shadowRoot?.querySelector('span[style*="color"]');
-        expect(span).to.exist;
-        const style = span?.getAttribute('style') || '';
-        expect(style).to.contain('color: var(--error-color)');
-      });
+      const span = el.shadowRoot?.querySelector('span[style*="color"]');
+      expect(span).to.exist;
+      const style = span?.getAttribute('style') || '';
+      expect(style).to.contain('color: var(--error-color)');
+    });
 
-      it('allows valid rgba colors', async () => {
-        const config: DeviceTableCardConfig = {
-          type: 'custom:ha-device-table-card',
-          columns: [
-            {
-                type: 'entity',
-                device_class: 'battery',
-                label: 'Battery',
-                highlight: [
-                    { below: 20, color: 'rgba(255, 0, 0, 0.5)' }
-                ]
-            }
-          ],
-        };
+    it('allows valid rgba colors', async () => {
+      const config: DeviceTableCardConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 20, color: 'rgba(255, 0, 0, 0.5)' }],
+          },
+        ],
+      };
 
-        const el = await fixture<DeviceTableCard>(html`
-          <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
-        `);
-        el.setConfig(config);
-        await el.updateComplete;
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
 
-        await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-        const span = el.shadowRoot?.querySelector('span[style*="color"]');
-        expect(span).to.exist;
-        const style = span?.getAttribute('style') || '';
-        expect(style).to.contain('color: rgba(255, 0, 0, 0.5)');
-      });
+      const span = el.shadowRoot?.querySelector('span[style*="color"]');
+      expect(span).to.exist;
+      const style = span?.getAttribute('style') || '';
+      expect(style).to.contain('color: rgba(255, 0, 0, 0.5)');
+    });
+
+    it('allows valid hsl colors with percentages', async () => {
+      const config: DeviceTableCardConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 20, color: 'hsl(0, 100%, 50%)' }],
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const span = el.shadowRoot?.querySelector('span[style*="color"]');
+      expect(span).to.exist;
+      const style = span?.getAttribute('style') || '';
+      expect(style).to.contain('color: hsl(0, 100%, 50%)');
+    });
   });
 });
