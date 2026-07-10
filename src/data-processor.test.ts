@@ -63,7 +63,13 @@ describe('data-processor', () => {
   };
 
   it('should process devices correctly', () => {
-    const result = processDevices(mockHass, defaultConfig, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      defaultConfig,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreas,
+    );
     expect(result).to.have.lengthOf(1);
     expect(result[0].name).to.equal('Test Device 1');
     expect(result[0].area).to.equal('Living Room');
