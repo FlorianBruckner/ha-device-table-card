@@ -36,6 +36,13 @@ export class DeviceTableCardEditor extends LitElement {
         background-color: var(--secondary-background-color, #f5f5f5);
         user-select: none;
       }
+      .section-header:hover {
+        background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
+      }
+      .section-header:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
+      }
       .section-content {
         padding: 12px;
         display: flex;
@@ -57,6 +64,13 @@ export class DeviceTableCardEditor extends LitElement {
         padding: 8px 12px;
         cursor: pointer;
         user-select: none;
+      }
+      .column-header:hover {
+        background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
+      }
+      .column-header:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
       .column-header-title {
         font-weight: bold;
@@ -105,6 +119,10 @@ export class DeviceTableCardEditor extends LitElement {
       .btn:hover {
         opacity: 0.9;
       }
+      .btn:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
+      }
       .btn-secondary {
         background-color: var(--secondary-background-color, #e0e0e0);
         color: var(--primary-text-color, #000);
@@ -129,6 +147,10 @@ export class DeviceTableCardEditor extends LitElement {
       .btn-icon:hover {
         background-color: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         color: var(--primary-text-color, #000);
+      }
+      .btn-icon:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
       .form-row {
         display: flex;
@@ -176,6 +198,10 @@ export class DeviceTableCardEditor extends LitElement {
       .preset-badge:hover {
         background-color: var(--primary-color, #03a9f4);
         color: var(--text-primary-color, #fff);
+      }
+      .preset-badge:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
       }
       .highlights-editor {
         border-top: 1px dashed var(--divider-color, #e0e0e0);
@@ -238,6 +264,10 @@ export class DeviceTableCardEditor extends LitElement {
           <div
             class="section-header"
             @click=${() => (this._generalExpanded = !this._generalExpanded)}
+            @keydown=${this._handleKeyDown}
+            tabindex="0"
+            role="button"
+            aria-expanded=${this._generalExpanded}
           >
             <span>General & Filters</span>
             <svg
@@ -309,6 +339,10 @@ export class DeviceTableCardEditor extends LitElement {
           <div
             class="section-header"
             @click=${() => (this._columnsExpanded = !this._columnsExpanded)}
+            @keydown=${this._handleKeyDown}
+            tabindex="0"
+            role="button"
+            aria-expanded=${this._columnsExpanded}
           >
             <span>Table Columns</span>
             <svg
@@ -333,21 +367,39 @@ export class DeviceTableCardEditor extends LitElement {
                     <div>
                       <p style="margin-bottom: 4px; font-weight: bold;">Quick Presets:</p>
                       <div class="presets-container">
-                        <div class="preset-badge" @click=${() => this._addColumnPreset('battery')}>
+                        <div
+                          class="preset-badge"
+                          @click=${() => this._addColumnPreset('battery')}
+                          @keydown=${this._handleKeyDown}
+                          tabindex="0"
+                          role="button"
+                        >
                           + Battery
                         </div>
-                        <div class="preset-badge" @click=${() => this._addColumnPreset('moisture')}>
+                        <div
+                          class="preset-badge"
+                          @click=${() => this._addColumnPreset('moisture')}
+                          @keydown=${this._handleKeyDown}
+                          tabindex="0"
+                          role="button"
+                        >
                           + Moisture
                         </div>
                         <div
                           class="preset-badge"
                           @click=${() => this._addColumnPreset('device_name')}
+                          @keydown=${this._handleKeyDown}
+                          tabindex="0"
+                          role="button"
                         >
                           + Device Name
                         </div>
                         <div
                           class="preset-badge"
                           @click=${() => this._addColumnPreset('last_seen')}
+                          @keydown=${this._handleKeyDown}
+                          tabindex="0"
+                          role="button"
                         >
                           + Last Seen
                         </div>
@@ -380,7 +432,14 @@ export class DeviceTableCardEditor extends LitElement {
 
     return html`
       <div class="column-item">
-        <div class="column-header" @click=${() => this._toggleColumn(index)}>
+        <div
+          class="column-header"
+          @click=${() => this._toggleColumn(index)}
+          @keydown=${this._handleKeyDown}
+          tabindex="0"
+          role="button"
+          aria-expanded=${isExpanded}
+        >
           <div class="column-header-title">
             <svg
               class="expand-icon ${isExpanded ? 'expanded' : ''}"
@@ -402,6 +461,7 @@ export class DeviceTableCardEditor extends LitElement {
             <button
               class="btn-icon"
               title="Move Up"
+              aria-label="Move Up"
               .disabled=${index === 0}
               @click=${() => this._moveColumn(index, 'up')}
             >
@@ -422,6 +482,7 @@ export class DeviceTableCardEditor extends LitElement {
             <button
               class="btn-icon"
               title="Move Down"
+              aria-label="Move Down"
               .disabled=${index === columnsCount - 1}
               @click=${() => this._moveColumn(index, 'down')}
             >
@@ -443,6 +504,7 @@ export class DeviceTableCardEditor extends LitElement {
               class="btn-icon btn-danger"
               style="color: var(--error-color, #e53935);"
               title="Delete Column"
+              aria-label="Delete Column"
               @click=${() => this._deleteColumn(index)}
             >
               <svg
@@ -605,6 +667,8 @@ export class DeviceTableCardEditor extends LitElement {
                                   <button
                                     class="btn-icon"
                                     style="color: var(--error-color, #e53935);"
+                                    title="Delete Rule"
+                                    aria-label="Delete Rule"
                                     @click=${() => this._deleteHighlightRule(index, hlIndex)}
                                   >
                                     <svg
@@ -818,6 +882,15 @@ export class DeviceTableCardEditor extends LitElement {
     columns[colIndex] = col;
     newConfig.columns = columns;
     fireEvent(this, 'config-changed', { config: newConfig });
+  }
+
+  private _handleKeyDown(ev: KeyboardEvent): void {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      if (ev.target === ev.currentTarget) {
+        ev.preventDefault();
+        (ev.target as HTMLElement).click();
+      }
+    }
   }
 
   private _updateHighlightRule(
