@@ -98,6 +98,12 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
 
+    // Security check: block prototype pollution
+    const forbidden = ['__proto__', 'constructor', 'prototype'];
+    if (forbidden.some((key) => configValue.includes(key))) {
+      return;
+    }
+
     const newConfig = { ...this._config };
 
     if (configValue.includes('.')) {

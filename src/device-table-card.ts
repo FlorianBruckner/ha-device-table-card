@@ -286,6 +286,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private _sanitizeColor(color: string): string {
+    if (!color) return '';
+    // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
+    return color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
+  }
+
   private _getColumns(): any[] {
     if (!this._config?.columns || this._config.columns.length === 0) {
       return [
@@ -422,7 +428,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
 
           if (color) {
-            return `<span style="color: ${escape(color)}; font-weight: bold;">${displayValue}</span>`;
+            return `<span style="color: ${this._sanitizeColor(
+              color,
+            )}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },
