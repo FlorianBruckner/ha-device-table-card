@@ -404,9 +404,21 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 const numericValue = parseFloat(data);
                 if (!isNaN(numericValue)) {
                   for (const rule of col.highlight) {
-                    if (rule.below !== undefined && numericValue < rule.below) {
+                    const ruleBelow =
+                      rule.below !== undefined && (rule.below as any) !== ''
+                        ? parseFloat(rule.below as any)
+                        : undefined;
+                    const ruleAbove =
+                      rule.above !== undefined && (rule.above as any) !== ''
+                        ? parseFloat(rule.above as any)
+                        : undefined;
+                    if (ruleBelow !== undefined && !isNaN(ruleBelow) && numericValue < ruleBelow) {
                       color = rule.color;
-                    } else if (rule.above !== undefined && numericValue > rule.above) {
+                    } else if (
+                      ruleAbove !== undefined &&
+                      !isNaN(ruleAbove) &&
+                      numericValue > ruleAbove
+                    ) {
                       color = rule.color;
                     }
                   }
@@ -430,9 +442,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (col.highlight) {
               const minutesAgo = Math.floor(secondsAgo / 60);
               for (const rule of col.highlight) {
-                if (rule.below !== undefined && minutesAgo < rule.below) {
+                const ruleBelow =
+                  rule.below !== undefined && (rule.below as any) !== ''
+                    ? parseFloat(rule.below as any)
+                    : undefined;
+                const ruleAbove =
+                  rule.above !== undefined && (rule.above as any) !== ''
+                    ? parseFloat(rule.above as any)
+                    : undefined;
+                if (ruleBelow !== undefined && !isNaN(ruleBelow) && minutesAgo < ruleBelow) {
                   color = rule.color;
-                } else if (rule.above !== undefined && minutesAgo > rule.above) {
+                } else if (ruleAbove !== undefined && !isNaN(ruleAbove) && minutesAgo > ruleAbove) {
                   color = rule.color;
                 }
               }
