@@ -136,6 +136,8 @@ export class DeviceTableCardEditor extends LitElement {
         align-items: center;
       }
       .form-row ha-textfield,
+      .form-row ha-input,
+      .form-row .native-input-container,
       .form-row select {
         flex: 1;
       }
@@ -197,7 +199,9 @@ export class DeviceTableCardEditor extends LitElement {
         align-items: center;
         margin-bottom: 8px;
       }
-      .highlight-rule-row ha-textfield {
+      .highlight-rule-row ha-textfield,
+      .highlight-rule-row ha-input,
+      .highlight-rule-row .native-input-container {
         flex: 1;
       }
       .expand-icon {
@@ -206,8 +210,38 @@ export class DeviceTableCardEditor extends LitElement {
       .expand-icon.expanded {
         transform: rotate(180deg);
       }
-      ha-textfield {
+      ha-textfield,
+      ha-input,
+      .native-input-container {
         display: block;
+        width: 100%;
+      }
+      .native-input-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+      }
+      .native-input-container label {
+        font-size: 0.85em;
+        color: var(--secondary-text-color);
+        font-weight: 500;
+      }
+      .native-input {
+        height: 40px;
+        padding: 0 12px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 4px;
+        background-color: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #000);
+        font-family: inherit;
+        font-size: 1em;
+        box-sizing: border-box;
+        width: 100%;
+      }
+      .native-input:focus {
+        border-color: var(--primary-color, #03a9f4);
+        outline: none;
       }
       h3 {
         margin: 8px 0 0 0;
@@ -258,46 +292,43 @@ export class DeviceTableCardEditor extends LitElement {
             this._generalExpanded
               ? html`
                   <div class="section-content">
-                    <ha-textfield
-                      label="Title"
-                      .value=${this._config.title || ''}
-                      .configValue=${'title'}
-                      @input=${this._valueChanged}
-                      maxlength="100"
-                    ></ha-textfield>
+                    ${this._renderInput(
+                      'Title',
+                      this._config.title || '',
+                      'title',
+                      this._valueChanged,
+                      '100',
+                    )}
 
                     <h3>Filters</h3>
-                    <ha-textfield
-                      label="Area"
-                      .value=${this._config.filter?.area || ''}
-                      .configValue=${'filter.area'}
-                      @input=${this._valueChanged}
-                      maxlength="100"
-                    ></ha-textfield>
-
-                    <ha-textfield
-                      label="Anchor Entity Device Class"
-                      .value=${this._config.filter?.anchor_entity_class || ''}
-                      .configValue=${'filter.anchor_entity_class'}
-                      @input=${this._valueChanged}
-                      maxlength="100"
-                    ></ha-textfield>
-
-                    <ha-textfield
-                      label="Integration (e.g. zha, mqtt, hue)"
-                      .value=${this._config.filter?.integration || ''}
-                      .configValue=${'filter.integration'}
-                      @input=${this._valueChanged}
-                      maxlength="100"
-                    ></ha-textfield>
-
-                    <ha-textfield
-                      label="Manufacturer (e.g. LUMI, Sonoff)"
-                      .value=${this._config.filter?.manufacturer || ''}
-                      .configValue=${'filter.manufacturer'}
-                      @input=${this._valueChanged}
-                      maxlength="100"
-                    ></ha-textfield>
+                    ${this._renderInput(
+                      'Area',
+                      this._config.filter?.area || '',
+                      'filter.area',
+                      this._valueChanged,
+                      '100',
+                    )}
+                    ${this._renderInput(
+                      'Anchor Entity Device Class',
+                      this._config.filter?.anchor_entity_class || '',
+                      'filter.anchor_entity_class',
+                      this._valueChanged,
+                      '100',
+                    )}
+                    ${this._renderInput(
+                      'Integration (e.g. zha, mqtt, hue)',
+                      this._config.filter?.integration || '',
+                      'filter.integration',
+                      this._valueChanged,
+                      '100',
+                    )}
+                    ${this._renderInput(
+                      'Manufacturer (e.g. LUMI, Sonoff)',
+                      this._config.filter?.manufacturer || '',
+                      'filter.manufacturer',
+                      this._valueChanged,
+                      '100',
+                    )}
                   </div>
                 `
               : ''
@@ -482,12 +513,13 @@ export class DeviceTableCardEditor extends LitElement {
                     </select>
                   </div>
 
-                  <ha-textfield
-                    label="Column Header Label"
-                    .value=${col.label || ''}
-                    @input=${(e: any) => this._updateColumnProperty(index, 'label', e.target.value)}
-                    maxlength="100"
-                  ></ha-textfield>
+                  ${this._renderInput(
+                    'Column Header Label',
+                    col.label || '',
+                    undefined,
+                    (e: any) => this._updateColumnProperty(index, 'label', e.target.value),
+                    '100',
+                  )}
 
                   <!-- Conditional inputs based on type -->
                   ${
@@ -532,20 +564,21 @@ export class DeviceTableCardEditor extends LitElement {
                   ${
                     col.type === 'entity'
                       ? html`
-                          <ha-textfield
-                            label="Device Class (e.g. battery, moisture)"
-                            .value=${col.device_class || ''}
-                            @input=${(e: any) =>
-                              this._updateColumnProperty(index, 'device_class', e.target.value)}
-                            maxlength="100"
-                          ></ha-textfield>
-                          <ha-textfield
-                            label="Entity ID Suffix (optional, e.g. _voltage)"
-                            .value=${col.suffix || ''}
-                            @input=${(e: any) =>
-                              this._updateColumnProperty(index, 'suffix', e.target.value)}
-                            maxlength="100"
-                          ></ha-textfield>
+                          ${this._renderInput(
+                            'Device Class (e.g. battery, moisture)',
+                            col.device_class || '',
+                            undefined,
+                            (e: any) =>
+                              this._updateColumnProperty(index, 'device_class', e.target.value),
+                            '100',
+                          )}
+                          ${this._renderInput(
+                            'Entity ID Suffix (optional, e.g. _voltage)',
+                            col.suffix || '',
+                            undefined,
+                            (e: any) => this._updateColumnProperty(index, 'suffix', e.target.value),
+                            '100',
+                          )}
                         `
                       : ''
                   }
@@ -568,40 +601,45 @@ export class DeviceTableCardEditor extends LitElement {
                             ${(col.highlight || []).map(
                               (hl, hlIndex) => html`
                                 <div class="highlight-rule-row">
-                                  <ha-textfield
-                                    label="Below"
-                                    .value=${hl.below !== undefined ? String(hl.below) : ''}
-                                    @input=${(e: any) =>
+                                  ${this._renderInput(
+                                    'Below',
+                                    hl.below !== undefined ? String(hl.below) : '',
+                                    undefined,
+                                    (e: any) =>
                                       this._updateHighlightRule(
                                         index,
                                         hlIndex,
                                         'below',
                                         e.target.value === '' ? undefined : e.target.value,
-                                      )}
-                                  ></ha-textfield>
-                                  <ha-textfield
-                                    label="Above"
-                                    .value=${hl.above !== undefined ? String(hl.above) : ''}
-                                    @input=${(e: any) =>
+                                      ),
+                                    '100',
+                                  )}
+                                  ${this._renderInput(
+                                    'Above',
+                                    hl.above !== undefined ? String(hl.above) : '',
+                                    undefined,
+                                    (e: any) =>
                                       this._updateHighlightRule(
                                         index,
                                         hlIndex,
                                         'above',
                                         e.target.value === '' ? undefined : e.target.value,
-                                      )}
-                                  ></ha-textfield>
-                                  <ha-textfield
-                                    label="Color"
-                                    .value=${hl.color || ''}
-                                    @input=${(e: any) =>
+                                      ),
+                                    '100',
+                                  )}
+                                  ${this._renderInput(
+                                    'Color',
+                                    hl.color || '',
+                                    undefined,
+                                    (e: any) =>
                                       this._updateHighlightRule(
                                         index,
                                         hlIndex,
                                         'color',
                                         e.target.value,
-                                      )}
-                                    maxlength="50"
-                                  ></ha-textfield>
+                                      ),
+                                    '50',
+                                  )}
                                   <button
                                     class="btn-icon"
                                     style="color: var(--error-color, #e53935);"
@@ -636,6 +674,50 @@ export class DeviceTableCardEditor extends LitElement {
               `
             : ''
         }
+      </div>
+    `;
+  }
+
+  private _renderInput(
+    label: string,
+    value: string,
+    configValue: string | undefined,
+    onInput: (e: any) => void,
+    maxlength = '100',
+  ): TemplateResult {
+    if (customElements.get('ha-input')) {
+      return html`
+        <ha-input
+          label=${label}
+          .value=${value}
+          .configValue=${configValue}
+          @input=${onInput}
+          maxlength=${maxlength}
+        ></ha-input>
+      `;
+    }
+    if (customElements.get('ha-textfield')) {
+      return html`
+        <ha-textfield
+          label=${label}
+          .value=${value}
+          .configValue=${configValue}
+          @input=${onInput}
+          maxlength=${maxlength}
+        ></ha-textfield>
+      `;
+    }
+    return html`
+      <div class="native-input-container">
+        <label>${label}</label>
+        <input
+          type="text"
+          .value=${value}
+          .configValue=${configValue}
+          @input=${onInput}
+          maxlength=${maxlength}
+          class="native-input"
+        />
       </div>
     `;
   }

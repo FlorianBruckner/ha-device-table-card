@@ -4,6 +4,13 @@ import { DeviceTableCard } from './device-table-card';
 import './ha-device-table-card-editor';
 import { DeviceTableCardEditor } from './ha-device-table-card-editor';
 
+if (!customElements.get('ha-textfield')) {
+  customElements.define('ha-textfield', class extends HTMLElement {});
+}
+if (!customElements.get('ha-input')) {
+  customElements.define('ha-input', class extends HTMLElement {});
+}
+
 describe('Security Vulnerabilities', () => {
   describe('ha-device-table-card-editor prototype pollution', () => {
     it('should not allow prototype pollution via configValue', async () => {
