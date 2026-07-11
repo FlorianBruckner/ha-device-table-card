@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -
 
+## [0.0.11] - 2026-07-11
+### Added
+-
+
 ## [0.0.10] - 2026-07-06
 fix table header alignment
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "ha-device-table-card",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A Home Assistant dashboard card to show devices as a table using DataTables.net",
   "type": "module",
   "main": "dist/ha-device-table-card.js",
