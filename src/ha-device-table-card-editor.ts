@@ -570,30 +570,24 @@ export class DeviceTableCardEditor extends LitElement {
                                 <div class="highlight-rule-row">
                                   <ha-textfield
                                     label="Below"
-                                    type="number"
                                     .value=${hl.below !== undefined ? String(hl.below) : ''}
                                     @input=${(e: any) =>
                                       this._updateHighlightRule(
                                         index,
                                         hlIndex,
                                         'below',
-                                        e.target.value === ''
-                                          ? undefined
-                                          : parseFloat(e.target.value),
+                                        e.target.value === '' ? undefined : e.target.value,
                                       )}
                                   ></ha-textfield>
                                   <ha-textfield
                                     label="Above"
-                                    type="number"
                                     .value=${hl.above !== undefined ? String(hl.above) : ''}
                                     @input=${(e: any) =>
                                       this._updateHighlightRule(
                                         index,
                                         hlIndex,
                                         'above',
-                                        e.target.value === ''
-                                          ? undefined
-                                          : parseFloat(e.target.value),
+                                        e.target.value === '' ? undefined : e.target.value,
                                       )}
                                   ></ha-textfield>
                                   <ha-textfield

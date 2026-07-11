@@ -209,8 +209,11 @@ export const styles = css`
 
   /* Override DataTables 2.x default sorting icons positioning */
   table.dataTable thead th .dt-column-order {
-    right: 4px !important;
+    position: absolute !important;
+    right: 8px !important;
     left: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
   }
 
   table.dataTable thead th::before,
