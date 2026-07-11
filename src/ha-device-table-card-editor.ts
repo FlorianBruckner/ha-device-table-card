@@ -571,6 +571,7 @@ export class DeviceTableCardEditor extends LitElement {
                                   <ha-textfield
                                     label="Below"
                                     .value=${hl.below !== undefined ? String(hl.below) : ''}
+                                    maxlength="20"
                                     @input=${(e: any) =>
                                       this._updateHighlightRule(
                                         index,
@@ -582,6 +583,7 @@ export class DeviceTableCardEditor extends LitElement {
                                   <ha-textfield
                                     label="Above"
                                     .value=${hl.above !== undefined ? String(hl.above) : ''}
+                                    maxlength="20"
                                     @input=${(e: any) =>
                                       this._updateHighlightRule(
                                         index,

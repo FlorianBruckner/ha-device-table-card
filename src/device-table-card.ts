@@ -388,7 +388,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           if (data === '-' || type === 'type') return data;
 
-          let displayValue = escape(String(data));
+          let rawValue = String(data);
           let color = '';
 
           if (col.type === 'entity') {
@@ -396,7 +396,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (stateObj) {
               const uom = stateObj.attributes.unit_of_measurement;
               if (uom) {
-                displayValue = `${escape(data)} ${escape(uom)}`;
+                rawValue = `${data} ${uom}`;
               }
 
               // Highlighting
@@ -430,13 +430,13 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             const secondsAgo = Math.floor((Date.now() - data) / 1000);
 
             if (secondsAgo < 60) {
-              displayValue = `${secondsAgo}s`;
+              rawValue = `${secondsAgo}s`;
             } else if (secondsAgo < 3600) {
-              displayValue = `${Math.floor(secondsAgo / 60)}m`;
+              rawValue = `${Math.floor(secondsAgo / 60)}m`;
             } else if (secondsAgo < 86400) {
-              displayValue = `${Math.floor(secondsAgo / 3600)}h`;
+              rawValue = `${Math.floor(secondsAgo / 3600)}h`;
             } else {
-              displayValue = `${Math.floor(secondsAgo / 86400)}d`;
+              rawValue = `${Math.floor(secondsAgo / 86400)}d`;
             }
 
             if (col.highlight) {
@@ -459,7 +459,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
           }
 
-          if (color) {
+          if (type === 'filter') return rawValue;
+
+          const displayValue = escape(rawValue);
+          if (type === 'display' && color) {
             return `<span style="color: ${this._sanitizeColor(
               color,
             )}; font-weight: bold;">${displayValue}</span>`;
