@@ -5,3 +5,7 @@
 ## 2026-07-06 - [Lexicographical string comparison for ISO timestamps]
 **Learning:** Comparing ISO 8601 strings lexicographically (`iso1 > iso2`) is significantly faster (up to 100x) than parsing each into a `Date` object and comparing numeric values. This is especially effective in hot loops where you only need to find the "latest" or "earliest" entry. Parsing should be deferred until after the loop.
 **Action:** Use string comparison for finding min/max ISO timestamps in high-frequency data processing loops.
+
+## 2026-07-07 - [Shift entity grouping to low-frequency path]
+**Learning:** In Home Assistant dashboard cards, registry entities are often processed for every device on every state update. Shifting the cost of grouping entities by `device_id` from the high-frequency state update path (`processDevices`) to the low-frequency registry fetch/update path (`_fetchRegistries`) yields significant performance gains.
+**Action:** Use Map-based pre-grouping for registry data that doesn't change on every state update to avoid (E)$ scans in the render loop.

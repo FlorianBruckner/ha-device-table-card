@@ -4,7 +4,7 @@ export function processDevices(
   hass: any,
   config: DeviceTableCardConfig,
   devices: any[],
-  entities: any[],
+  entitiesByDevice: Map<string, any[]>,
   areas: any[],
 ): DeviceData[] {
   if (!hass || !config || devices.length === 0) {
@@ -22,7 +22,7 @@ export function processDevices(
   }
 
   // Pre-filter devices by Manufacturer and Area to avoid processing their entities
-  const filteredDevices: Record<string, { d: any; areaName: string }> = {};
+  const filteredDevices: Array<{ d: any; areaName: string }> = [];
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
 
@@ -39,41 +39,7 @@ export function processDevices(
       continue;
     }
 
-    filteredDevices[d.id] = { d, areaName };
-  }
-
-  const deviceMap: Record<string, any[]> = {};
-  const devicePlatform: Record<string, string> = {};
-  const rejectedDevices = new Set<string>();
-
-  // Group entities by device, applying integration filter early
-  for (let i = 0; i < entities.length; i++) {
-    const ent = entities[i];
-    const deviceId = ent.device_id;
-
-    if (!deviceId || !filteredDevices[deviceId] || rejectedDevices.has(deviceId)) {
-      continue;
-    }
-
-    const stateObj = states[ent.entity_id];
-    if (!stateObj) continue;
-
-    const platform = ent.platform || 'Unknown';
-    if (!deviceMap[deviceId]) {
-      // This is the "primary" entity for this device in our processing
-      if (filter.integration && platform !== filter.integration) {
-        rejectedDevices.add(deviceId);
-        continue;
-      }
-      deviceMap[deviceId] = [];
-      devicePlatform[deviceId] = platform;
-    }
-
-    deviceMap[deviceId].push({
-      entity_id: ent.entity_id,
-      state: stateObj,
-      registry: ent, // Keep registry for device_class
-    });
+    filteredDevices.push({ d, areaName });
   }
 
   // Pre-categorize columns to avoid repeated checks in the loop
@@ -88,23 +54,43 @@ export function processDevices(
   }
 
   const result: DeviceData[] = [];
-  for (const deviceId in deviceMap) {
-    const deviceEntities = deviceMap[deviceId];
-    const { d, areaName } = filteredDevices[deviceId];
+  for (let i = 0; i < filteredDevices.length; i++) {
+    const { d, areaName } = filteredDevices[i];
+    const deviceId = d.id;
+    const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
 
-    // Single pass: index entities by device_class, find latest update, and check anchor filter
+    if (!deviceEntitiesRaw || deviceEntitiesRaw.length === 0) {
+      continue;
+    }
+
+    // Check integration filter (using the first entity's platform as proxy for device integration)
+    const integration = deviceEntitiesRaw[0].platform || 'Unknown';
+    if (filter.integration && integration !== filter.integration) {
+      continue;
+    }
+
+    // Single pass: Resolve states, index entities by device_class, find latest update, and check anchor filter
+    const deviceEntities = [];
     const entitiesByClass: Record<string, any> = {};
     let latestIso: string | null = null;
     let hasAnchor = !filter.anchor_entity_class;
 
-    for (let i = 0; i < deviceEntities.length; i++) {
-      const e = deviceEntities[i];
-      const stateObj = e.state;
-      const dClass = stateObj.attributes.device_class || e.registry.device_class;
+    for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+      const ent = deviceEntitiesRaw[j];
+      const stateObj = states[ent.entity_id];
+      if (!stateObj) continue;
 
+      const processedEntity = {
+        entity_id: ent.entity_id,
+        state: stateObj,
+        registry: ent,
+      };
+      deviceEntities.push(processedEntity);
+
+      const dClass = stateObj.attributes.device_class || ent.device_class;
       if (dClass) {
         if (!entitiesByClass[dClass]) {
-          entitiesByClass[dClass] = e;
+          entitiesByClass[dClass] = processedEntity;
         }
         if (!hasAnchor && dClass === filter.anchor_entity_class) {
           hasAnchor = true;
@@ -117,10 +103,9 @@ export function processDevices(
       }
     }
 
-    if (!hasAnchor) continue;
+    if (!hasAnchor || deviceEntities.length === 0) continue;
 
     const lastChanged = latestIso ? Date.parse(latestIso) : null;
-    const integration = devicePlatform[deviceId];
 
     const deviceData: DeviceData = {
       id: deviceId,
