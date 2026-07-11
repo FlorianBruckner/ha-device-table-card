@@ -44,12 +44,9 @@ describe('data-processor', () => {
 
   const mockEntitiesByDevice = new Map([['device1', mockEntities]]);
 
-  const mockAreas = [
-    {
-      area_id: 'living_room',
-      name: 'Living Room',
-    },
-  ];
+  const mockAreaLookup = {
+    living_room: 'Living Room',
+  };
 
   const defaultConfig: DeviceTableCardConfig = {
     type: 'custom:ha-device-table-card',
@@ -68,7 +65,7 @@ describe('data-processor', () => {
       defaultConfig,
       mockDevices,
       mockEntitiesByDevice,
-      mockAreas,
+      mockAreaLookup,
     );
     expect(result).to.have.lengthOf(1);
     expect(result[0].name).to.equal('Test Device 1');
@@ -84,47 +81,101 @@ describe('data-processor', () => {
 
   it('should filter by area name', () => {
     const config = { ...defaultConfig, filter: { area: 'Living Room' } };
-    const result = processDevices(mockHass, config, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result).to.have.lengthOf(1);
 
     const config2 = { ...defaultConfig, filter: { area: 'Kitchen' } };
-    const result2 = processDevices(mockHass, config2, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result2 = processDevices(
+      mockHass,
+      config2,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result2).to.have.lengthOf(0);
   });
 
   it('should filter by area id', () => {
     const config = { ...defaultConfig, filter: { area: 'living_room' } };
-    const result = processDevices(mockHass, config, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result).to.have.lengthOf(1);
   });
 
   it('should filter by anchor entity class', () => {
     const config = { ...defaultConfig, filter: { anchor_entity_class: 'moisture' } };
-    const result = processDevices(mockHass, config, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result).to.have.lengthOf(0);
 
     const config2 = { ...defaultConfig, filter: { anchor_entity_class: 'battery' } };
-    const result2 = processDevices(mockHass, config2, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result2 = processDevices(
+      mockHass,
+      config2,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result2).to.have.lengthOf(1);
   });
 
   it('should filter by integration', () => {
     const config = { ...defaultConfig, filter: { integration: 'zha' } };
-    const result = processDevices(mockHass, config, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result).to.have.lengthOf(1);
 
     const config2 = { ...defaultConfig, filter: { integration: 'hue' } };
-    const result2 = processDevices(mockHass, config2, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result2 = processDevices(
+      mockHass,
+      config2,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result2).to.have.lengthOf(0);
   });
 
   it('should filter by manufacturer', () => {
     const config = { ...defaultConfig, filter: { manufacturer: 'BrandX' } };
-    const result = processDevices(mockHass, config, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result).to.have.lengthOf(1);
 
     const config2 = { ...defaultConfig, filter: { manufacturer: 'Other' } };
-    const result2 = processDevices(mockHass, config2, mockDevices, mockEntitiesByDevice, mockAreas);
+    const result2 = processDevices(
+      mockHass,
+      config2,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
     expect(result2).to.have.lengthOf(0);
   });
 });
