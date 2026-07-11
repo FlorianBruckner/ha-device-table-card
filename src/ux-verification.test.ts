@@ -90,6 +90,34 @@ describe('ha-device-table-card UX', () => {
     expect(lengthSelect?.getAttribute('aria-label')).to.equal('Items per page');
   });
 
+  it('has correct domain-specific language for empty states', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const emptyHass = {
+      ...mockHass,
+      callWS: async (msg: any) => {
+        if (msg.type === 'config/device_registry/list') return [];
+        if (msg.type === 'config/entity_registry/list') return [];
+        if (msg.type === 'config/area_registry/list') return [];
+        return [];
+      },
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${emptyHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const emptyMsg = el.shadowRoot?.querySelector('.dt-empty');
+    expect(emptyMsg?.textContent).to.equal('No devices available');
+  });
+
   it('has correct keyboard accessibility attributes on interactive cells', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',

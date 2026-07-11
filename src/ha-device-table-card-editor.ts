@@ -1,4 +1,4 @@
-import { LitElement, html, TemplateResult } from 'lit';
+import { LitElement, html, TemplateResult, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { fireEvent } from 'custom-card-helpers';
 import { DeviceTableCardConfig } from './types';
@@ -7,6 +7,27 @@ import { DeviceTableCardConfig } from './types';
 export class DeviceTableCardEditor extends LitElement {
   @property({ attribute: false }) public hass?: any;
   @state() private _config?: DeviceTableCardConfig;
+
+  static get styles() {
+    return css`
+      .card-config {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      ha-textfield {
+        display: block;
+      }
+      h3 {
+        margin: 8px 0 0 0;
+      }
+      p {
+        margin: 0;
+        font-size: 0.9em;
+        color: var(--secondary-text-color);
+      }
+    `;
+  }
 
   public setConfig(config: DeviceTableCardConfig): void {
     this._config = config;

@@ -53,6 +53,10 @@ export const styles = css`
     padding: 16px 24px 16px 8px !important;
   }
 
+  table.dataTable tbody tr {
+    transition: background-color 0.2s;
+  }
+
   table.dataTable tbody tr:hover {
     background-color: var(--secondary-background-color) !important;
   }
