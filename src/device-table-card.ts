@@ -325,8 +325,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any, type: any) =>
-            type === 'display' && data && data !== '-' ? escape(String(data)) : data,
+          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
         },
         {
           title: 'Area',
@@ -339,8 +338,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any, type: any) =>
-            type === 'display' && data && data !== '-' ? escape(String(data)) : data,
+          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
         },
       ];
     }
@@ -374,7 +372,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            if (typeof _cellData === 'number') {
+            if (typeof _cellData === 'number' && !isNaN(_cellData)) {
               td.title = new Date(_cellData).toLocaleString();
             }
           }
@@ -466,7 +464,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
           }
 
-          if (color) {
+          if (color && type === 'display') {
             return `<span style="color: ${this._sanitizeColor(
               color,
             )}; font-weight: bold;">${displayValue}</span>`;
