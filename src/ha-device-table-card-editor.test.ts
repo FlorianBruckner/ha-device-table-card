@@ -3,6 +3,13 @@ import './ha-device-table-card-editor';
 import { DeviceTableCardEditor } from './ha-device-table-card-editor';
 import { DeviceTableCardConfig } from './types';
 
+if (!customElements.get('ha-textfield')) {
+  customElements.define('ha-textfield', class extends HTMLElement {});
+}
+if (!customElements.get('ha-input')) {
+  customElements.define('ha-input', class extends HTMLElement {});
+}
+
 describe('ha-device-table-card-editor', () => {
   const mockHass = {
     states: {},
@@ -36,7 +43,7 @@ describe('ha-device-table-card-editor', () => {
     el.setConfig(config);
     await el.updateComplete;
 
-    const textfields = el.shadowRoot?.querySelectorAll('ha-textfield');
+    const textfields = el.shadowRoot?.querySelectorAll('ha-textfield, ha-input');
     expect(textfields).to.exist;
 
     const labels = Array.from(textfields!).map((tf) => tf.getAttribute('label'));
@@ -196,5 +203,32 @@ describe('ha-device-table-card-editor', () => {
     (el as any)._deleteHighlightRule(1, 0);
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns![1].highlight).to.have.lengthOf(0);
+  });
+
+  it('renders native input as fallback when custom elements are not registered', async () => {
+    const el = await fixture<DeviceTableCardEditor>(html`
+      <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+
+    // Stub customElements.get to return undefined for custom elements
+    const originalGet = customElements.get;
+    customElements.get = (name: string) => {
+      if (name === 'ha-input' || name === 'ha-textfield') {
+        return undefined;
+      }
+      return originalGet.call(customElements, name);
+    };
+
+    try {
+      const template = (el as any)._renderInput('Test Label', 'test-val', 'test-config', () => {});
+      const container = await fixture(html`<div>${template}</div>`);
+      const nativeInput = container.querySelector('input.native-input');
+      expect(nativeInput).to.exist;
+      expect((nativeInput as any).value).to.equal('test-val');
+    } finally {
+      customElements.get = originalGet;
+    }
   });
 });
