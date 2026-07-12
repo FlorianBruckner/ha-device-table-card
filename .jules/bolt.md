@@ -9,3 +9,7 @@
 ## 2026-07-07 - [Shift entity grouping to low-frequency path]
 **Learning:** In Home Assistant dashboard cards, registry entities are often processed for every device on every state update. Shifting the cost of grouping entities by `device_id` from the high-frequency state update path (`processDevices`) to the low-frequency registry fetch/update path (`_fetchRegistries`) yields significant performance gains.
 **Action:** Use Map-based pre-grouping for registry data that doesn't change on every state update to avoid (E)$ scans in the render loop.
+
+## 2026-07-08 - [Consolidated loops and conditional parsing]
+**Learning:** Merging multiple loops over large datasets (e.g., 1000+ devices) into a single pass reduces iteration and allocation overhead. Furthermore, using conditional flags to skip expensive operations (like ISO 8601 parsing) when the resulting data isn't needed by any active column provides significant gains in high-frequency update paths.
+**Action:** Consolidate data processing into single passes and implement feature-flagged logic to bypass unnecessary computations based on configuration.

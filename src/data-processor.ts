@@ -5,7 +5,7 @@ export function processDevices(
   config: DeviceTableCardConfig,
   devices: any[],
   entitiesByDevice: Map<string, any[]>,
-  areas: any[],
+  areaLookup: Record<string, string>,
 ): DeviceData[] {
   if (!hass || !config || devices.length === 0) {
     return [];
@@ -15,14 +15,28 @@ export function processDevices(
   const filter = config.filter || {};
   const columns = config.columns || [];
 
-  // Create area lookup
-  const areaLookup: Record<string, string> = {};
-  for (let i = 0; i < areas.length; i++) {
-    areaLookup[areas[i].area_id] = areas[i].name;
+  // Pre-categorize columns and calculate requirements once per call
+  const entityCols = [];
+  const deviceCols = [];
+  const metaCols = [];
+  let needsLastChanged = false;
+
+  for (let i = 0; i < columns.length; i++) {
+    const col = columns[i];
+    const m = { col, key: `col_${i}` };
+    if (col.type === 'entity') {
+      entityCols.push(m);
+    } else if (col.type === 'device') {
+      deviceCols.push(m);
+    } else if (col.type === 'meta') {
+      metaCols.push(m);
+      if (col.prop === 'last_changed') needsLastChanged = true;
+    }
   }
 
-  // Pre-filter devices by Manufacturer and Area to avoid processing their entities
-  const filteredDevices: Array<{ d: any; areaName: string }> = [];
+  const result: DeviceData[] = [];
+  const anchorClass = filter.anchor_entity_class;
+
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
 
@@ -39,31 +53,13 @@ export function processDevices(
       continue;
     }
 
-    filteredDevices.push({ d, areaName });
-  }
-
-  // Pre-categorize columns to avoid repeated checks in the loop
-  const entityCols = [];
-  const deviceCols = [];
-  const metaCols = [];
-  for (let i = 0; i < columns.length; i++) {
-    const m = { col: columns[i], key: `col_${i}` };
-    if (m.col.type === 'entity') entityCols.push(m);
-    else if (m.col.type === 'device') deviceCols.push(m);
-    else if (m.col.type === 'meta') metaCols.push(m);
-  }
-
-  const result: DeviceData[] = [];
-  for (let i = 0; i < filteredDevices.length; i++) {
-    const { d, areaName } = filteredDevices[i];
     const deviceId = d.id;
     const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
-
     if (!deviceEntitiesRaw || deviceEntitiesRaw.length === 0) {
       continue;
     }
 
-    // Check integration filter (using the first entity's platform as proxy for device integration)
+    // 3. Integration filter (using the first entity's platform as proxy for device integration)
     const integration = deviceEntitiesRaw[0].platform || 'Unknown';
     if (filter.integration && integration !== filter.integration) {
       continue;
@@ -73,7 +69,7 @@ export function processDevices(
     const deviceEntities = [];
     const entitiesByClass: Record<string, any> = {};
     let latestIso: string | null = null;
-    let hasAnchor = !filter.anchor_entity_class;
+    let hasAnchor = !anchorClass;
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
@@ -92,38 +88,41 @@ export function processDevices(
         if (!entitiesByClass[dClass]) {
           entitiesByClass[dClass] = processedEntity;
         }
-        if (!hasAnchor && dClass === filter.anchor_entity_class) {
+        if (!hasAnchor && dClass === anchorClass) {
           hasAnchor = true;
         }
       }
 
-      const iso = stateObj.last_updated;
-      if (iso && (latestIso === null || iso > latestIso)) {
-        latestIso = iso;
+      if (needsLastChanged) {
+        const iso = stateObj.last_updated;
+        if (iso && (latestIso === null || iso > latestIso)) {
+          latestIso = iso;
+        }
       }
     }
 
     if (!hasAnchor || deviceEntities.length === 0) continue;
 
-    const lastChanged = latestIso ? Date.parse(latestIso) : null;
+    const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
     const deviceData: DeviceData = {
       id: deviceId,
       name: d.name_by_user || d.name || 'Unknown Device',
       area: areaName,
       integration: integration,
-      manufacturer: d.manufacturer || 'Unknown',
+      manufacturer: manufacturer,
       _entities: {},
     };
 
     // Resolve Device Columns
     for (let i = 0; i < deviceCols.length; i++) {
       const { col, key } = deviceCols[i];
-      if (col.prop === 'name') deviceData[key] = deviceData.name;
-      else if (col.prop === 'area') deviceData[key] = deviceData.area;
-      else if (col.prop === 'integration') deviceData[key] = deviceData.integration;
-      else if (col.prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-      else deviceData[key] = (d as any)?.[col.prop as string] || '-';
+      const prop = col.prop;
+      if (prop === 'name') deviceData[key] = deviceData.name;
+      else if (prop === 'area') deviceData[key] = deviceData.area;
+      else if (prop === 'integration') deviceData[key] = deviceData.integration;
+      else if (prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
+      else deviceData[key] = (d as any)?.[prop as string] || '-';
     }
 
     // Resolve Entity Columns
@@ -151,10 +150,12 @@ export function processDevices(
     }
 
     // Resolve Meta Columns
-    for (let i = 0; i < metaCols.length; i++) {
-      const { col, key } = metaCols[i];
-      if (col.prop === 'last_changed') {
-        deviceData[key] = lastChanged !== null ? lastChanged : '-';
+    if (metaCols.length > 0) {
+      for (let i = 0; i < metaCols.length; i++) {
+        const { col, key } = metaCols[i];
+        if (col.prop === 'last_changed') {
+          deviceData[key] = lastChanged !== null ? lastChanged : '-';
+        }
       }
     }
 
