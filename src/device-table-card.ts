@@ -359,7 +359,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           (col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
             ? ' dt-type-numeric'
             : ''),
-        createdCell: (td: HTMLElement, cellData: any, rowData: any) => {
+        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
           if (col.type === 'entity') {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
@@ -374,8 +374,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            if (typeof _cellData === 'number' && !isNaN(_cellData)) {
-              td.title = new Date(_cellData).toLocaleString();
+            const rawTimestamp = rowData[colKey];
+            if (typeof rawTimestamp === 'number' && !isNaN(rawTimestamp)) {
+              td.title = `Last updated: ${new Date(rawTimestamp).toLocaleString()}`;
             }
           }
         },
