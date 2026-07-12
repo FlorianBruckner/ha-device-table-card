@@ -60,7 +60,7 @@ describe('ha-device-table-card UX', () => {
     expect(cells[1].title).to.equal('View sensor.battery details');
 
     // Column 2: Last Seen Meta
-    expect(cells[2].title).to.not.be.empty;
+    expect(cells[2].title).to.contain('Last updated: ');
   });
 
   it('has correct search accessibility attributes', async () => {

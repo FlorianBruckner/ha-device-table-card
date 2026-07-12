@@ -115,6 +115,9 @@ export class DeviceTableCardEditor extends LitElement {
         align-items: center;
         justify-content: center;
         gap: 4px;
+        transition:
+          background-color 0.2s,
+          opacity 0.2s;
       }
       .btn:hover {
         opacity: 0.9;
@@ -143,14 +146,23 @@ export class DeviceTableCardEditor extends LitElement {
         justify-content: center;
         width: 28px;
         height: 28px;
+        transition:
+          background-color 0.2s,
+          color 0.2s,
+          opacity 0.2s;
       }
-      .btn-icon:hover {
+      .btn-icon:hover:not(:disabled) {
         background-color: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         color: var(--primary-text-color, #000);
       }
       .btn-icon:focus-visible {
         outline: 2px solid var(--primary-color, #03a9f4);
         outline-offset: -2px;
+      }
+      .btn-icon:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
       }
       .form-row {
         display: flex;
@@ -196,6 +208,9 @@ export class DeviceTableCardEditor extends LitElement {
         align-items: center;
         gap: 4px;
         font-weight: 500;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
       }
       .preset-badge:hover {
         background-color: var(--primary-color, #03a9f4);
@@ -771,10 +786,12 @@ export class DeviceTableCardEditor extends LitElement {
         ></ha-textfield>
       `;
     }
+    const inputId = `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${configValue?.replace(/\./g, '-') || Math.random().toString(36).substring(2, 7)}`;
     return html`
       <div class="native-input-container">
-        <label>${label}</label>
+        <label for=${inputId}>${label}</label>
         <input
+          id=${inputId}
           type="text"
           .value=${value}
           .configValue=${configValue}
