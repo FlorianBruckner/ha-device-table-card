@@ -13,3 +13,11 @@
 ## 2025-05-18 - [Fixing Cursor Jumps and Input Loss in Custom Lit Editors]
 **Learning:** For high-frequency state updates in Lit-based text editors (like Home Assistant card editors), immediately converting inputs to numbers on keypress causes the value to reset on re-render. This deletes intermediate characters like decimal points (`.`) and minus signs (`-`), preventing users from typing valid decimal or negative numbers.
 **Action:** Always allow inputs in custom textfields to be handled and stored as strings in configuration state, and only parse them to float or integer during rendering or evaluation stages.
+
+## 2025-05-20 - [Safe Keyboard Event Handlers for Nested Interactivity]
+**Learning:** Adding a `keydown` handler to a parent container (like an accordion header) that also contains native buttons can cause "double-triggering". If a user focuses a child button and presses Enter, the button clicks, the event bubbles to the parent, and the parent's handler may programmatically click the button again.
+**Action:** In keyboard handlers for composite components, always verify `ev.target === ev.currentTarget` before programmatically triggering a click, or use `ev.stopPropagation()` on child elements.
+
+## 2025-05-20 - [Communicating State with aria-expanded]
+**Learning:** Marking an element with `role="button"` is not enough for toggleable UI sections. Screen reader users need to know if the section is currently open or closed to navigate effectively.
+**Action:** Always pair `role="button"` with `aria-expanded` (set to "true" or "false") for elements that control the visibility of other content.
