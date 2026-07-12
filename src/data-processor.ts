@@ -20,12 +20,14 @@ export function processDevices(
   const deviceCols = [];
   const metaCols = [];
   let needsLastChanged = false;
+  let needsSuffix = false;
 
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
     const m = { col, key: `col_${i}` };
     if (col.type === 'entity') {
       entityCols.push(m);
+      if (col.suffix) needsSuffix = true;
     } else if (col.type === 'device') {
       deviceCols.push(m);
     } else if (col.type === 'meta') {
@@ -70,20 +72,26 @@ export function processDevices(
     const entitiesByClass: Record<string, any> = {};
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
+    let hasValidEntities = false;
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
       const stateObj = states[ent.entity_id];
       if (!stateObj) continue;
 
+      hasValidEntities = true;
+
+      const dClass = stateObj.attributes.device_class || ent.device_class;
       const processedEntity = {
         entity_id: ent.entity_id,
         state: stateObj,
         registry: ent,
       };
-      deviceEntities.push(processedEntity);
 
-      const dClass = stateObj.attributes.device_class || ent.device_class;
+      if (needsSuffix) {
+        deviceEntities.push(processedEntity);
+      }
+
       if (dClass) {
         if (!entitiesByClass[dClass]) {
           entitiesByClass[dClass] = processedEntity;
@@ -101,7 +109,7 @@ export function processDevices(
       }
     }
 
-    if (!hasAnchor || deviceEntities.length === 0) continue;
+    if (!hasAnchor || !hasValidEntities) continue;
 
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
