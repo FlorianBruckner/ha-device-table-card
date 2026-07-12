@@ -261,6 +261,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (searchInput) {
             searchInput.setAttribute('aria-label', 'Search devices');
             searchInput.setAttribute('type', 'search');
+            searchInput.setAttribute('autocapitalize', 'off');
+            searchInput.setAttribute('spellcheck', 'false');
           }
 
           const lengthSelect = this.renderRoot.querySelector(
@@ -359,7 +361,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           (col.type === 'entity' || (col.type === 'meta' && col.prop === 'last_changed')
             ? ' dt-type-numeric'
             : ''),
-        createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
+        createdCell: (td: HTMLElement, cellData: any, rowData: any) => {
           if (col.type === 'entity') {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
@@ -374,8 +376,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
-            if (typeof _cellData === 'number') {
-              td.title = new Date(_cellData).toLocaleString();
+            if (typeof cellData === 'number') {
+              td.title = `Last updated: ${new Date(cellData).toLocaleString()}`;
             }
           }
         },

@@ -189,6 +189,12 @@ export const styles = css`
     background: transparent !important;
   }
 
+  .dt-paging-button:focus-visible,
+  .dataTables_wrapper .dataTables_paginate .paginate_button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+
   .dt-paging-button.current,
   .dataTables_wrapper .dataTables_paginate .paginate_button.current {
     background: var(--primary-color) !important;

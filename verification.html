@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Verification</title>
+  <script type="module" src="./dist/ha-device-table-card.js"></script>
+  <style>
+    body {
+        background: #f0f0f0;
+        padding: 20px;
+        font-family: sans-serif;
+    }
+    #container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <ha-device-table-card id="card"></ha-device-table-card>
+    <ha-device-table-card-editor id="editor"></ha-device-table-card-editor>
+  </div>
+  <script type="module">
+    // Mock Home Assistant elements if they don't exist
+    if (!customElements.get('ha-card')) {
+        customElements.define('ha-card', class extends HTMLElement {
+            set header(val) {
+                this.setAttribute('header', val);
+                this.innerHTML = `<h2>${val}</h2>` + this.innerHTML;
+            }
+        });
+    }
+
+    const card = document.getElementById('card');
+    const editor = document.getElementById('editor');
+    const mockHass = {
+        states: {
+          'sensor.battery': {
+            entity_id: 'sensor.battery',
+            state: '80',
+            attributes: {
+              device_class: 'battery',
+              unit_of_measurement: '%',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg) => {
+          if (msg.type === 'config/device_registry/list')
+            return [{ id: 'dev1', name: 'Device 1', area_id: 'area1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.battery', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [{ area_id: 'area1', name: 'Area 1' }];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+    setTimeout(() => {
+        card.hass = mockHass;
+        card.setConfig({
+          type: 'custom:ha-device-table-card',
+          title: 'UX Test',
+          columns: [
+            { type: 'device', prop: 'name', label: 'Device' },
+            { type: 'meta', prop: 'last_changed', label: 'Last Seen' },
+          ],
+        });
+
+        editor.hass = mockHass;
+        editor.setConfig({
+            type: 'custom:ha-device-table-card',
+            title: 'Editor Test',
+            columns: [
+                { type: 'device', prop: 'name', label: 'Device' }
+            ]
+        });
+    }, 100);
+  </script>
+</body>
+</html>
