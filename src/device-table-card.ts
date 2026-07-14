@@ -398,6 +398,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           let displayValue = escape(String(data));
           let color = '';
+          let highlightReason = '';
 
           if (col.type === 'entity') {
             const stateObj = row._entities[colKey];
@@ -422,12 +423,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                         : undefined;
                     if (ruleBelow !== undefined && !isNaN(ruleBelow) && numericValue < ruleBelow) {
                       color = rule.color;
+                      highlightReason = `Value is below threshold: ${ruleBelow}${uom || ''}`;
                     } else if (
                       ruleAbove !== undefined &&
                       !isNaN(ruleAbove) &&
                       numericValue > ruleAbove
                     ) {
                       color = rule.color;
+                      highlightReason = `Value is above threshold: ${ruleAbove}${uom || ''}`;
                     }
                   }
                 }
@@ -460,15 +463,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                     : undefined;
                 if (ruleBelow !== undefined && !isNaN(ruleBelow) && minutesAgo < ruleBelow) {
                   color = rule.color;
+                  highlightReason = `Last changed ${minutesAgo}m ago (below ${ruleBelow}m threshold)`;
                 } else if (ruleAbove !== undefined && !isNaN(ruleAbove) && minutesAgo > ruleAbove) {
                   color = rule.color;
+                  highlightReason = `Last changed ${minutesAgo}m ago (above ${ruleAbove}m threshold)`;
                 }
               }
             }
           }
 
           if (color && type === 'display') {
-            return `<span style="color: ${this._sanitizeColor(
+            return `<span title="${escape(highlightReason)}" style="color: ${this._sanitizeColor(
               color,
             )}; font-weight: bold;">${displayValue}</span>`;
           }

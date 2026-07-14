@@ -36,6 +36,25 @@ export const styles = css`
     text-transform: uppercase;
     position: relative;
     vertical-align: middle !important;
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  table.dataTable thead th:hover {
+    background-color: var(--secondary-background-color);
+    color: var(--primary-text-color);
+  }
+
+  table.dataTable thead th:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+
+  table.dataTable thead th.dt-ordering-asc,
+  table.dataTable thead th.dt-ordering-desc {
+    color: var(--primary-color);
   }
 
   table.dataTable thead th.dt-type-numeric {

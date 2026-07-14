@@ -146,4 +146,33 @@ describe('ha-device-table-card UX', () => {
     expect(cells[1].tabIndex).to.equal(0);
     expect(cells[1].getAttribute('role')).to.equal('button');
   });
+
+  it('shows tooltips for threshold highlights', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [
+        {
+          type: 'entity',
+          device_class: 'battery',
+          label: 'Battery',
+          highlight: [{ below: 90, color: 'red' }],
+        },
+      ],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const rows = el.shadowRoot?.querySelectorAll('tbody tr');
+    const cells = rows![0].querySelectorAll('td');
+
+    const span = cells[0].querySelector('span');
+    expect(span).to.exist;
+    expect(span?.getAttribute('title')).to.equal('Value is below threshold: 90%');
+  });
 });
