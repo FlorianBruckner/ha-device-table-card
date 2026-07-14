@@ -17,3 +17,7 @@
 ## 2026-07-09 - [Consolidated Suffix Matching and Object Elimination]
 **Learning:** Moving suffix-based entity matching into a primary entity iteration loop (pre-calculated via column indexing) eliminates the need for redundant $O(M \times N)$ scans. Furthermore, bypassing the creation of intermediate "wrapper" objects for every entity significantly reduces GC pressure and heap churn in environments with high entity counts.
 **Action:** Use pre-calculated column requirement maps to resolve all entity types in a single pass, and work directly with raw data objects where possible.
+
+## 2026-07-10 - [Property lookup and iteration pruning]
+**Learning:** Moving static lookup sets to the module level and using a "requirements" Set to prune iterations in nested loops significantly reduces CPU cycles and allocation churn. Interestingly, for small records in this environment, standard object literals {} performed slightly better than Object.create(null) in benchmarks.
+**Action:** Use module-level Sets for property allowlists and implement configuration-driven pruning for expensive iteration logic.

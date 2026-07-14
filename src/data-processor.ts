@@ -1,5 +1,8 @@
 import { DeviceData, DeviceTableCardConfig } from './types';
 
+const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
+const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
+
 export function processDevices(
   hass: any,
   config: DeviceTableCardConfig,
@@ -16,11 +19,14 @@ export function processDevices(
   const columns = config.columns || [];
 
   // Pre-categorize columns and calculate requirements once per call
-  const entityCols = [];
-  const deviceCols = [];
-  const metaCols = [];
-  const suffixCols = [];
+  const entityCols: any[] = [];
+  const deviceCols: any[] = [];
+  const metaCols: any[] = [];
+  const suffixCols: any[] = [];
+  const requiredClasses = new Set<string>();
   let needsLastChanged = false;
+
+  if (filter.anchor_entity_class) requiredClasses.add(filter.anchor_entity_class);
 
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
@@ -28,6 +34,7 @@ export function processDevices(
     if (col.type === 'entity') {
       entityCols.push(m);
       if (col.suffix) suffixCols.push(m);
+      if (col.device_class) requiredClasses.add(col.device_class);
     } else if (col.type === 'device') {
       deviceCols.push(m);
     } else if (col.type === 'meta') {
@@ -81,9 +88,9 @@ export function processDevices(
 
       hasValidEntities = true;
 
-      // Match by Device Class
+      // Match by Device Class - only if required by config or anchor
       const dClass = stateObj.attributes.device_class || ent.device_class;
-      if (dClass) {
+      if (dClass && requiredClasses.has(dClass)) {
         if (!entitiesByClass[dClass]) {
           entitiesByClass[dClass] = stateObj;
         }
@@ -126,25 +133,20 @@ export function processDevices(
       const { col, key } = deviceCols[i];
       const prop = col.prop;
 
-      // Security check: block prototype pollution/sensitive access via custom properties
-      const forbidden = ['__proto__', 'constructor', 'prototype'];
-      if (typeof prop === 'string' && forbidden.includes(prop)) {
+      if (FORBIDDEN_PROPS.has(prop)) {
         deviceData[key] = '-';
-        continue;
-      }
-
-      if (prop === 'name') deviceData[key] = deviceData.name;
-      else if (prop === 'area') deviceData[key] = deviceData.area;
-      else if (prop === 'integration') deviceData[key] = deviceData.integration;
-      else if (prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-      else {
-        // Fallback for custom/internal properties - restricted to avoid sensitive access
-        const allowed = ['model', 'sw_version', 'hw_version'];
-        if (typeof prop === 'string' && allowed.includes(prop)) {
-          deviceData[key] = (d as any)?.[prop] || '-';
-        } else {
-          deviceData[key] = '-';
-        }
+      } else if (prop === 'name') {
+        deviceData[key] = deviceData.name;
+      } else if (prop === 'area') {
+        deviceData[key] = deviceData.area;
+      } else if (prop === 'integration') {
+        deviceData[key] = deviceData.integration;
+      } else if (prop === 'manufacturer') {
+        deviceData[key] = deviceData.manufacturer;
+      } else if (ALLOWED_DEVICE_PROPS.has(prop)) {
+        deviceData[key] = (d as any)?.[prop] || '-';
+      } else {
+        deviceData[key] = '-';
       }
     }
 
