@@ -126,11 +126,27 @@ export function processDevices(
     for (let i = 0; i < deviceCols.length; i++) {
       const { col, key } = deviceCols[i];
       const prop = col.prop;
+
+      // Security check: block prototype pollution/sensitive access via custom properties
+      const forbidden = ['__proto__', 'constructor', 'prototype'];
+      if (typeof prop === 'string' && forbidden.includes(prop)) {
+        deviceData[key] = '-';
+        continue;
+      }
+
       if (prop === 'name') deviceData[key] = deviceData.name;
       else if (prop === 'area') deviceData[key] = deviceData.area;
       else if (prop === 'integration') deviceData[key] = deviceData.integration;
       else if (prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-      else deviceData[key] = (d as any)?.[prop as string] || '-';
+      else {
+        // Fallback for custom/internal properties - restricted to avoid sensitive access
+        const allowed = ['model', 'sw_version', 'hw_version'];
+        if (typeof prop === 'string' && allowed.includes(prop)) {
+          deviceData[key] = (d as any)?.[prop] || '-';
+        } else {
+          deviceData[key] = '-';
+        }
+      }
     }
 
     // Resolve Entity Columns

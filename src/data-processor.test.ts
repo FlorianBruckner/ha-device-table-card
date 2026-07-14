@@ -178,4 +178,20 @@ describe('data-processor', () => {
     );
     expect(result2).to.have.lengthOf(0);
   });
+
+  it('should block access to forbidden properties in device columns', () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      columns: [{ type: 'device', prop: '__proto__', label: 'Malicious' }],
+    };
+    const result = processDevices(
+      mockHass,
+      config,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+    expect(result).to.have.lengthOf(1);
+    expect(result[0].col_0).to.equal('-');
+  });
 });
