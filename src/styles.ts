@@ -34,6 +34,9 @@ export const styles = css`
     padding: 16px 24px 16px 8px !important;
     font-size: 0.9em;
     text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     position: relative;
     vertical-align: middle !important;
     cursor: pointer;
@@ -150,12 +153,15 @@ export const styles = css`
     border: none;
     border-bottom: 1px solid var(--secondary-text-color);
     border-radius: 4px 4px 0 0;
-    padding: 8px 12px;
+    padding: 8px 12px 8px 36px;
     margin-left: 8px;
     outline: none;
     transition: border-bottom-color 0.2s;
     height: 40px;
     box-sizing: border-box;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23727272' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
   }
 
   .dt-search input:focus,

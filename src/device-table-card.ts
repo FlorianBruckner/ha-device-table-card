@@ -271,6 +271,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (lengthSelect) {
             lengthSelect.setAttribute('aria-label', 'Items per page');
           }
+
+          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
+          headers.forEach((th) => {
+            const element = th as HTMLElement;
+            if (element.innerText) {
+              element.title = element.innerText;
+            }
+          });
         },
       });
 

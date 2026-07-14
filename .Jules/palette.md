@@ -29,3 +29,7 @@
 ## 2025-05-22 - [Improving Header Affordance and Feedback]
 **Learning:** In data-dense tables, the fact that headers are interactive (sortable) can be easily missed if they look static. Adding clear hover states (`background-color`), transitions, and high-contrast color indicators for active sorted states significantly improves the discoverability of sorting features.
 **Action:** Ensure all interactive table headers have distinct hover styles, focus-visible indicators, and clear visual feedback for their active state (e.g., sorted ascending/descending).
+
+## 2025-06-01 - [Affordance and Context in Data Tables]
+**Learning:** Responsive tables often truncate headers to fit narrow screens, which can hide important context. Pairing `text-overflow: ellipsis` with a dynamic `title` attribute (tooltip) that mirrors the header text ensures that the full label is always accessible. Additionally, adding a magnifying glass icon to the search input significantly improves the visual affordance of the search feature.
+**Action:** Always provide tooltip fallbacks for potentially truncated text and use standard iconography to reinforce the purpose of key interactive elements like search fields.
