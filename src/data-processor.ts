@@ -19,15 +19,15 @@ export function processDevices(
   const entityCols = [];
   const deviceCols = [];
   const metaCols = [];
+  const suffixCols = [];
   let needsLastChanged = false;
-  let needsSuffix = false;
 
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
     const m = { col, key: `col_${i}` };
     if (col.type === 'entity') {
       entityCols.push(m);
-      if (col.suffix) needsSuffix = true;
+      if (col.suffix) suffixCols.push(m);
     } else if (col.type === 'device') {
       deviceCols.push(m);
     } else if (col.type === 'meta') {
@@ -67,9 +67,9 @@ export function processDevices(
       continue;
     }
 
-    // Single pass: Resolve states, index entities by device_class, find latest update, and check anchor filter
-    const deviceEntities = [];
+    // Single pass: Resolve states, match entities by device_class/suffix, find latest update, and check anchor filter
     const entitiesByClass: Record<string, any> = {};
+    const entitiesBySuffix: Record<string, any> = {};
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
     let hasValidEntities = false;
@@ -81,23 +81,22 @@ export function processDevices(
 
       hasValidEntities = true;
 
+      // Match by Device Class
       const dClass = stateObj.attributes.device_class || ent.device_class;
-      const processedEntity = {
-        entity_id: ent.entity_id,
-        state: stateObj,
-        registry: ent,
-      };
-
-      if (needsSuffix) {
-        deviceEntities.push(processedEntity);
-      }
-
       if (dClass) {
         if (!entitiesByClass[dClass]) {
-          entitiesByClass[dClass] = processedEntity;
+          entitiesByClass[dClass] = stateObj;
         }
         if (!hasAnchor && dClass === anchorClass) {
           hasAnchor = true;
+        }
+      }
+
+      // Match by Suffix (pre-calculated columns)
+      for (let k = 0; k < suffixCols.length; k++) {
+        const { col, key } = suffixCols[k];
+        if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
+          entitiesBySuffix[key] = stateObj;
         }
       }
 
@@ -152,22 +151,16 @@ export function processDevices(
     // Resolve Entity Columns
     for (let i = 0; i < entityCols.length; i++) {
       const { col, key } = entityCols[i];
-      let found = null;
+      let stateObj = null;
       if (col.device_class) {
-        found = entitiesByClass[col.device_class];
+        stateObj = entitiesByClass[col.device_class];
       } else if (col.suffix) {
-        const suffix = col.suffix;
-        for (let j = 0; j < deviceEntities.length; j++) {
-          if (deviceEntities[j].entity_id.endsWith(suffix)) {
-            found = deviceEntities[j];
-            break;
-          }
-        }
+        stateObj = entitiesBySuffix[key];
       }
 
-      if (found) {
-        deviceData[key] = found.state.state;
-        deviceData._entities[key] = found.state;
+      if (stateObj) {
+        deviceData[key] = stateObj.state;
+        deviceData._entities[key] = stateObj;
       } else {
         deviceData[key] = '-';
       }

@@ -13,3 +13,7 @@
 ## 2026-07-08 - [Consolidated loops and conditional parsing]
 **Learning:** Merging multiple loops over large datasets (e.g., 1000+ devices) into a single pass reduces iteration and allocation overhead. Furthermore, using conditional flags to skip expensive operations (like ISO 8601 parsing) when the resulting data isn't needed by any active column provides significant gains in high-frequency update paths.
 **Action:** Consolidate data processing into single passes and implement feature-flagged logic to bypass unnecessary computations based on configuration.
+
+## 2026-07-09 - [Consolidated Suffix Matching and Object Elimination]
+**Learning:** Moving suffix-based entity matching into a primary entity iteration loop (pre-calculated via column indexing) eliminates the need for redundant $O(M \times N)$ scans. Furthermore, bypassing the creation of intermediate "wrapper" objects for every entity significantly reduces GC pressure and heap churn in environments with high entity counts.
+**Action:** Use pre-calculated column requirement maps to resolve all entity types in a single pass, and work directly with raw data objects where possible.
