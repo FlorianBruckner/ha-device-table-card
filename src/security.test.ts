@@ -104,6 +104,64 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card color sanitization hardening', () => {
+    it('should block url() and expression() function calls in colors', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'battery',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            highlight: [
+              {
+                below: 20,
+                color: 'url("https://malicious.site/xss.css")',
+              },
+            ],
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const span = el.shadowRoot?.querySelector('tbody span') as HTMLElement;
+      expect(span).to.exist;
+
+      // The color should have been sanitized to empty string or at least not contain url(
+      expect(span.style.color).to.be.oneOf(['', 'initial', 'inherit']);
+    });
+  });
+
   describe('ha-device-table-card DataTables search integrity', () => {
     it('should not match HTML tags when searching/filtering', async () => {
       const mockHass = {
