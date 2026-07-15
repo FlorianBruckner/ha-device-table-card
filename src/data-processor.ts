@@ -1,5 +1,8 @@
 import { DeviceData, DeviceTableCardConfig } from './types';
 
+const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
+const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
+
 export function processDevices(
   hass: any,
   config: DeviceTableCardConfig,
@@ -20,15 +23,37 @@ export function processDevices(
   const deviceCols = [];
   const metaCols = [];
   const suffixCols = [];
+  const requiredClasses = new Set<string>();
   let needsLastChanged = false;
+
+  if (filter.anchor_entity_class) {
+    requiredClasses.add(filter.anchor_entity_class);
+  }
 
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
-    const m = { col, key: `col_${i}` };
+    const m: any = { col, key: `col_${i}` };
     if (col.type === 'entity') {
       entityCols.push(m);
       if (col.suffix) suffixCols.push(m);
+      if (col.device_class) requiredClasses.add(col.device_class);
     } else if (col.type === 'device') {
+      const prop = col.prop;
+      if (typeof prop === 'string' && FORBIDDEN_PROPS.has(prop)) {
+        m.strategy = 'forbidden';
+      } else if (
+        prop === 'name' ||
+        prop === 'area' ||
+        prop === 'integration' ||
+        prop === 'manufacturer'
+      ) {
+        m.strategy = prop;
+      } else if (typeof prop === 'string' && ALLOWED_DEVICE_PROPS.has(prop)) {
+        m.strategy = 'allowed';
+        m.prop = prop;
+      } else {
+        m.strategy = 'unknown';
+      }
       deviceCols.push(m);
     } else if (col.type === 'meta') {
       metaCols.push(m);
@@ -70,6 +95,7 @@ export function processDevices(
     // Single pass: Resolve states, match entities by device_class/suffix, find latest update, and check anchor filter
     const entitiesByClass: Record<string, any> = {};
     const entitiesBySuffix: Record<string, any> = {};
+    let matchedSuffixesCount = 0;
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
     let hasValidEntities = false;
@@ -83,7 +109,7 @@ export function processDevices(
 
       // Match by Device Class
       const dClass = stateObj.attributes.device_class || ent.device_class;
-      if (dClass) {
+      if (dClass && requiredClasses.has(dClass)) {
         if (!entitiesByClass[dClass]) {
           entitiesByClass[dClass] = stateObj;
         }
@@ -93,10 +119,13 @@ export function processDevices(
       }
 
       // Match by Suffix (pre-calculated columns)
-      for (let k = 0; k < suffixCols.length; k++) {
-        const { col, key } = suffixCols[k];
-        if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
-          entitiesBySuffix[key] = stateObj;
+      if (matchedSuffixesCount < suffixCols.length) {
+        for (let k = 0; k < suffixCols.length; k++) {
+          const { col, key } = suffixCols[k];
+          if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
+            entitiesBySuffix[key] = stateObj;
+            matchedSuffixesCount++;
+          }
         }
       }
 
@@ -123,28 +152,17 @@ export function processDevices(
 
     // Resolve Device Columns
     for (let i = 0; i < deviceCols.length; i++) {
-      const { col, key } = deviceCols[i];
-      const prop = col.prop;
+      const m = deviceCols[i];
+      const { key, strategy } = m;
 
-      // Security check: block prototype pollution/sensitive access via custom properties
-      const forbidden = ['__proto__', 'constructor', 'prototype'];
-      if (typeof prop === 'string' && forbidden.includes(prop)) {
+      if (strategy === 'name') deviceData[key] = deviceData.name;
+      else if (strategy === 'area') deviceData[key] = deviceData.area;
+      else if (strategy === 'integration') deviceData[key] = deviceData.integration;
+      else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
+      else if (strategy === 'allowed') {
+        deviceData[key] = (d as any)?.[m.prop] || '-';
+      } else {
         deviceData[key] = '-';
-        continue;
-      }
-
-      if (prop === 'name') deviceData[key] = deviceData.name;
-      else if (prop === 'area') deviceData[key] = deviceData.area;
-      else if (prop === 'integration') deviceData[key] = deviceData.integration;
-      else if (prop === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-      else {
-        // Fallback for custom/internal properties - restricted to avoid sensitive access
-        const allowed = ['model', 'sw_version', 'hw_version'];
-        if (typeof prop === 'string' && allowed.includes(prop)) {
-          deviceData[key] = (d as any)?.[prop] || '-';
-        } else {
-          deviceData[key] = '-';
-        }
       }
     }
 
