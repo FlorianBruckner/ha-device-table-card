@@ -17,3 +17,7 @@
 ## 2026-07-09 - [Consolidated Suffix Matching and Object Elimination]
 **Learning:** Moving suffix-based entity matching into a primary entity iteration loop (pre-calculated via column indexing) eliminates the need for redundant $O(M \times N)$ scans. Furthermore, bypassing the creation of intermediate "wrapper" objects for every entity significantly reduces GC pressure and heap churn in environments with high entity counts.
 **Action:** Use pre-calculated column requirement maps to resolve all entity types in a single pass, and work directly with raw data objects where possible.
+
+## 2026-07-10 - [Hoisting resolution strategies and early-exit]
+**Learning:** Pre-calculating resolution strategies (e.g., property access vs. fixed strings) during a configuration pre-pass avoids redundant branching and Set lookups in the main iteration loop. Additionally, tracking match counts for multi-entity lookups (like suffixes) enables early-exit, saving significant cycles in devices with many entities.
+**Action:** Hoist resolution logic to the configuration pre-pass and implement match-count based early-exits for entity scanning loops.
