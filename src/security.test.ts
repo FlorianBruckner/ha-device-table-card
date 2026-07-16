@@ -160,6 +160,31 @@ describe('Security Vulnerabilities', () => {
       // The color should have been sanitized to empty string or at least not contain url(
       expect(span.style.color).to.be.oneOf(['', 'initial', 'inherit']);
     });
+
+    it('should block all dangerous or resource-loading CSS functions directly via _sanitizeColor', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      // Blocked functions
+      expect((el as any)._sanitizeColor('url("https://example.com/image.png")')).to.equal('');
+      expect((el as any)._sanitizeColor('expression(alert(1))')).to.equal('');
+      expect((el as any)._sanitizeColor('image("https://example.com/image.png")')).to.equal('');
+      expect((el as any)._sanitizeColor('image-set("a.png" 1x, "b.png" 2x)')).to.equal('');
+      expect((el as any)._sanitizeColor('-webkit-image-set("a.png" 1x)')).to.equal('');
+      expect((el as any)._sanitizeColor('-moz-image-set("a.png" 1x)')).to.equal('');
+      expect((el as any)._sanitizeColor('element(#myid)')).to.equal('');
+      expect((el as any)._sanitizeColor('paint(my-painter)')).to.equal('');
+      expect((el as any)._sanitizeColor('cross-fade(20% url("a.png"), url("b.png"))')).to.equal('');
+
+      // Allowed safe colors and color functions
+      expect((el as any)._sanitizeColor('red')).to.equal('red');
+      expect((el as any)._sanitizeColor('#ff0000')).to.equal('#ff0000');
+      expect((el as any)._sanitizeColor('rgb(255, 0, 0)')).to.equal('rgb(255, 0, 0)');
+      expect((el as any)._sanitizeColor('rgba(255, 0, 0, 0.5)')).to.equal('rgba(255, 0, 0, 0.5)');
+      expect((el as any)._sanitizeColor('hsl(120, 100, 50)')).to.equal('hsl(120, 100, 50)');
+      expect((el as any)._sanitizeColor('var(--my-color)')).to.equal('var(--my-color)');
+    });
   });
 
   describe('ha-device-table-card DataTables search integrity', () => {
