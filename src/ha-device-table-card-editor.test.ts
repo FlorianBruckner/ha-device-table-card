@@ -234,4 +234,35 @@ describe('ha-device-table-card-editor', () => {
       customElements.get = originalGet;
     }
   });
+
+  it('has accessible select elements and preset badges', async () => {
+    const el = await fixture<DeviceTableCardEditor>(html`
+      <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+    `);
+    el.setConfig(config);
+    // Expand columns section and first column item to render column-body
+    (el as any)._columnsExpanded = true;
+    (el as any)._expandedColumnIndex = 0;
+    await el.updateComplete;
+
+    const selectType = el.shadowRoot?.querySelector('#select-type-0');
+    const labelType = el.shadowRoot?.querySelector('label[for="select-type-0"]');
+    expect(selectType).to.exist;
+    expect(labelType).to.exist;
+    expect(labelType?.textContent?.trim()).to.equal('Type:');
+
+    const selectProp = el.shadowRoot?.querySelector('#select-prop-0');
+    const labelProp = el.shadowRoot?.querySelector('label[for="select-prop-0"]');
+    expect(selectProp).to.exist;
+    expect(labelProp).to.exist;
+    expect(labelProp?.textContent?.trim()).to.equal('Property:');
+
+    const presets = el.shadowRoot?.querySelectorAll('.preset-badge');
+    expect(presets).to.exist;
+    expect(presets!.length).to.equal(4);
+    expect(presets![0].getAttribute('aria-label')).to.equal('Add Battery column preset');
+    expect(presets![1].getAttribute('aria-label')).to.equal('Add Moisture column preset');
+    expect(presets![2].getAttribute('aria-label')).to.equal('Add Device Name column preset');
+    expect(presets![3].getAttribute('aria-label')).to.equal('Add Last Seen column preset');
+  });
 });
