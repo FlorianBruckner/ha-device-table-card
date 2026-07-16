@@ -12,3 +12,8 @@
 **Vulnerability:** The data processor used dynamic property access `(d as any)[prop]` for device columns, which could be exploited to access sensitive internal properties like `__proto__` or `constructor` via malicious dashboard configurations.
 **Learning:** Even when most properties are whitelisted, an `else` block that falls back to dynamic access creates a security gap. Transitioning from a "blocklist" of forbidden properties to a strict "allowlist" for custom properties provides defense-in-depth.
 **Prevention:** Avoid dynamic property access on objects from external/user-controlled strings. Use strict allowlists for any properties not handled by explicit logic.
+
+## 2026-07-08 - [Harden Color CSS Sanitization for Resource-Loading Functions]
+**Vulnerability:** While `url()` and `expression()` were blocked, modern CSS functions and legacy vendor prefixes (e.g., `image()`, `image-set()`, `-webkit-image-set()`, `element()`, `paint()`, `cross-fade()`) can also fetch external resources or execute custom rendering. Since these functions bypass simple `url` checks, they could be leveraged to exfiltrate client-side data or bypass CSP.
+**Learning:** Expanding the blocklist using word boundaries (`\b`) matches both standard and prefixed versions (e.g., matching `-webkit-image-set` via `\bimage-set`) without needing complex lookarounds.
+**Prevention:** Always sanitize style attributes by blocking all resource-loading, paint, and scriptable CSS functions in addition to `url`.

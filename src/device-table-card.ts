@@ -312,8 +312,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
     const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
 
-    // Block potential CSS function injections like url() or expression()
-    if (/\b(url|expression)\s*\(/i.test(sanitized)) {
+    // Block potential CSS function injections like url(), expression(), image(), image-set(), etc.
+    if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
       return '';
     }
 
