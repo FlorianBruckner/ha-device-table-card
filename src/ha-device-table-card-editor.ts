@@ -419,6 +419,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          aria-label="Add Battery column preset"
                         >
                           + Battery
                         </div>
@@ -428,6 +429,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          aria-label="Add Moisture column preset"
                         >
                           + Moisture
                         </div>
@@ -437,6 +439,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          aria-label="Add Device Name column preset"
                         >
                           + Device Name
                         </div>
@@ -446,6 +449,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          aria-label="Add Last Seen column preset"
                         >
                           + Last Seen
                         </div>
@@ -579,8 +583,13 @@ export class DeviceTableCardEditor extends LitElement {
             ? html`
                 <div class="column-body">
                   <div class="form-row">
-                    <span style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;">Type:</span>
+                    <label
+                      for="select-type-${index}"
+                      style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;"
+                      >Type:</label
+                    >
                     <select
+                      id="select-type-${index}"
                       .value=${col.type}
                       @change=${(e: any) => this._updateColumnProperty(index, 'type', e.target.value)}
                     >
@@ -603,10 +612,13 @@ export class DeviceTableCardEditor extends LitElement {
                     col.type === 'device'
                       ? html`
                           <div class="form-row">
-                            <span style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;"
-                              >Property:</span
+                            <label
+                              for="select-prop-${index}"
+                              style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;"
+                              >Property:</label
                             >
                             <select
+                              id="select-prop-${index}"
                               .value=${col.prop || 'name'}
                               @change=${(e: any) =>
                                 this._updateColumnProperty(index, 'prop', e.target.value)}
@@ -624,10 +636,13 @@ export class DeviceTableCardEditor extends LitElement {
                     col.type === 'meta'
                       ? html`
                           <div class="form-row">
-                            <span style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;"
-                              >Property:</span
+                            <label
+                              for="select-prop-${index}"
+                              style="font-weight: 500; font-size: 0.9em; flex: 0 0 80px;"
+                              >Property:</label
                             >
                             <select
+                              id="select-prop-${index}"
                               .value=${col.prop || 'last_changed'}
                               @change=${(e: any) =>
                                 this._updateColumnProperty(index, 'prop', e.target.value)}
