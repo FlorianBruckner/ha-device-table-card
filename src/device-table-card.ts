@@ -44,11 +44,28 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     };
   }
 
+  private _sanitizeConfig<T>(obj: T): T {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this._sanitizeConfig(item)) as any;
+    }
+    const sanitized: any = {};
+    for (const key of Object.keys(obj)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
+      sanitized[key] = this._sanitizeConfig((obj as any)[key]);
+    }
+    return sanitized;
+  }
+
   public setConfig(config: DeviceTableCardConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
     }
-    this._config = config;
+    this._config = this._sanitizeConfig(config);
   }
 
   public getCardSize(): number {
@@ -308,7 +325,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _sanitizeColor(color: string): string {
-    if (!color) return '';
+    if (typeof color !== 'string' || !color) return '';
     // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
     const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
 
@@ -416,10 +433,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               }
 
               // Highlighting
-              if (col.highlight) {
+              if (Array.isArray(col.highlight)) {
                 const numericValue = parseFloat(data);
                 if (!isNaN(numericValue)) {
                   for (const rule of col.highlight) {
+                    if (!rule || typeof rule !== 'object') continue;
                     const ruleBelow =
                       rule.below !== undefined && (rule.below as any) !== ''
                         ? parseFloat(rule.below as any)
@@ -457,9 +475,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               displayValue = `${Math.floor(secondsAgo / 86400)}d`;
             }
 
-            if (col.highlight) {
+            if (Array.isArray(col.highlight)) {
               const minutesAgo = Math.floor(secondsAgo / 60);
               for (const rule of col.highlight) {
+                if (!rule || typeof rule !== 'object') continue;
                 const ruleBelow =
                   rule.below !== undefined && (rule.below as any) !== ''
                     ? parseFloat(rule.below as any)

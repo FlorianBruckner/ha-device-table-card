@@ -17,3 +17,8 @@
 **Vulnerability:** While `url()` and `expression()` were blocked, modern CSS functions and legacy vendor prefixes (e.g., `image()`, `image-set()`, `-webkit-image-set()`, `element()`, `paint()`, `cross-fade()`) can also fetch external resources or execute custom rendering. Since these functions bypass simple `url` checks, they could be leveraged to exfiltrate client-side data or bypass CSP.
 **Learning:** Expanding the blocklist using word boundaries (`\b`) matches both standard and prefixed versions (e.g., matching `-webkit-image-set` via `\bimage-set`) without needing complex lookarounds.
 **Prevention:** Always sanitize style attributes by blocking all resource-loading, paint, and scriptable CSS functions in addition to `url`.
+
+## 2026-07-09 - [Card Configuration Sandbox & Sanitization]
+**Vulnerability:** Malicious card configurations containing prototype pollution payloads (`__proto__`, `constructor`, `prototype`) could be loaded via dashboard YAML, potentially polluting the global prototype chain or leading to UI-based Denial of Service and logic bypass. Additionally, non-string properties and malformed array structures in `highlight` configs could trigger unhandled exceptions in the renderer loop.
+**Learning:** Deeply sanitizing configuration objects recursively inside `setConfig` strips dangerous properties at the boundaries before the configuration is stored. Hardening downstream functions with strict type guards and resilient array/object handling ensures robust rendering.
+**Prevention:** Never trust structural patterns or types in parsed YAML configurations. Sanitize properties recursively and use explicit array/null-object guards during rendering and property access.
