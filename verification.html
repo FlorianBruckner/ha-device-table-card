@@ -79,6 +79,12 @@
                 { type: 'device', prop: 'name', label: 'Device' }
             ]
         });
+
+        editor.addEventListener('config-changed', (ev) => {
+            console.log('config-changed', ev.detail.config);
+            editor.setConfig(ev.detail.config);
+            editor.requestUpdate();
+        });
     }, 100);
   </script>
 </body>

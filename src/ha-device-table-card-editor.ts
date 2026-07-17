@@ -284,6 +284,12 @@ export class DeviceTableCardEditor extends LitElement {
         border-color: var(--primary-color, #03a9f4);
         outline: none;
       }
+      .helper-text {
+        font-size: 0.8em;
+        font-style: italic;
+        color: var(--secondary-text-color, #727272);
+        margin-top: 4px;
+      }
       h3 {
         margin: 8px 0 0 0;
       }
@@ -343,6 +349,7 @@ export class DeviceTableCardEditor extends LitElement {
                       'title',
                       this._valueChanged,
                       '100',
+                      'Optional card header title',
                     )}
 
                     <h3>Filters</h3>
@@ -352,6 +359,7 @@ export class DeviceTableCardEditor extends LitElement {
                       'filter.area',
                       this._valueChanged,
                       '100',
+                      'Only show devices located in this specific area',
                     )}
                     ${this._renderInput(
                       'Anchor Entity Device Class',
@@ -359,6 +367,7 @@ export class DeviceTableCardEditor extends LitElement {
                       'filter.anchor_entity_class',
                       this._valueChanged,
                       '100',
+                      'Only show devices containing an entity with this device class (e.g. battery, moisture)',
                     )}
                     ${this._renderInput(
                       'Integration (e.g. zha, mqtt, hue)',
@@ -366,6 +375,7 @@ export class DeviceTableCardEditor extends LitElement {
                       'filter.integration',
                       this._valueChanged,
                       '100',
+                      'Only show devices from this integration domain',
                     )}
                     ${this._renderInput(
                       'Manufacturer (e.g. LUMI, Sonoff)',
@@ -373,6 +383,7 @@ export class DeviceTableCardEditor extends LitElement {
                       'filter.manufacturer',
                       this._valueChanged,
                       '100',
+                      'Only show devices made by this manufacturer',
                     )}
                   </div>
                 `
@@ -605,6 +616,7 @@ export class DeviceTableCardEditor extends LitElement {
                     undefined,
                     (e: any) => this._updateColumnProperty(index, 'label', e.target.value),
                     '100',
+                    'Custom header text to display for this column',
                   )}
 
                   <!-- Conditional inputs based on type -->
@@ -663,6 +675,7 @@ export class DeviceTableCardEditor extends LitElement {
                             (e: any) =>
                               this._updateColumnProperty(index, 'device_class', e.target.value),
                             '100',
+                            'Match an entity by its device class',
                           )}
                           ${this._renderInput(
                             'Entity ID Suffix (optional, e.g. _voltage)',
@@ -670,6 +683,7 @@ export class DeviceTableCardEditor extends LitElement {
                             undefined,
                             (e: any) => this._updateColumnProperty(index, 'suffix', e.target.value),
                             '100',
+                            'Find entity with an entity ID ending with this suffix',
                           )}
                         `
                       : ''
@@ -705,6 +719,7 @@ export class DeviceTableCardEditor extends LitElement {
                                         e.target.value === '' ? undefined : e.target.value,
                                       ),
                                     '100',
+                                    'Trigger value below',
                                   )}
                                   ${this._renderInput(
                                     'Above',
@@ -718,6 +733,7 @@ export class DeviceTableCardEditor extends LitElement {
                                         e.target.value === '' ? undefined : e.target.value,
                                       ),
                                     '100',
+                                    'Trigger value above',
                                   )}
                                   ${this._renderInput(
                                     'Color',
@@ -731,6 +747,7 @@ export class DeviceTableCardEditor extends LitElement {
                                         e.target.value,
                                       ),
                                     '50',
+                                    'CSS color name or hex',
                                   )}
                                   <button
                                     class="btn-icon"
@@ -778,6 +795,7 @@ export class DeviceTableCardEditor extends LitElement {
     configValue: string | undefined,
     onInput: (e: any) => void,
     maxlength = '100',
+    helperText?: string,
   ): TemplateResult {
     if (customElements.get('ha-input')) {
       return html`
@@ -785,6 +803,7 @@ export class DeviceTableCardEditor extends LitElement {
           label=${label}
           .value=${value}
           .configValue=${configValue}
+          .helper=${helperText || ''}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-input>
@@ -796,6 +815,7 @@ export class DeviceTableCardEditor extends LitElement {
           label=${label}
           .value=${value}
           .configValue=${configValue}
+          .helper=${helperText || ''}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-textfield>
@@ -814,6 +834,7 @@ export class DeviceTableCardEditor extends LitElement {
           maxlength=${maxlength}
           class="native-input"
         />
+        ${helperText ? html`<div class="helper-text">${helperText}</div>` : ''}
       </div>
     `;
   }
