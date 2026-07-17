@@ -245,4 +245,83 @@ describe('Security Vulnerabilities', () => {
       expect(dataTable.rows({ filter: 'applied' }).count()).to.equal(1);
     });
   });
+
+  describe('ha-device-table-card additional hardening and robustness', () => {
+    it('should deep sanitize incoming config in setConfig to prevent prototype pollution', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const maliciousConfig = JSON.parse(
+        '{"type":"custom:ha-device-table-card","columns":[],"__proto__":{"polluted":true},"columns_item":{"__proto__":{"inner":true}}}',
+      );
+
+      el.setConfig(maliciousConfig);
+
+      expect((Object.prototype as any).polluted).to.be.undefined;
+      expect((Object.prototype as any).inner).to.be.undefined;
+      expect((el as any)._config.__proto__.polluted).to.be.undefined;
+    });
+
+    it('should safely handle non-string values passed to _sanitizeColor', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      expect((el as any)._sanitizeColor(null)).to.equal('');
+      expect((el as any)._sanitizeColor(undefined)).to.equal('');
+      expect((el as any)._sanitizeColor({} as any)).to.equal('');
+      expect((el as any)._sanitizeColor([] as any)).to.equal('');
+      expect((el as any)._sanitizeColor(true as any)).to.equal('');
+    });
+
+    it('should be resilient to malformed highlight configurations', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'battery',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            highlight: [null, undefined, {}, { below: 20, color: 'red' }] as any,
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const span = el.shadowRoot?.querySelector('tbody span') as HTMLElement;
+      expect(span).to.exist;
+      expect(span.style.color).to.equal('red');
+    });
+  });
 });
