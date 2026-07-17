@@ -21,3 +21,7 @@
 ## 2026-07-10 - [Hoisting resolution strategies and early-exit]
 **Learning:** Pre-calculating resolution strategies (e.g., property access vs. fixed strings) during a configuration pre-pass avoids redundant branching and Set lookups in the main iteration loop. Additionally, tracking match counts for multi-entity lookups (like suffixes) enables early-exit, saving significant cycles in devices with many entities.
 **Action:** Hoist resolution logic to the configuration pre-pass and implement match-count based early-exits for entity scanning loops.
+
+## 2026-07-11 - [Stable Reference Configuration Memoization]
+**Learning:** In highly frequent rendering pipelines (such as Home Assistant custom cards updating on every state change), config schema pre-categorization can be safely cached using a `WeakMap` keyed by the stable `config` object reference. This completely bypasses loop overheads, conditional branches, array instantiations, and Set creation on consecutive calls with the same configuration.
+**Action:** For hot functions receiving a stable/immutable configuration or schema object, implement `WeakMap`-based memoization of configuration parsing.

@@ -3,6 +3,19 @@ import { DeviceData, DeviceTableCardConfig } from './types';
 const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
 
+interface ConfigCacheEntry {
+  entityCols: any[];
+  deviceCols: any[];
+  metaCols: any[];
+  suffixCols: any[];
+  requiredClasses: Set<string>;
+  needsLastChanged: boolean;
+}
+
+// Performance Optimization: Cache pre-categorized column schema based on stable config reference.
+// This avoids repeated schema iteration, branching, and Set/array allocations during frequent state updates.
+const configCache = new WeakMap<DeviceTableCardConfig, ConfigCacheEntry>();
+
 export function processDevices(
   hass: any,
   config: DeviceTableCardConfig,
@@ -16,50 +29,64 @@ export function processDevices(
 
   const states = hass.states || {};
   const filter = config.filter || {};
-  const columns = config.columns || [];
 
-  // Pre-categorize columns and calculate requirements once per call
-  const entityCols = [];
-  const deviceCols = [];
-  const metaCols = [];
-  const suffixCols = [];
-  const requiredClasses = new Set<string>();
-  let needsLastChanged = false;
+  let cache = configCache.get(config);
+  if (!cache) {
+    const columns = config.columns || [];
+    const entityCols = [];
+    const deviceCols = [];
+    const metaCols = [];
+    const suffixCols = [];
+    const requiredClasses = new Set<string>();
+    let needsLastChanged = false;
 
-  if (filter.anchor_entity_class) {
-    requiredClasses.add(filter.anchor_entity_class);
-  }
-
-  for (let i = 0; i < columns.length; i++) {
-    const col = columns[i];
-    const m: any = { col, key: `col_${i}` };
-    if (col.type === 'entity') {
-      entityCols.push(m);
-      if (col.suffix) suffixCols.push(m);
-      if (col.device_class) requiredClasses.add(col.device_class);
-    } else if (col.type === 'device') {
-      const prop = col.prop;
-      if (typeof prop === 'string' && FORBIDDEN_PROPS.has(prop)) {
-        m.strategy = 'forbidden';
-      } else if (
-        prop === 'name' ||
-        prop === 'area' ||
-        prop === 'integration' ||
-        prop === 'manufacturer'
-      ) {
-        m.strategy = prop;
-      } else if (typeof prop === 'string' && ALLOWED_DEVICE_PROPS.has(prop)) {
-        m.strategy = 'allowed';
-        m.prop = prop;
-      } else {
-        m.strategy = 'unknown';
-      }
-      deviceCols.push(m);
-    } else if (col.type === 'meta') {
-      metaCols.push(m);
-      if (col.prop === 'last_changed') needsLastChanged = true;
+    if (filter.anchor_entity_class) {
+      requiredClasses.add(filter.anchor_entity_class);
     }
+
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i];
+      const m: any = { col, key: `col_${i}` };
+      if (col.type === 'entity') {
+        entityCols.push(m);
+        if (col.suffix) suffixCols.push(m);
+        if (col.device_class) requiredClasses.add(col.device_class);
+      } else if (col.type === 'device') {
+        const prop = col.prop;
+        if (typeof prop === 'string' && FORBIDDEN_PROPS.has(prop)) {
+          m.strategy = 'forbidden';
+        } else if (
+          prop === 'name' ||
+          prop === 'area' ||
+          prop === 'integration' ||
+          prop === 'manufacturer'
+        ) {
+          m.strategy = prop;
+        } else if (typeof prop === 'string' && ALLOWED_DEVICE_PROPS.has(prop)) {
+          m.strategy = 'allowed';
+          m.prop = prop;
+        } else {
+          m.strategy = 'unknown';
+        }
+        deviceCols.push(m);
+      } else if (col.type === 'meta') {
+        metaCols.push(m);
+        if (col.prop === 'last_changed') needsLastChanged = true;
+      }
+    }
+
+    cache = {
+      entityCols,
+      deviceCols,
+      metaCols,
+      suffixCols,
+      requiredClasses,
+      needsLastChanged,
+    };
+    configCache.set(config, cache);
   }
+
+  const { entityCols, deviceCols, metaCols, suffixCols, requiredClasses, needsLastChanged } = cache;
 
   const result: DeviceData[] = [];
   const anchorClass = filter.anchor_entity_class;
