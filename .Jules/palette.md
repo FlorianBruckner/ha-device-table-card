@@ -29,3 +29,7 @@
 ## 2025-05-22 - [Improving Header Affordance and Feedback]
 **Learning:** In data-dense tables, the fact that headers are interactive (sortable) can be easily missed if they look static. Adding clear hover states (`background-color`), transitions, and high-contrast color indicators for active sorted states significantly improves the discoverability of sorting features.
 **Action:** Ensure all interactive table headers have distinct hover styles, focus-visible indicators, and clear visual feedback for their active state (e.g., sorted ascending/descending).
+
+## 2025-10-24 - [Focus Management in Dynamic List-Editing Interfaces]
+**Learning:** In dynamic custom card config editors, adding, deleting, or reordering elements causes keyboard focus to drop completely to the document body, trapping or disorienting screen reader and keyboard users. Programmatically shifting focus to the newly relevant interactive element (such as the header of a newly added column, a neighboring element, or a fallback button) maintains a coherent tab order and prevents "focus drops". Additionally, calling `this.updateComplete.then` inside LitElement's `updated` callback can cause microtask timing deadlocks in headless browsers; instead, focus elements directly in `updated` since DOM rendering is already finished.
+**Action:** Implement a private `_focusQuery` property in composite list editors, assign unique semantic query attributes (like `data-index`), and apply focus immediately inside the `updated` lifecycle method.

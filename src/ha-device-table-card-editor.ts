@@ -10,6 +10,17 @@ export class DeviceTableCardEditor extends LitElement {
   @state() private _generalExpanded = true;
   @state() private _columnsExpanded = true;
   @state() private _expandedColumnIndex: number | null = null;
+  private _focusQuery: string | null = null;
+
+  protected updated(changedProperties: any): void {
+    super.updated(changedProperties);
+    if (this._focusQuery !== null) {
+      const query = this._focusQuery;
+      this._focusQuery = null;
+      const el = this.renderRoot.querySelector(query) as HTMLElement;
+      el?.focus();
+    }
+  }
 
   static get styles() {
     return css`
@@ -472,6 +483,7 @@ export class DeviceTableCardEditor extends LitElement {
 
                     <!-- Add Custom Column Button -->
                     <button
+                      id="add-column-btn"
                       class="btn btn-secondary"
                       style="width: 100%;"
                       @click=${() => this._addColumn()}
@@ -495,6 +507,7 @@ export class DeviceTableCardEditor extends LitElement {
       <div class="column-item">
         <div
           class="column-header"
+          data-index=${index}
           @click=${() => this._toggleColumn(index)}
           @keydown=${this._handleKeyDown}
           tabindex="0"
@@ -699,6 +712,7 @@ export class DeviceTableCardEditor extends LitElement {
                               <button
                                 class="btn btn-secondary btn-icon"
                                 style="width: auto; height: auto; border-radius: 4px; padding: 4px 8px;"
+                                data-add-rule-col-index=${index}
                                 @click=${() => this._addHighlightRule(index)}
                               >
                                 + Add Rule
@@ -706,7 +720,11 @@ export class DeviceTableCardEditor extends LitElement {
                             </div>
                             ${(col.highlight || []).map(
                               (hl, hlIndex) => html`
-                                <div class="highlight-rule-row">
+                                <div
+                                  class="highlight-rule-row"
+                                  data-col-index=${index}
+                                  data-hl-index=${hlIndex}
+                                >
                                   ${this._renderInput(
                                     'Below',
                                     hl.below !== undefined ? String(hl.below) : '',
@@ -891,8 +909,10 @@ export class DeviceTableCardEditor extends LitElement {
 
     columns.push(newCol);
     newConfig.columns = columns;
-    this._expandedColumnIndex = columns.length - 1;
+    const newIndex = columns.length - 1;
+    this._expandedColumnIndex = newIndex;
     this._columnsExpanded = true;
+    this._focusQuery = `.column-header[data-index="${newIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -907,8 +927,10 @@ export class DeviceTableCardEditor extends LitElement {
     };
     columns.push(newCol);
     newConfig.columns = columns;
-    this._expandedColumnIndex = columns.length - 1;
+    const newIndex = columns.length - 1;
+    this._expandedColumnIndex = newIndex;
     this._columnsExpanded = true;
+    this._focusQuery = `.column-header[data-index="${newIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -922,6 +944,12 @@ export class DeviceTableCardEditor extends LitElement {
       this._expandedColumnIndex = null;
     } else if (this._expandedColumnIndex !== null && this._expandedColumnIndex > index) {
       this._expandedColumnIndex--;
+    }
+    if (columns.length > 0) {
+      const nextFocusIndex = Math.min(index, columns.length - 1);
+      this._focusQuery = `.column-header[data-index="${nextFocusIndex}"]`;
+    } else {
+      this._focusQuery = '#add-column-btn';
     }
     fireEvent(this, 'config-changed', { config: newConfig });
   }
@@ -948,6 +976,7 @@ export class DeviceTableCardEditor extends LitElement {
       this._expandedColumnIndex = index;
     }
 
+    this._focusQuery = `.column-header[data-index="${targetIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -1001,6 +1030,8 @@ export class DeviceTableCardEditor extends LitElement {
     col.highlight = highlight;
     columns[colIndex] = col;
     newConfig.columns = columns;
+    const ruleIndex = highlight.length - 1;
+    this._focusQuery = `.highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] ha-input, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] ha-textfield, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] input`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -1016,6 +1047,13 @@ export class DeviceTableCardEditor extends LitElement {
     col.highlight = highlight;
     columns[colIndex] = col;
     newConfig.columns = columns;
+
+    if (highlight.length > 0) {
+      const nextFocusIndex = Math.min(ruleIndex, highlight.length - 1);
+      this._focusQuery = `.highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] ha-input, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] ha-textfield, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] input`;
+    } else {
+      this._focusQuery = `button[data-add-rule-col-index="${colIndex}"]`;
+    }
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 

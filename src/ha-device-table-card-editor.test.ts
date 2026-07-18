@@ -265,4 +265,81 @@ describe('ha-device-table-card-editor', () => {
     expect(presets![2].getAttribute('aria-label')).to.equal('Add Device Name column preset');
     expect(presets![3].getAttribute('aria-label')).to.equal('Add Last Seen column preset');
   });
+
+  describe('accessibility focus management', () => {
+    it('focuses the new column header when a preset is added', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig({ ...config, columns: [] });
+      await el.updateComplete;
+
+      el.addEventListener('config-changed', (ev: any) => {
+        el.setConfig(ev.detail.config);
+      });
+
+      (el as any)._addColumnPreset('moisture');
+      await el.updateComplete;
+
+      const header = el.shadowRoot?.querySelector('.column-header[data-index="0"]');
+      expect(el.shadowRoot?.activeElement).to.equal(header);
+    });
+
+    it('focuses the other column header when a column is deleted', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
+
+      el.addEventListener('config-changed', (ev: any) => {
+        el.setConfig(ev.detail.config);
+      });
+
+      (el as any)._deleteColumn(1);
+      await el.updateComplete;
+
+      const header = el.shadowRoot?.querySelector('.column-header[data-index="0"]');
+      expect(el.shadowRoot?.activeElement).to.equal(header);
+    });
+
+    it('focuses the moved column header when column is reordered', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
+
+      el.addEventListener('config-changed', (ev: any) => {
+        el.setConfig(ev.detail.config);
+      });
+
+      (el as any)._moveColumn(0, 'down');
+      await el.updateComplete;
+
+      const header = el.shadowRoot?.querySelector('.column-header[data-index="1"]');
+      expect(el.shadowRoot?.activeElement).to.equal(header);
+    });
+
+    it('focuses the rule input when a highlight rule is added', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      (el as any)._expandedColumnIndex = 1;
+      await el.updateComplete;
+
+      el.addEventListener('config-changed', (ev: any) => {
+        el.setConfig(ev.detail.config);
+      });
+
+      (el as any)._addHighlightRule(1);
+      await el.updateComplete;
+
+      const input = el.shadowRoot?.querySelector(
+        '.highlight-rule-row[data-col-index="1"][data-hl-index="0"] input',
+      );
+      expect(el.shadowRoot?.activeElement).to.equal(input);
+    });
+  });
 });
