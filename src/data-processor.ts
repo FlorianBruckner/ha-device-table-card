@@ -28,11 +28,28 @@ export function processDevices(
   }
 
   const states = hass.states || {};
-  const filter = config.filter || {};
+  const filter: any = {};
+  if (config.filter && typeof config.filter === 'object') {
+    for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
+      if (Object.prototype.hasOwnProperty.call(config.filter, key)) {
+        filter[key] = (config.filter as any)[key];
+      }
+    }
+  }
 
   let cache = configCache.get(config);
   if (!cache) {
-    const columns = config.columns || [];
+    const columnsRaw = config.columns || [];
+    const columns = columnsRaw.map((c: any) => {
+      if (!c || typeof c !== 'object') return {};
+      const cleanCol: any = {};
+      for (const key of ['type', 'prop', 'device_class', 'suffix', 'label', 'highlight']) {
+        if (Object.prototype.hasOwnProperty.call(c, key)) {
+          cleanCol[key] = c[key];
+        }
+      }
+      return cleanCol;
+    });
     const entityCols = [];
     const deviceCols = [];
     const metaCols = [];
