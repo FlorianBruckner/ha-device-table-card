@@ -324,4 +324,81 @@ describe('Security Vulnerabilities', () => {
       expect(span.style.color).to.equal('red');
     });
   });
+
+  describe('ha-device-table-card-editor deep sanitization', () => {
+    it('should deep sanitize incoming config in setConfig to prevent prototype pollution in editor', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const maliciousConfig = JSON.parse(
+        '{"type":"custom:ha-device-table-card","columns":[],"__proto__":{"polluted_ed":true},"columns_item":{"__proto__":{"inner_ed":true}}}',
+      );
+
+      el.setConfig(maliciousConfig);
+
+      expect((Object.prototype as any).polluted_ed).to.be.undefined;
+      expect((Object.prototype as any).inner_ed).to.be.undefined;
+      expect((el as any)._config.__proto__.polluted_ed).to.be.undefined;
+    });
+  });
+
+  describe('ha-device-table-card areaLookup prototype safety', () => {
+    it('should handle area_id values that match Object.prototype property names safely', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'battery',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') {
+            return [{ id: 'dev1', name: 'Device 1', area_id: 'toString' }];
+          }
+          if (msg.type === 'config/entity_registry/list') {
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          }
+          if (msg.type === 'config/area_registry/list') {
+            return [{ area_id: 'toString', name: 'Living Room' }];
+          }
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'device',
+            prop: 'area',
+            label: 'Area',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Force registry fetch and wait
+      await (el as any)._fetchRegistries(true);
+      await el.updateComplete;
+
+      const areaLookup = (el as any)._areaLookup;
+      expect(areaLookup).to.exist;
+      expect(areaLookup.toString).to.equal('Living Room');
+      // On an object without prototype, toString should be a string, not a function!
+      expect(typeof areaLookup.toString).to.equal('string');
+    });
+  });
 });
