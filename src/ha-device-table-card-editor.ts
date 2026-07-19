@@ -10,6 +10,8 @@ export class DeviceTableCardEditor extends LitElement {
   @state() private _generalExpanded = true;
   @state() private _columnsExpanded = true;
   @state() private _expandedColumnIndex: number | null = null;
+  @state() private _confirmDeleteColumnIndex: number | null = null;
+  @state() private _confirmDeleteHighlightIndex: string | null = null;
 
   static get styles() {
     return css`
@@ -490,6 +492,7 @@ export class DeviceTableCardEditor extends LitElement {
   private _renderColumnItem(col: ColumnConfig, index: number): TemplateResult {
     const isExpanded = this._expandedColumnIndex === index;
     const columnsCount = this._config?.columns?.length || 0;
+    const isConfirmingDelete = this._confirmDeleteColumnIndex === index;
 
     return html`
       <div class="column-item">
@@ -563,28 +566,34 @@ export class DeviceTableCardEditor extends LitElement {
             </button>
             <button
               class="btn-icon btn-danger"
-              style="color: var(--error-color, #e53935);"
-              title="Delete Column"
-              aria-label="Delete Column"
+              style="color: ${isConfirmingDelete ? 'var(--primary-text-color)' : 'var(--error-color, #e53935)'}; background-color: ${isConfirmingDelete ? 'var(--error-color, #e53935)' : 'none'}; border-radius: ${isConfirmingDelete ? '4px' : '50%'}; width: ${isConfirmingDelete ? 'auto' : '28px'}; padding: ${isConfirmingDelete ? '0 8px' : '4px'}"
+              title="${isConfirmingDelete ? 'Confirm Delete' : 'Delete Column'}"
+              aria-label="${isConfirmingDelete ? 'Confirm Delete' : 'Delete Column'}"
               @click=${() => this._deleteColumn(index)}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path
-                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                ></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
+              ${
+                isConfirmingDelete
+                  ? html`<span style="font-size: 0.85em; font-weight: bold; color: white;"
+                      >Confirm?</span
+                    >`
+                  : html`<svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>`
+              }
             </button>
           </div>
         </div>
@@ -704,8 +713,10 @@ export class DeviceTableCardEditor extends LitElement {
                                 + Add Rule
                               </button>
                             </div>
-                            ${(col.highlight || []).map(
-                              (hl, hlIndex) => html`
+                            ${(col.highlight || []).map((hl, hlIndex) => {
+                              const isConfirmingRule =
+                                this._confirmDeleteHighlightIndex === `${index}-${hlIndex}`;
+                              return html`
                                 <div class="highlight-rule-row">
                                   ${this._renderInput(
                                     'Below',
@@ -751,32 +762,39 @@ export class DeviceTableCardEditor extends LitElement {
                                   )}
                                   <button
                                     class="btn-icon"
-                                    style="color: var(--error-color, #e53935);"
-                                    title="Delete Rule"
-                                    aria-label="Delete Rule"
+                                    style="color: ${isConfirmingRule ? 'var(--primary-text-color)' : 'var(--error-color, #e53935)'}; background-color: ${isConfirmingRule ? 'var(--error-color, #e53935)' : 'none'}; border-radius: ${isConfirmingRule ? '4px' : '50%'}; width: ${isConfirmingRule ? 'auto' : '28px'}; padding: ${isConfirmingRule ? '0 8px' : '4px'}"
+                                    title="${isConfirmingRule ? 'Confirm Delete' : 'Delete Rule'}"
+                                    aria-label="${isConfirmingRule ? 'Confirm Delete' : 'Delete Rule'}"
                                     @click=${() => this._deleteHighlightRule(index, hlIndex)}
                                   >
-                                    <svg
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                    >
-                                      <polyline points="3 6 5 6 21 6"></polyline>
-                                      <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                                      ></path>
-                                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                                    </svg>
+                                    ${
+                                      isConfirmingRule
+                                        ? html`<span
+                                            style="font-size: 0.85em; font-weight: bold; color: white;"
+                                            >Confirm?</span
+                                          >`
+                                        : html`<svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                          >
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path
+                                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                            ></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                          </svg>`
+                                    }
                                   </button>
                                 </div>
-                              `,
-                            )}
+                              `;
+                            })}
                           </div>
                         `
                       : ''
@@ -841,9 +859,16 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _toggleColumn(index: number): void {
     this._expandedColumnIndex = this._expandedColumnIndex === index ? null : index;
+    // Reset deletion states on column toggle/expand
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
   }
 
   private _addColumnPreset(preset: string): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config) return;
     const newConfig = { ...this._config };
     const columns = [...(newConfig.columns || [])];
@@ -897,6 +922,10 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _addColumn(): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config) return;
     const newConfig = { ...this._config };
     const columns = [...(newConfig.columns || [])];
@@ -913,6 +942,14 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _deleteColumn(index: number): void {
+    if (this._confirmDeleteColumnIndex !== index) {
+      this._confirmDeleteColumnIndex = index;
+      this._confirmDeleteHighlightIndex = null;
+      return;
+    }
+
+    this._confirmDeleteColumnIndex = null;
+
     if (!this._config) return;
     const newConfig = { ...this._config };
     const columns = [...(newConfig.columns || [])];
@@ -927,6 +964,10 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _moveColumn(index: number, direction: 'up' | 'down'): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
@@ -952,6 +993,10 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _updateColumnProperty(index: number, prop: string, value: any): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
@@ -986,6 +1031,10 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _addHighlightRule(colIndex: number): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
@@ -1005,9 +1054,18 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
-    if (!this._config || !this._config.columns) return;
+    const key = `${colIndex}-${ruleIndex}`;
+    if (this._confirmDeleteHighlightIndex !== key) {
+      this._confirmDeleteHighlightIndex = key;
+      this._confirmDeleteColumnIndex = null;
+      return;
+    }
+
+    this._confirmDeleteHighlightIndex = null;
+
+    if (!this._config) return;
     const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
+    const columns = [...(newConfig.columns || [])];
     const col = { ...columns[colIndex] };
     const highlight = [...(col.highlight || [])];
 
@@ -1034,6 +1092,10 @@ export class DeviceTableCardEditor extends LitElement {
     prop: string,
     value: any,
   ): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
+
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
@@ -1055,6 +1117,9 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _valueChanged(ev: any): void {
+    // Reset deletion states on other actions
+    this._confirmDeleteColumnIndex = null;
+    this._confirmDeleteHighlightIndex = null;
     if (!this._config || !this.hass) {
       return;
     }

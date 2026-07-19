@@ -29,3 +29,7 @@
 ## 2025-05-22 - [Improving Header Affordance and Feedback]
 **Learning:** In data-dense tables, the fact that headers are interactive (sortable) can be easily missed if they look static. Adding clear hover states (`background-color`), transitions, and high-contrast color indicators for active sorted states significantly improves the discoverability of sorting features.
 **Action:** Ensure all interactive table headers have distinct hover styles, focus-visible indicators, and clear visual feedback for their active state (e.g., sorted ascending/descending).
+
+## 2026-07-19 - [Inline Click-to-Confirm Deletion UX]
+**Learning:** Abruptly deleting configurations like table columns or highlight rules upon a single click is a poor user experience as users can easily misclick. While heavy modal popups disrupt flow, an inline click-to-confirm pattern transforms the button itself into a confirmation trigger, which is highly visible yet completely inline. It keeps visual flow uninterrupted.
+**Action:** For destructive or high-impact actions in card configuration editors, implement an inline click-to-confirm pattern where the first click prompts for confirmation on the element itself, and any unrelated editor activity safely resets the pending confirmation state.
