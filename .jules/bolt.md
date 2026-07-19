@@ -25,3 +25,7 @@
 ## 2026-07-11 - [Stable Reference Configuration Memoization]
 **Learning:** In highly frequent rendering pipelines (such as Home Assistant custom cards updating on every state change), config schema pre-categorization can be safely cached using a `WeakMap` keyed by the stable `config` object reference. This completely bypasses loop overheads, conditional branches, array instantiations, and Set creation on consecutive calls with the same configuration.
 **Action:** For hot functions receiving a stable/immutable configuration or schema object, implement `WeakMap`-based memoization of configuration parsing.
+
+## 2026-07-12 - [Lazy Property Resolution & Pre-compiled Strategy Maps]
+**Learning:** Evaluating attributes (e.g., area lookup, manufacturer name, integration platform) of objects prior to filter validation results in redundant work for objects that are eventually excluded. Deferring property resolution until after validation checks pass avoids wasteful computations. Pre-compiling resolution strategy mappings outside loop execution also eliminates runtime branching and type assertions.
+**Action:** Implement lazy evaluation for object attributes when filtering large collections, and pre-compute column resolution structures during configuration pre-computation to minimize inside-loop execution logic.

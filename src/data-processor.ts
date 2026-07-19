@@ -65,6 +65,13 @@ export function processDevices(
       const col = columns[i];
       const m: any = { col, key: `col_${i}` };
       if (col.type === 'entity') {
+        if (col.device_class) {
+          m.resolveType = 'class';
+          m.resolveKey = col.device_class;
+        } else if (col.suffix) {
+          m.resolveType = 'suffix';
+          m.resolveKey = `col_${i}`;
+        }
         entityCols.push(m);
         if (col.suffix) suffixCols.push(m);
         if (col.device_class) requiredClasses.add(col.device_class);
@@ -112,16 +119,17 @@ export function processDevices(
     const d = devices[i];
 
     // 1. Manufacturer filter
-    const manufacturer = d.manufacturer || 'Unknown';
-    if (filter.manufacturer && manufacturer !== filter.manufacturer) {
+    if (filter.manufacturer && (d.manufacturer || 'Unknown') !== filter.manufacturer) {
       continue;
     }
 
     // 2. Area filter
-    const areaId = d.area_id;
-    const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
-    if (filter.area && areaName !== filter.area && areaId !== filter.area) {
-      continue;
+    if (filter.area) {
+      const areaId = d.area_id;
+      const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
+      if (areaName !== filter.area && areaId !== filter.area) {
+        continue;
+      }
     }
 
     const deviceId = d.id;
@@ -131,8 +139,7 @@ export function processDevices(
     }
 
     // 3. Integration filter (using the first entity's platform as proxy for device integration)
-    const integration = deviceEntitiesRaw[0].platform || 'Unknown';
-    if (filter.integration && integration !== filter.integration) {
+    if (filter.integration && (deviceEntitiesRaw[0].platform || 'Unknown') !== filter.integration) {
       continue;
     }
 
@@ -185,6 +192,11 @@ export function processDevices(
 
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
+    const areaId = d.area_id;
+    const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
+    const manufacturer = d.manufacturer || 'Unknown';
+    const integration = deviceEntitiesRaw[0].platform || 'Unknown';
+
     const deviceData: DeviceData = {
       id: deviceId,
       name: d.name_by_user || d.name || 'Unknown Device',
@@ -204,7 +216,7 @@ export function processDevices(
       else if (strategy === 'integration') deviceData[key] = deviceData.integration;
       else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
       else if (strategy === 'allowed') {
-        deviceData[key] = (d as any)?.[m.prop] || '-';
+        deviceData[key] = d[m.prop] || '-';
       } else {
         deviceData[key] = '-';
       }
@@ -212,13 +224,9 @@ export function processDevices(
 
     // Resolve Entity Columns
     for (let i = 0; i < entityCols.length; i++) {
-      const { col, key } = entityCols[i];
-      let stateObj = null;
-      if (col.device_class) {
-        stateObj = entitiesByClass[col.device_class];
-      } else if (col.suffix) {
-        stateObj = entitiesBySuffix[key];
-      }
+      const { key, resolveType, resolveKey } = entityCols[i];
+      const stateObj =
+        resolveType === 'class' ? entitiesByClass[resolveKey] : entitiesBySuffix[resolveKey];
 
       if (stateObj) {
         deviceData[key] = stateObj.state;
