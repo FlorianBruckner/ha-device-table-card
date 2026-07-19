@@ -18,7 +18,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   @state() private _entities: any[] = [];
   @state() private _areas: any[] = [];
   @state() private _entitiesByDevice: Map<string, any[]> = new Map();
-  @state() private _areaLookup: Record<string, string> = {};
+  @state() private _areaLookup: Record<string, string> = Object.create(null);
 
   private _dataTable: any = null;
   private _updateTimeout?: any;
@@ -156,9 +156,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._entities = entities as any[];
       this._areas = areas as any[];
 
-      const areaLookup: Record<string, string> = {};
+      const areaLookup: Record<string, string> = Object.create(null);
       for (const area of this._areas) {
-        areaLookup[area.area_id] = area.name;
+        if (area && area.area_id) {
+          areaLookup[area.area_id] = area.name;
+        }
       }
       this._areaLookup = areaLookup;
 

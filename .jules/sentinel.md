@@ -22,3 +22,8 @@
 **Vulnerability:** Malicious card configurations containing prototype pollution payloads (`__proto__`, `constructor`, `prototype`) could be loaded via dashboard YAML, potentially polluting the global prototype chain or leading to UI-based Denial of Service and logic bypass. Additionally, non-string properties and malformed array structures in `highlight` configs could trigger unhandled exceptions in the renderer loop.
 **Learning:** Deeply sanitizing configuration objects recursively inside `setConfig` strips dangerous properties at the boundaries before the configuration is stored. Hardening downstream functions with strict type guards and resilient array/object handling ensures robust rendering.
 **Prevention:** Never trust structural patterns or types in parsed YAML configurations. Sanitize properties recursively and use explicit array/null-object guards during rendering and property access.
+
+## 2026-07-10 - [Null-Prototype Object Lookup Hardening]
+**Vulnerability:** Using plain objects (`{}`) as key-value dictionaries for entities, areas, or metadata from external data sources allows property lookup clashes. If an external key matches inherited prototype properties (like `toString` or `hasOwnProperty`), the lookup resolves to a function, potentially leading to errors, crashes, or logical bypasses.
+**Learning:** Creating dictionaries in low-frequency/registry-fetch paths using `Object.create(null)` removes any prototype inheritance, making the lookup completely immune to prototype property clashes.
+**Prevention:** For dictionary lookups mapping dynamic external IDs, prioritize `Object.create(null)` to ensure safe, property-collision-free lookups.
