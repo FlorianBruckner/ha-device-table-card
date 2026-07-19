@@ -194,4 +194,102 @@ describe('data-processor', () => {
     expect(result).to.have.lengthOf(1);
     expect(result[0].col_0).to.equal('-');
   });
+
+  it('should memoize device data when entity states do not change', () => {
+    const mutableHass = {
+      states: {
+        'sensor.device1_battery': {
+          entity_id: 'sensor.device1_battery',
+          state: '80',
+          attributes: { device_class: 'battery', unit_of_measurement: '%' },
+          last_updated: '2023-01-01T00:00:00Z',
+        },
+        'sensor.device1_temp': {
+          entity_id: 'sensor.device1_temp',
+          state: '22',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_updated: '2023-01-01T00:05:00Z',
+        },
+      },
+    };
+
+    const firstResult = processDevices(
+      mutableHass,
+      defaultConfig,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+
+    // Update state object of an irrelevant sensor or state but with same reference
+    const secondResult = processDevices(
+      mutableHass,
+      defaultConfig,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+
+    expect(firstResult[0]).to.equal(secondResult[0]); // Object identity check for cache hit
+
+    // Update actual battery state object reference
+    mutableHass.states = {
+      ...mutableHass.states,
+      'sensor.device1_battery': {
+        entity_id: 'sensor.device1_battery',
+        state: '79', // updated state
+        attributes: { device_class: 'battery', unit_of_measurement: '%' },
+        last_updated: '2023-01-01T00:10:00Z',
+      },
+    };
+
+    const thirdResult = processDevices(
+      mutableHass,
+      defaultConfig,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+
+    expect(thirdResult[0]).to.not.equal(firstResult[0]); // Object identity check for cache miss
+    expect(thirdResult[0].col_1).to.equal('79');
+  });
+
+  it('should reset device cache when device array reference changes', () => {
+    const mutableHass = {
+      states: {
+        'sensor.device1_battery': {
+          entity_id: 'sensor.device1_battery',
+          state: '80',
+          attributes: { device_class: 'battery', unit_of_measurement: '%' },
+          last_updated: '2023-01-01T00:00:00Z',
+        },
+        'sensor.device1_temp': {
+          entity_id: 'sensor.device1_temp',
+          state: '22',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_updated: '2023-01-01T00:05:00Z',
+        },
+      },
+    };
+
+    const firstResult = processDevices(
+      mutableHass,
+      defaultConfig,
+      mockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+
+    const newMockDevices = [...mockDevices];
+    const secondResult = processDevices(
+      mutableHass,
+      defaultConfig,
+      newMockDevices,
+      mockEntitiesByDevice,
+      mockAreaLookup,
+    );
+
+    expect(firstResult[0]).to.not.equal(secondResult[0]); // Cache is reset/invalidated
+  });
 });

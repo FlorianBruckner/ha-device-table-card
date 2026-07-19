@@ -10,11 +10,159 @@ interface ConfigCacheEntry {
   suffixCols: any[];
   requiredClasses: Set<string>;
   needsLastChanged: boolean;
+  lastDevicesRef?: any[];
+  lastEntitiesByDeviceRef?: Map<string, any[]>;
+  lastAreaLookupRef?: Record<string, string>;
+  deviceCache?: Map<
+    string,
+    {
+      stateRefs: any[];
+      deviceData: DeviceData | null;
+    }
+  >;
 }
 
 // Performance Optimization: Cache pre-categorized column schema based on stable config reference.
 // This avoids repeated schema iteration, branching, and Set/array allocations during frequent state updates.
 const configCache = new WeakMap<DeviceTableCardConfig, ConfigCacheEntry>();
+
+function processSingleDevice(
+  d: any,
+  deviceEntitiesRaw: any[],
+  filter: any,
+  areaLookup: Record<string, string>,
+  states: any,
+  entityCols: any[],
+  deviceCols: any[],
+  metaCols: any[],
+  suffixCols: any[],
+  requiredClasses: Set<string>,
+  needsLastChanged: boolean,
+  anchorClass: string | undefined,
+): DeviceData | null {
+  // 1. Manufacturer filter
+  const manufacturer = d.manufacturer || 'Unknown';
+  if (filter.manufacturer && manufacturer !== filter.manufacturer) {
+    return null;
+  }
+
+  // 2. Area filter
+  const areaId = d.area_id;
+  const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
+  if (filter.area && areaName !== filter.area && areaId !== filter.area) {
+    return null;
+  }
+
+  // 3. Integration filter (using the first entity's platform as proxy for device integration)
+  const integration = deviceEntitiesRaw[0].platform || 'Unknown';
+  if (filter.integration && integration !== filter.integration) {
+    return null;
+  }
+
+  // Single pass: Resolve states, match entities by device_class/suffix, find latest update, and check anchor filter
+  const entitiesByClass: Record<string, any> = {};
+  const entitiesBySuffix: Record<string, any> = {};
+  let matchedSuffixesCount = 0;
+  let latestIso: string | null = null;
+  let hasAnchor = !anchorClass;
+  let hasValidEntities = false;
+
+  for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+    const ent = deviceEntitiesRaw[j];
+    const stateObj = states[ent.entity_id];
+    if (!stateObj) continue;
+
+    hasValidEntities = true;
+
+    // Match by Device Class
+    const dClass = stateObj.attributes.device_class || ent.device_class;
+    if (dClass && requiredClasses.has(dClass)) {
+      if (!entitiesByClass[dClass]) {
+        entitiesByClass[dClass] = stateObj;
+      }
+      if (!hasAnchor && dClass === anchorClass) {
+        hasAnchor = true;
+      }
+    }
+
+    // Match by Suffix (pre-calculated columns)
+    if (matchedSuffixesCount < suffixCols.length) {
+      for (let k = 0; k < suffixCols.length; k++) {
+        const { col, key } = suffixCols[k];
+        if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
+          entitiesBySuffix[key] = stateObj;
+          matchedSuffixesCount++;
+        }
+      }
+    }
+
+    if (needsLastChanged) {
+      const iso = stateObj.last_updated;
+      if (iso && (latestIso === null || iso > latestIso)) {
+        latestIso = iso;
+      }
+    }
+  }
+
+  if (!hasAnchor || !hasValidEntities) return null;
+
+  const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
+
+  const deviceData: DeviceData = {
+    id: d.id,
+    name: d.name_by_user || d.name || 'Unknown Device',
+    area: areaName,
+    integration: integration,
+    manufacturer: manufacturer,
+    _entities: {},
+  };
+
+  // Resolve Device Columns
+  for (let i = 0; i < deviceCols.length; i++) {
+    const m = deviceCols[i];
+    const { key, strategy } = m;
+
+    if (strategy === 'name') deviceData[key] = deviceData.name;
+    else if (strategy === 'area') deviceData[key] = deviceData.area;
+    else if (strategy === 'integration') deviceData[key] = deviceData.integration;
+    else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
+    else if (strategy === 'allowed') {
+      deviceData[key] = (d as any)?.[m.prop] || '-';
+    } else {
+      deviceData[key] = '-';
+    }
+  }
+
+  // Resolve Entity Columns
+  for (let i = 0; i < entityCols.length; i++) {
+    const { col, key } = entityCols[i];
+    let stateObj = null;
+    if (col.device_class) {
+      stateObj = entitiesByClass[col.device_class];
+    } else if (col.suffix) {
+      stateObj = entitiesBySuffix[key];
+    }
+
+    if (stateObj) {
+      deviceData[key] = stateObj.state;
+      deviceData._entities[key] = stateObj;
+    } else {
+      deviceData[key] = '-';
+    }
+  }
+
+  // Resolve Meta Columns
+  if (metaCols.length > 0) {
+    for (let i = 0; i < metaCols.length; i++) {
+      const { col, key } = metaCols[i];
+      if (col.prop === 'last_changed') {
+        deviceData[key] = lastChanged !== null ? lastChanged : '-';
+      }
+    }
+  }
+
+  return deviceData;
+}
 
 export function processDevices(
   hass: any,
@@ -88,140 +236,81 @@ export function processDevices(
 
   const { entityCols, deviceCols, metaCols, suffixCols, requiredClasses, needsLastChanged } = cache;
 
+  // Initialize or reset device cache if stable references change
+  if (
+    !cache.deviceCache ||
+    cache.lastDevicesRef !== devices ||
+    cache.lastEntitiesByDeviceRef !== entitiesByDevice ||
+    cache.lastAreaLookupRef !== areaLookup
+  ) {
+    cache.deviceCache = new Map();
+    cache.lastDevicesRef = devices;
+    cache.lastEntitiesByDeviceRef = entitiesByDevice;
+    cache.lastAreaLookupRef = areaLookup;
+  }
+
+  const deviceCache = cache.deviceCache;
   const result: DeviceData[] = [];
   const anchorClass = filter.anchor_entity_class;
 
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
-
-    // 1. Manufacturer filter
-    const manufacturer = d.manufacturer || 'Unknown';
-    if (filter.manufacturer && manufacturer !== filter.manufacturer) {
-      continue;
-    }
-
-    // 2. Area filter
-    const areaId = d.area_id;
-    const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
-    if (filter.area && areaName !== filter.area && areaId !== filter.area) {
-      continue;
-    }
-
     const deviceId = d.id;
     const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
     if (!deviceEntitiesRaw || deviceEntitiesRaw.length === 0) {
       continue;
     }
 
-    // 3. Integration filter (using the first entity's platform as proxy for device integration)
-    const integration = deviceEntitiesRaw[0].platform || 'Unknown';
-    if (filter.integration && integration !== filter.integration) {
-      continue;
+    // Performance Optimization: Retrieve cached device computation if states of its associated entities are unchanged.
+    // This completely eliminates loop overheads, column resolutions, and GC pressure/allocations on hot paths.
+    const cached = deviceCache.get(deviceId);
+    if (cached) {
+      let match = true;
+      const refs = cached.stateRefs;
+      for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+        const ent = deviceEntitiesRaw[j];
+        if (states[ent.entity_id] !== refs[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        if (cached.deviceData !== null) {
+          result.push(cached.deviceData);
+        }
+        continue;
+      }
     }
 
-    // Single pass: Resolve states, match entities by device_class/suffix, find latest update, and check anchor filter
-    const entitiesByClass: Record<string, any> = {};
-    const entitiesBySuffix: Record<string, any> = {};
-    let matchedSuffixesCount = 0;
-    let latestIso: string | null = null;
-    let hasAnchor = !anchorClass;
-    let hasValidEntities = false;
-
+    // Cache miss or invalidated - process device
+    const stateRefs = [];
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
-      const ent = deviceEntitiesRaw[j];
-      const stateObj = states[ent.entity_id];
-      if (!stateObj) continue;
-
-      hasValidEntities = true;
-
-      // Match by Device Class
-      const dClass = stateObj.attributes.device_class || ent.device_class;
-      if (dClass && requiredClasses.has(dClass)) {
-        if (!entitiesByClass[dClass]) {
-          entitiesByClass[dClass] = stateObj;
-        }
-        if (!hasAnchor && dClass === anchorClass) {
-          hasAnchor = true;
-        }
-      }
-
-      // Match by Suffix (pre-calculated columns)
-      if (matchedSuffixesCount < suffixCols.length) {
-        for (let k = 0; k < suffixCols.length; k++) {
-          const { col, key } = suffixCols[k];
-          if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
-            entitiesBySuffix[key] = stateObj;
-            matchedSuffixesCount++;
-          }
-        }
-      }
-
-      if (needsLastChanged) {
-        const iso = stateObj.last_updated;
-        if (iso && (latestIso === null || iso > latestIso)) {
-          latestIso = iso;
-        }
-      }
+      stateRefs.push(states[deviceEntitiesRaw[j].entity_id]);
     }
 
-    if (!hasAnchor || !hasValidEntities) continue;
+    const deviceData = processSingleDevice(
+      d,
+      deviceEntitiesRaw,
+      filter,
+      areaLookup,
+      states,
+      entityCols,
+      deviceCols,
+      metaCols,
+      suffixCols,
+      requiredClasses,
+      needsLastChanged,
+      anchorClass,
+    );
 
-    const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
+    deviceCache.set(deviceId, {
+      stateRefs,
+      deviceData,
+    });
 
-    const deviceData: DeviceData = {
-      id: deviceId,
-      name: d.name_by_user || d.name || 'Unknown Device',
-      area: areaName,
-      integration: integration,
-      manufacturer: manufacturer,
-      _entities: {},
-    };
-
-    // Resolve Device Columns
-    for (let i = 0; i < deviceCols.length; i++) {
-      const m = deviceCols[i];
-      const { key, strategy } = m;
-
-      if (strategy === 'name') deviceData[key] = deviceData.name;
-      else if (strategy === 'area') deviceData[key] = deviceData.area;
-      else if (strategy === 'integration') deviceData[key] = deviceData.integration;
-      else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
-      else if (strategy === 'allowed') {
-        deviceData[key] = (d as any)?.[m.prop] || '-';
-      } else {
-        deviceData[key] = '-';
-      }
+    if (deviceData !== null) {
+      result.push(deviceData);
     }
-
-    // Resolve Entity Columns
-    for (let i = 0; i < entityCols.length; i++) {
-      const { col, key } = entityCols[i];
-      let stateObj = null;
-      if (col.device_class) {
-        stateObj = entitiesByClass[col.device_class];
-      } else if (col.suffix) {
-        stateObj = entitiesBySuffix[key];
-      }
-
-      if (stateObj) {
-        deviceData[key] = stateObj.state;
-        deviceData._entities[key] = stateObj;
-      } else {
-        deviceData[key] = '-';
-      }
-    }
-
-    // Resolve Meta Columns
-    if (metaCols.length > 0) {
-      for (let i = 0; i < metaCols.length; i++) {
-        const { col, key } = metaCols[i];
-        if (col.prop === 'last_changed') {
-          deviceData[key] = lastChanged !== null ? lastChanged : '-';
-        }
-      }
-    }
-
-    result.push(deviceData);
   }
 
   return result;

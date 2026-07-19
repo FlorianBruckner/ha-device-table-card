@@ -25,3 +25,7 @@
 ## 2026-07-11 - [Stable Reference Configuration Memoization]
 **Learning:** In highly frequent rendering pipelines (such as Home Assistant custom cards updating on every state change), config schema pre-categorization can be safely cached using a `WeakMap` keyed by the stable `config` object reference. This completely bypasses loop overheads, conditional branches, array instantiations, and Set creation on consecutive calls with the same configuration.
 **Action:** For hot functions receiving a stable/immutable configuration or schema object, implement `WeakMap`-based memoization of configuration parsing.
+
+## 2026-07-12 - [Fine-Grained Device State-Reference Memoization]
+**Learning:** Even with configuration memoization, computing column data and matching filters for every device on every state update is extremely wasteful. Since most states remain unchanged during a given update cycle, caching the processed device data and validating it via simple reference equality checks (`===`) against the state objects of its associated entities completely eliminates loop overheads, string operations, and garbage collection pressure.
+**Action:** Implement fine-grained device data caching keyed by device ID, validated by checking the references of its associated entities' state objects.
