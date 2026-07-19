@@ -275,6 +275,55 @@ describe('Security Vulnerabilities', () => {
       expect((el as any)._sanitizeColor(true as any)).to.equal('');
     });
 
+    it('should prevent prototype pollution in filters and column configs during data processing', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'battery',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const pollutedFilterConfig = JSON.parse(
+        '{"type":"custom:ha-device-table-card","columns":[{"type":"device","prop":"name","label":"Device"}],"filter":{"__proto__":{"manufacturer":"MaliciousManufacturer"}}}',
+      );
+
+      const pollutedColumnsConfig = JSON.parse(
+        '{"type":"custom:ha-device-table-card","columns":[{"__proto__":{"type":"entity","device_class":"battery","label":"Battery"}}]}',
+      );
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      // 1. Verify polluted filter has no effect
+      el.setConfig(pollutedFilterConfig);
+      await el.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect((el as any)._config.filter.manufacturer).to.be.undefined;
+
+      // 2. Verify polluted column has no effect
+      el.setConfig(pollutedColumnsConfig);
+      await el.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect((el as any)._config.columns[0].type).to.be.undefined;
+    });
+
     it('should be resilient to malformed highlight configurations', async () => {
       const mockHass = {
         states: {
