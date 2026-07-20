@@ -100,7 +100,7 @@ describe('ha-device-table-card-editor', () => {
     expect(receivedConfig!.columns![2].label).to.equal('Column 3');
   });
 
-  it('deletes columns', async () => {
+  it('deletes columns with click-to-confirm', async () => {
     const el = await fixture<DeviceTableCardEditor>(html`
       <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
     `);
@@ -112,10 +112,37 @@ describe('ha-device-table-card-editor', () => {
       receivedConfig = ev.detail.config;
     });
 
+    // First click: sets confirmation state, does not emit config-changed yet
+    (el as any)._deleteColumn(0);
+    expect(receivedConfig).to.be.null;
+    expect((el as any)._confirmDeleteColumnIndex).to.equal(0);
+
+    // Second click: executes deletion
     (el as any)._deleteColumn(0);
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns).to.have.lengthOf(1);
     expect(receivedConfig!.columns![0].device_class).to.equal('battery');
+    expect((el as any)._confirmDeleteColumnIndex).to.be.null;
+  });
+
+  it('resets column delete confirmation when clicking elsewhere', async () => {
+    const el = await fixture<DeviceTableCardEditor>(html`
+      <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+
+    // First click: sets confirmation state
+    (el as any)._deleteColumn(0);
+    expect((el as any)._confirmDeleteColumnIndex).to.equal(0);
+
+    // Simulate global click elsewhere
+    const mockEvent = {
+      composedPath: () => [document.body],
+    };
+    (el as any)._handleGlobalClick(mockEvent);
+
+    expect((el as any)._confirmDeleteColumnIndex).to.be.null;
   });
 
   it('moves/reorders columns', async () => {
@@ -197,12 +224,20 @@ describe('ha-device-table-card-editor', () => {
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns![1].highlight![0].below).to.equal(15);
 
-    // Delete Highlight Rule
+    // Delete Highlight Rule with click-to-confirm
     el.setConfig(receivedConfig!);
     receivedConfig = null;
+
+    // First click: sets confirmation state, does not delete
+    (el as any)._deleteHighlightRule(1, 0);
+    expect(receivedConfig).to.be.null;
+    expect((el as any)._confirmDeleteHighlightIndex).to.deep.equal({ colIndex: 1, hlIndex: 0 });
+
+    // Second click: executes deletion
     (el as any)._deleteHighlightRule(1, 0);
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns![1].highlight).to.have.lengthOf(0);
+    expect((el as any)._confirmDeleteHighlightIndex).to.be.null;
   });
 
   it('renders native input as fallback when custom elements are not registered', async () => {
@@ -296,6 +331,8 @@ describe('ha-device-table-card-editor', () => {
         el.setConfig(ev.detail.config);
       });
 
+      // Call twice due to click-to-confirm delete mechanism
+      (el as any)._deleteColumn(1);
       (el as any)._deleteColumn(1);
       await el.updateComplete;
 

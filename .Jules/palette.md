@@ -8,7 +8,7 @@
 
 ## 2025-05-16 - [Collapsible Accordion Form Layouts for Dashboard Card Editors]
 **Learning:** Dashboard card editors in Home Assistant can grow incredibly long and confusing when multiple complex nested objects (like columns and threshold highlights) are added. Employing a collapsible accordion layout with single-item expansion state tracking simplifies visual noise and dramatically improves the user experience.
-**Action:** When designing complex custom card config editors, group inputs into logical collapsible sections, and track a single active expanded item to keep the editor clean and focus-driven.
+**Action:** When designing custom card config editors, group inputs into logical collapsible sections, and track a single active expanded item to keep the editor clean and focus-driven.
 
 ## 2025-05-18 - [Fixing Cursor Jumps and Input Loss in Custom Lit Editors]
 **Learning:** For high-frequency state updates in Lit-based text editors (like Home Assistant card editors), immediately converting inputs to numbers on keypress causes the value to reset on re-render. This deletes intermediate characters like decimal points (`.`) and minus signs (`-`), preventing users from typing valid decimal or negative numbers.
@@ -33,3 +33,7 @@
 ## 2025-10-24 - [Focus Management in Dynamic List-Editing Interfaces]
 **Learning:** In dynamic custom card config editors, adding, deleting, or reordering elements causes keyboard focus to drop completely to the document body, trapping or disorienting screen reader and keyboard users. Programmatically shifting focus to the newly relevant interactive element (such as the header of a newly added column, a neighboring element, or a fallback button) maintains a coherent tab order and prevents "focus drops". Additionally, calling `this.updateComplete.then` inside LitElement's `updated` callback can cause microtask timing deadlocks in headless browsers; instead, focus elements directly in `updated` since DOM rendering is already finished.
 **Action:** Implement a private `_focusQuery` property in composite list editors, assign unique semantic query attributes (like `data-index`), and apply focus immediately inside the `updated` lifecycle method.
+
+## 2025-10-25 - [Double-Tap click-to-confirm Deletion Pattern]
+**Learning:** Destructive actions like deleting dashboard columns or threshold rules can be easily misclicked by users, causing frustration and data loss. Standard confirmation modals are often heavy and break the flow of editing. Implementing an inline click-to-confirm deletion pattern dynamically alters the style, text labels, and icons of the individual delete button on the first click, requiring a second click to execute the deletion. Additionally, a global window click handler is required to safely reset the confirmation states when clicking anywhere outside of the delete buttons, preventing accidental clicks from locking the buttons in a dangerous deletion state.
+**Action:** Implement a localized `_confirmDelete...` state, adjust styles (e.g., solid red background and a checkmark icon) and ARIA descriptions on the first click, and reset the confirmation state globally when any click event falls outside of the active deletion context.
