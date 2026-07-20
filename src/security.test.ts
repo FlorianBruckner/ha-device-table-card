@@ -450,4 +450,128 @@ describe('Security Vulnerabilities', () => {
       expect(typeof areaLookup.toString).to.equal('string');
     });
   });
+
+  describe('ha-device-table-card interactive cell validation', () => {
+    it('should navigate for safe deviceId but block malicious deviceId values', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig({ type: 'custom:ha-device-table-card', columns: [] });
+      await el.updateComplete;
+
+      let navigatedPath: string | null = null;
+      const originalPushState = history.pushState;
+      history.pushState = (_state: any, _title: string, url?: string | null) => {
+        navigatedPath = url ?? null;
+      };
+
+      try {
+        // Trigger click with safe deviceId
+        const safeCell = document.createElement('td');
+        safeCell.classList.add('cell-device');
+        safeCell.setAttribute('data-device-id', 'dev-123_abc');
+
+        const table = el.shadowRoot?.querySelector('#deviceTable');
+        expect(table).to.exist;
+        table!.appendChild(safeCell);
+
+        safeCell.click();
+        expect(navigatedPath).to.equal('/config/devices/device/dev-123_abc');
+
+        // Reset navigatedPath
+        navigatedPath = null;
+
+        // Trigger click with malicious deviceId (e.g. path traversal)
+        const maliciousCell1 = document.createElement('td');
+        maliciousCell1.classList.add('cell-device');
+        maliciousCell1.setAttribute('data-device-id', '../../malicious');
+        table!.appendChild(maliciousCell1);
+
+        maliciousCell1.click();
+        expect(navigatedPath).to.be.null;
+
+        // Trigger click with malicious deviceId (e.g. absolute URL / open redirect)
+        const maliciousCell2 = document.createElement('td');
+        maliciousCell2.classList.add('cell-device');
+        maliciousCell2.setAttribute('data-device-id', 'https://evil.com');
+        table!.appendChild(maliciousCell2);
+
+        maliciousCell2.click();
+        expect(navigatedPath).to.be.null;
+
+        // Trigger click with malicious deviceId (e.g. spaces/characters)
+        const maliciousCell3 = document.createElement('td');
+        maliciousCell3.classList.add('cell-device');
+        maliciousCell3.setAttribute('data-device-id', 'dev id');
+        table!.appendChild(maliciousCell3);
+
+        maliciousCell3.click();
+        expect(navigatedPath).to.be.null;
+      } finally {
+        history.pushState = originalPushState;
+      }
+    });
+
+    it('should fire event for safe entityId but block malicious entityId values', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig({ type: 'custom:ha-device-table-card', columns: [] });
+      await el.updateComplete;
+
+      let firedDetail: any = null;
+      el.addEventListener('hass-more-info', (e: any) => {
+        firedDetail = e.detail;
+      });
+
+      const table = el.shadowRoot?.querySelector('#deviceTable');
+      expect(table).to.exist;
+
+      // Safe entityId
+      const safeCell = document.createElement('td');
+      safeCell.classList.add('cell-entity');
+      safeCell.setAttribute('data-entity-id', 'sensor.battery_level-1');
+      table!.appendChild(safeCell);
+
+      safeCell.click();
+      expect(firedDetail).to.deep.equal({ entityId: 'sensor.battery_level-1' });
+
+      // Reset
+      firedDetail = null;
+
+      // Malicious entityId (directory traversal / arbitrary payload)
+      const maliciousCell1 = document.createElement('td');
+      maliciousCell1.classList.add('cell-entity');
+      maliciousCell1.setAttribute('data-entity-id', '../../sensor.battery');
+      table!.appendChild(maliciousCell1);
+
+      maliciousCell1.click();
+      expect(firedDetail).to.be.null;
+
+      // Malicious entityId (containing spaces/quotes/special characters)
+      const maliciousCell2 = document.createElement('td');
+      maliciousCell2.classList.add('cell-entity');
+      maliciousCell2.setAttribute('data-entity-id', 'sensor.battery" onclick="alert(1)');
+      table!.appendChild(maliciousCell2);
+
+      maliciousCell2.click();
+      expect(firedDetail).to.be.null;
+    });
+  });
 });
