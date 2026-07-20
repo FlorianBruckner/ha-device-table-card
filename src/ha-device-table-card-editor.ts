@@ -10,7 +10,35 @@ export class DeviceTableCardEditor extends LitElement {
   @state() private _generalExpanded = true;
   @state() private _columnsExpanded = true;
   @state() private _expandedColumnIndex: number | null = null;
+  @state() private _confirmDeleteColumnIndex: number | null = null;
+  @state() private _confirmDeleteHighlightIndex: { colIndex: number; hlIndex: number } | null =
+    null;
   private _focusQuery: string | null = null;
+
+  private _handleGlobalClick = (ev: Event): void => {
+    const path = ev.composedPath();
+    let isDeleteClick = false;
+    for (const node of path) {
+      if (node instanceof HTMLElement && node.closest('.btn-danger')) {
+        isDeleteClick = true;
+        break;
+      }
+    }
+    if (!isDeleteClick) {
+      this._confirmDeleteColumnIndex = null;
+      this._confirmDeleteHighlightIndex = null;
+    }
+  };
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('click', this._handleGlobalClick);
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('click', this._handleGlobalClick);
+  }
 
   protected updated(changedProperties: any): void {
     super.updated(changedProperties);
@@ -593,28 +621,51 @@ export class DeviceTableCardEditor extends LitElement {
             </button>
             <button
               class="btn-icon btn-danger"
-              style="color: var(--error-color, #e53935);"
-              title="Delete Column"
-              aria-label="Delete Column"
+              style=${
+                this._confirmDeleteColumnIndex === index
+                  ? 'background-color: var(--error-color, #e53935); color: #fff;'
+                  : 'color: var(--error-color, #e53935);'
+              }
+              title=${this._confirmDeleteColumnIndex === index ? 'Confirm Delete Column' : 'Delete Column'}
+              aria-label=${this._confirmDeleteColumnIndex === index ? 'Confirm Delete Column' : 'Delete Column'}
               @click=${() => this._deleteColumn(index)}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path
-                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                ></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
+              ${
+                this._confirmDeleteColumnIndex === index
+                  ? html`
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    `
+                  : html`
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    `
+              }
             </button>
           </div>
         </div>
@@ -785,29 +836,68 @@ export class DeviceTableCardEditor extends LitElement {
                                     'CSS color name or hex',
                                   )}
                                   <button
-                                    class="btn-icon"
-                                    style="color: var(--error-color, #e53935);"
-                                    title="Delete Rule"
-                                    aria-label="Delete Rule"
+                                    class="btn-icon btn-danger"
+                                    style=${
+                                      this._confirmDeleteHighlightIndex &&
+                                      this._confirmDeleteHighlightIndex.colIndex === index &&
+                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                        ? 'background-color: var(--error-color, #e53935); color: #fff;'
+                                        : 'color: var(--error-color, #e53935);'
+                                    }
+                                    title=${
+                                      this._confirmDeleteHighlightIndex &&
+                                      this._confirmDeleteHighlightIndex.colIndex === index &&
+                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                        ? 'Confirm Delete Rule'
+                                        : 'Delete Rule'
+                                    }
+                                    aria-label=${
+                                      this._confirmDeleteHighlightIndex &&
+                                      this._confirmDeleteHighlightIndex.colIndex === index &&
+                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                        ? 'Confirm Delete Rule'
+                                        : 'Delete Rule'
+                                    }
                                     @click=${() => this._deleteHighlightRule(index, hlIndex)}
                                   >
-                                    <svg
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                    >
-                                      <polyline points="3 6 5 6 21 6"></polyline>
-                                      <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                                      ></path>
-                                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                                    </svg>
+                                    ${
+                                      this._confirmDeleteHighlightIndex &&
+                                      this._confirmDeleteHighlightIndex.colIndex === index &&
+                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                        ? html`
+                                            <svg
+                                              width="16"
+                                              height="16"
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              stroke-width="2.5"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                            >
+                                              <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                          `
+                                        : html`
+                                            <svg
+                                              width="16"
+                                              height="16"
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              stroke-width="2"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                            >
+                                              <polyline points="3 6 5 6 21 6"></polyline>
+                                              <path
+                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                              ></path>
+                                              <line x1="10" y1="11" x2="10" y2="17"></line>
+                                              <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                          `
+                                    }
                                   </button>
                                 </div>
                               `,
@@ -953,6 +1043,13 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteColumn(index: number): void {
     if (!this._config) return;
+    if (this._confirmDeleteColumnIndex !== index) {
+      this._confirmDeleteColumnIndex = index;
+      this._confirmDeleteHighlightIndex = null;
+      return;
+    }
+    this._confirmDeleteColumnIndex = null;
+
     const newConfig = { ...this._config };
     const columns = [...(newConfig.columns || [])];
     columns.splice(index, 1);
@@ -1054,6 +1151,17 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
     if (!this._config || !this._config.columns) return;
+    if (
+      !this._confirmDeleteHighlightIndex ||
+      this._confirmDeleteHighlightIndex.colIndex !== colIndex ||
+      this._confirmDeleteHighlightIndex.hlIndex !== ruleIndex
+    ) {
+      this._confirmDeleteHighlightIndex = { colIndex, hlIndex: ruleIndex };
+      this._confirmDeleteColumnIndex = null;
+      return;
+    }
+    this._confirmDeleteHighlightIndex = null;
+
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
     const col = { ...columns[colIndex] };
