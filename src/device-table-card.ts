@@ -313,12 +313,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
         if (cell.classList.contains('cell-entity')) {
           const entityId = cell.getAttribute('data-entity-id');
-          if (entityId) {
+          // Security Hardening: strictly validate entityId before firing more-info action
+          if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
             fireEvent(this, 'hass-more-info', { entityId });
           }
         } else if (cell.classList.contains('cell-device')) {
           const deviceId = cell.getAttribute('data-device-id');
-          if (deviceId) {
+          // Security Hardening: strictly validate deviceId before triggering navigation
+          if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
             navigate(this, `/config/devices/device/${deviceId}`);
           }
         }
