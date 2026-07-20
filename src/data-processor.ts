@@ -3,6 +3,20 @@ import { DeviceData, DeviceTableCardConfig } from './types';
 const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
 
+// Fine-grained cache structure for individual devices.
+interface DeviceCacheEntry {
+  filtered: boolean;
+  deviceData?: DeviceData;
+  deviceRef: any;
+  entitiesRawRef: any;
+  nameByUser: string | undefined;
+  name: string | undefined;
+  areaId: string | undefined;
+  manufacturer: string | undefined;
+  areaLookupRef: any;
+  entityStates: Record<string, any>;
+}
+
 interface ConfigCacheEntry {
   entityCols: any[];
   deviceCols: any[];
@@ -10,6 +24,8 @@ interface ConfigCacheEntry {
   suffixCols: any[];
   requiredClasses: Set<string>;
   needsLastChanged: boolean;
+  deviceCache: Map<string, DeviceCacheEntry>;
+  lastFilter?: Record<string, any>;
 }
 
 // Performance Optimization: Cache pre-categorized column schema based on stable config reference.
@@ -106,20 +122,104 @@ export function processDevices(
       suffixCols,
       requiredClasses,
       needsLastChanged,
+      deviceCache: new Map<string, DeviceCacheEntry>(),
     };
     configCache.set(config, cache);
   }
 
-  const { entityCols, deviceCols, metaCols, suffixCols, requiredClasses, needsLastChanged } = cache;
+  const {
+    entityCols,
+    deviceCols,
+    metaCols,
+    suffixCols,
+    requiredClasses,
+    needsLastChanged,
+    deviceCache,
+  } = cache;
+
+  // Security & Stability: Validate filter parameters.
+  // If filter criteria have mutated under the same stable config reference, invalidate the deviceCache.
+  if (!cache.lastFilter) {
+    cache.lastFilter = { ...filter };
+  } else {
+    let filterChanged = false;
+    for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
+      if (cache.lastFilter[key] !== filter[key]) {
+        filterChanged = true;
+        break;
+      }
+    }
+    if (filterChanged) {
+      deviceCache.clear();
+      cache.lastFilter = { ...filter };
+    }
+  }
 
   const result: DeviceData[] = [];
   const anchorClass = filter.anchor_entity_class;
 
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
+    const deviceId = d.id;
+    const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
+
+    // Performance Optimization: Fine-grained, state-reference based memoization for individual devices.
+    // If device properties, area lookup context, entity registry arrays, and state objects remain unchanged,
+    // we bypass all processing, calculations, filtering, and allocations for this device.
+    if (deviceEntitiesRaw) {
+      const cached = deviceCache.get(deviceId);
+      if (
+        cached &&
+        (d === cached.deviceRef ||
+          (d.name_by_user === cached.nameByUser &&
+            d.name === cached.name &&
+            d.area_id === cached.areaId &&
+            d.manufacturer === cached.manufacturer)) &&
+        areaLookup === cached.areaLookupRef &&
+        deviceEntitiesRaw === cached.entitiesRawRef
+      ) {
+        let statesMatch = true;
+        for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+          const ent = deviceEntitiesRaw[j];
+          if (cached.entityStates[ent.entity_id] !== states[ent.entity_id]) {
+            statesMatch = false;
+            break;
+          }
+        }
+        if (statesMatch) {
+          if (!cached.filtered && cached.deviceData) {
+            result.push(cached.deviceData);
+          }
+          continue;
+        }
+      }
+    }
+
+    // Cache the evaluation output for this device, whether it was filtered or resolved successfully.
+    const cacheEvaluationResult = (filtered: boolean, deviceData?: DeviceData) => {
+      if (!deviceEntitiesRaw) return;
+      const entityStates: Record<string, any> = {};
+      for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+        const ent = deviceEntitiesRaw[j];
+        entityStates[ent.entity_id] = states[ent.entity_id];
+      }
+      deviceCache.set(deviceId, {
+        filtered,
+        deviceData,
+        deviceRef: d,
+        entitiesRawRef: deviceEntitiesRaw,
+        nameByUser: d.name_by_user,
+        name: d.name,
+        areaId: d.area_id,
+        manufacturer: d.manufacturer,
+        areaLookupRef: areaLookup,
+        entityStates,
+      });
+    };
 
     // 1. Manufacturer filter
     if (filter.manufacturer && (d.manufacturer || 'Unknown') !== filter.manufacturer) {
+      cacheEvaluationResult(true);
       continue;
     }
 
@@ -128,18 +228,18 @@ export function processDevices(
       const areaId = d.area_id;
       const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
       if (areaName !== filter.area && areaId !== filter.area) {
+        cacheEvaluationResult(true);
         continue;
       }
     }
 
-    const deviceId = d.id;
-    const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
     if (!deviceEntitiesRaw || deviceEntitiesRaw.length === 0) {
       continue;
     }
 
     // 3. Integration filter (using the first entity's platform as proxy for device integration)
     if (filter.integration && (deviceEntitiesRaw[0].platform || 'Unknown') !== filter.integration) {
+      cacheEvaluationResult(true);
       continue;
     }
 
@@ -188,7 +288,10 @@ export function processDevices(
       }
     }
 
-    if (!hasAnchor || !hasValidEntities) continue;
+    if (!hasAnchor || !hasValidEntities) {
+      cacheEvaluationResult(true);
+      continue;
+    }
 
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
@@ -246,6 +349,7 @@ export function processDevices(
       }
     }
 
+    cacheEvaluationResult(false, deviceData);
     result.push(deviceData);
   }
 

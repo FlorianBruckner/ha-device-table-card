@@ -29,3 +29,7 @@
 ## 2026-07-12 - [Lazy Property Resolution & Pre-compiled Strategy Maps]
 **Learning:** Evaluating attributes (e.g., area lookup, manufacturer name, integration platform) of objects prior to filter validation results in redundant work for objects that are eventually excluded. Deferring property resolution until after validation checks pass avoids wasteful computations. Pre-compiling resolution strategy mappings outside loop execution also eliminates runtime branching and type assertions.
 **Action:** Implement lazy evaluation for object attributes when filtering large collections, and pre-compute column resolution structures during configuration pre-computation to minimize inside-loop execution logic.
+
+## 2026-07-13 - [Fine-Grained Memoization Filter Invalidation Edge Case]
+**Learning:** Caching device-level processing outputs under a stable configuration key (`WeakMap`) avoids costly calculations. However, if the function accepts dynamic external arguments (like user-configured filter values) that can mutate under the same configuration reference, the device-level cache must be explicitly validated and cleared when filter criteria change.
+**Action:** Always validate dynamic parameters against cached metadata in memoized pipelines and clear stateful sub-caches immediately when parameter mutations are detected.
