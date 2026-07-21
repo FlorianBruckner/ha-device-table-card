@@ -392,6 +392,94 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card data-processor entitiesByClass prototype safety', () => {
+    it('should handle device_class values that match Object.prototype property names safely', async () => {
+      const { processDevices } = await import('./data-processor');
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'toString',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'toString',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const devices = [{ id: 'dev1', name: 'Device 1' }];
+      const entitiesByDevice = new Map([
+        ['dev1', [{ entity_id: 'sensor.test', device_class: 'toString' }]],
+      ]);
+      const areaLookup = {};
+
+      const processed = processDevices(
+        mockHass,
+        config as any,
+        devices,
+        entitiesByDevice,
+        areaLookup,
+      );
+      expect(processed).to.exist;
+      expect(processed[0].col_0).to.equal('10');
+    });
+
+    it('should block device_class values that are forbidden prototype properties like __proto__', async () => {
+      const { processDevices } = await import('./data-processor');
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: '__proto__',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: '__proto__',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const devices = [{ id: 'dev1', name: 'Device 1' }];
+      const entitiesByDevice = new Map([
+        ['dev1', [{ entity_id: 'sensor.test', device_class: '__proto__' }]],
+      ]);
+      const areaLookup = {};
+
+      const processed = processDevices(
+        mockHass,
+        config as any,
+        devices,
+        entitiesByDevice,
+        areaLookup,
+      );
+      expect(processed).to.exist;
+      expect(processed[0].col_0).to.equal('-');
+    });
+  });
+
   describe('ha-device-table-card areaLookup prototype safety', () => {
     it('should handle area_id values that match Object.prototype property names safely', async () => {
       const mockHass = {

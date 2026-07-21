@@ -260,8 +260,8 @@ export function processDevices(
 
       // Match by Device Class
       const dClass = stateObj.attributes.device_class || ent.device_class;
-      if (dClass && requiredClasses.has(dClass)) {
-        if (!entitiesByClass[dClass]) {
+      if (dClass && !FORBIDDEN_PROPS.has(dClass) && requiredClasses.has(dClass)) {
+        if (!Object.prototype.hasOwnProperty.call(entitiesByClass, dClass)) {
           entitiesByClass[dClass] = stateObj;
         }
         if (!hasAnchor && dClass === anchorClass) {
@@ -329,7 +329,11 @@ export function processDevices(
     for (let i = 0; i < entityCols.length; i++) {
       const { key, resolveType, resolveKey } = entityCols[i];
       const stateObj =
-        resolveType === 'class' ? entitiesByClass[resolveKey] : entitiesBySuffix[resolveKey];
+        resolveType === 'class'
+          ? Object.prototype.hasOwnProperty.call(entitiesByClass, resolveKey)
+            ? entitiesByClass[resolveKey]
+            : undefined
+          : entitiesBySuffix[resolveKey];
 
       if (stateObj) {
         deviceData[key] = stateObj.state;

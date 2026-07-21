@@ -27,3 +27,8 @@
 **Vulnerability:** Using plain objects (`{}`) as key-value dictionaries for entities, areas, or metadata from external data sources allows property lookup clashes. If an external key matches inherited prototype properties (like `toString` or `hasOwnProperty`), the lookup resolves to a function, potentially leading to errors, crashes, or logical bypasses.
 **Learning:** Creating dictionaries in low-frequency/registry-fetch paths using `Object.create(null)` removes any prototype inheritance, making the lookup completely immune to prototype property clashes.
 **Prevention:** For dictionary lookups mapping dynamic external IDs, prioritize `Object.create(null)` to ensure safe, property-collision-free lookups.
+
+## 2026-07-11 - [Harden Hot-Path Class Entity Lookups Against Prototype Property Clashes]
+**Vulnerability:** When processing devices in `src/data-processor.ts`, entity lookup maps are created dynamically on a plain object (`{}`) in the hot path. If an entity state attribute contains a `device_class` matching prototype properties (e.g. `toString`, `valueOf`) or dangerous properties (e.g. `__proto__`), it can collide with the prototype chain, causing errors, incorrect mappings, or potential prototype pollution during lookups.
+**Learning:** Standard object literals perform better in hot paths, but lookups should be guarded using `Object.prototype.hasOwnProperty.call(obj, key)` and filtered against forbidden properties to achieve both maximum performance and absolute prototype safety.
+**Prevention:** Always check lookups in plain objects using `Object.prototype.hasOwnProperty.call` when the keys are derived from external data, and validate against a forbidden properties blocklist.
