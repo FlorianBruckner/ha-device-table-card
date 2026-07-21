@@ -29,7 +29,7 @@ describe('ha-device-table-card UX', () => {
     },
   };
 
-  it('has correct title attributes on cells', async () => {
+  it('has correct title attributes on cells and headers', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',
       title: 'UX Test',
@@ -61,6 +61,13 @@ describe('ha-device-table-card UX', () => {
 
     // Column 2: Last Seen Meta
     expect(cells[2].title).to.contain('Last updated: ');
+
+    // Verify headers have title attribute matching their text (truncated labels visible on hover)
+    const headers = el.shadowRoot?.querySelectorAll('table.dataTable thead th');
+    expect(headers?.length).to.be.greaterThan(0);
+    expect(headers![0].getAttribute('title')).to.equal('Device');
+    expect(headers![1].getAttribute('title')).to.equal('Battery');
+    expect(headers![2].getAttribute('title')).to.equal('Last Seen');
   });
 
   it('has correct search accessibility attributes', async () => {
