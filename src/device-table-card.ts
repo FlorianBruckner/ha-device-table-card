@@ -24,6 +24,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
+  private _lastProcessedData: any[] | null = null;
 
   static get styles() {
     return styles;
@@ -219,8 +220,47 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (tableElement) {
       tableElement.innerHTML = '';
     }
+    this._lastProcessedData = null;
     this._initDataTable();
     this._updateDataTable();
+  }
+
+  private _areDeviceDataListsEqual(a: any[], b: any[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const da = a[i];
+      const db = b[i];
+      if (
+        da.id !== db.id ||
+        da.name !== db.name ||
+        da.area !== db.area ||
+        da.integration !== db.integration ||
+        da.manufacturer !== db.manufacturer
+      ) {
+        return false;
+      }
+      const keys = Object.keys(da);
+      for (let j = 0; j < keys.length; j++) {
+        const key = keys[j];
+        if (key.startsWith('col_')) {
+          if (da[key] !== db[key]) return false;
+          const sa = da._entities[key];
+          const sb = db._entities[key];
+          if (sa !== sb) {
+            if (!sa || !sb) return false;
+            if (
+              sa.state !== sb.state ||
+              sa.entity_id !== sb.entity_id ||
+              sa.attributes?.unit_of_measurement !== sb.attributes?.unit_of_measurement ||
+              sa.attributes?.friendly_name !== sb.attributes?.friendly_name
+            ) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
   }
 
   private _updateDataTable(): void {
@@ -235,6 +275,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._entitiesByDevice,
       this._areaLookup,
     );
+
+    // Performance Optimization: Skip full table clear and redraw if the processed data values
+    // are identical to the previously processed data, reducing DOM thrashing on frequent state updates.
+    if (this._lastProcessedData && this._areDeviceDataListsEqual(this._lastProcessedData, data)) {
+      return;
+    }
+    this._lastProcessedData = data;
+
     this._dataTable.clear();
     this._dataTable.rows.add(data);
     this._dataTable.draw(false); // Use false to keep current paging

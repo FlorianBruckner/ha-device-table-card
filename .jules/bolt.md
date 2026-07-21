@@ -33,3 +33,7 @@
 ## 2026-07-13 - [Fine-Grained Memoization Filter Invalidation Edge Case]
 **Learning:** Caching device-level processing outputs under a stable configuration key (`WeakMap`) avoids costly calculations. However, if the function accepts dynamic external arguments (like user-configured filter values) that can mutate under the same configuration reference, the device-level cache must be explicitly validated and cleared when filter criteria change.
 **Action:** Always validate dynamic parameters against cached metadata in memoized pipelines and clear stateful sub-caches immediately when parameter mutations are detected.
+
+## 2026-07-14 - [Skip Redundant Table Draws in Card Updates]
+**Learning:** Although processing devices with memoization is extremely fast, repeatedly passing the result list to DataTables and calling `.draw(false)` still forces full layout reflows and DOM reconciliations for every single Home Assistant state update (which occur very frequently). By comparing the newly processed dataset with the previous one using a custom deep value/reference check, we can completely bypass DataTables updates unless visible text, properties, or entity states have changed, yielding vast layout performance gains.
+**Action:** Compare the result array elements by key visible values/entities and return early in the update/render pipeline if no user-facing changes have occurred.
