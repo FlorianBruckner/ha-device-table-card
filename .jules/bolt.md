@@ -33,3 +33,7 @@
 ## 2026-07-13 - [Fine-Grained Memoization Filter Invalidation Edge Case]
 **Learning:** Caching device-level processing outputs under a stable configuration key (`WeakMap`) avoids costly calculations. However, if the function accepts dynamic external arguments (like user-configured filter values) that can mutate under the same configuration reference, the device-level cache must be explicitly validated and cleared when filter criteria change.
 **Action:** Always validate dynamic parameters against cached metadata in memoized pipelines and clear stateful sub-caches immediately when parameter mutations are detected.
+
+## 2026-07-14 - [Shallow element-by-element equality check to skip DOM reconciliation]
+**Learning:** In High-frequency update loops such as custom card state updates, even if processed data contains memoized objects, calling DataTables' `clear()`, `rows.add()`, and `draw()` on every update triggers heavy and unnecessary DOM reconciliations. A fast O(N) element-by-element reference/shallow equality check (`a[i] === b[i]`) can completely bypass this redrawing overhead when the underlying device data array remains unchanged.
+**Action:** Implement array shallow reference equality check (`_areDeviceDataListsEqual`) on the update hot-path to skip expensive DOM and library-level table redraw operations when data has not changed.

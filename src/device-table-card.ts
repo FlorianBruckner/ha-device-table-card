@@ -24,6 +24,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
+  private _lastProcessedData?: any[];
 
   static get styles() {
     return styles;
@@ -90,6 +91,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._dataTable.destroy();
       this._dataTable = null;
     }
+    this._lastProcessedData = undefined;
     this._unsubscribeRegistryUpdates();
   }
 
@@ -219,8 +221,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (tableElement) {
       tableElement.innerHTML = '';
     }
+    this._lastProcessedData = undefined;
     this._initDataTable();
     this._updateDataTable();
+  }
+
+  private _areDeviceDataListsEqual(a?: any[], b?: any[]): boolean {
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   }
 
   private _updateDataTable(): void {
@@ -235,6 +247,15 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._entitiesByDevice,
       this._areaLookup,
     );
+
+    // Performance Optimization: Skip expensive DataTables clear/redraw if the processed
+    // device list has not changed. Since processDevices returns stable object references
+    // for cached device-level data, a simple reference equality check per element is highly accurate.
+    if (this._areDeviceDataListsEqual(data, this._lastProcessedData)) {
+      return;
+    }
+
+    this._lastProcessedData = data;
     this._dataTable.clear();
     this._dataTable.rows.add(data);
     this._dataTable.draw(false); // Use false to keep current paging
