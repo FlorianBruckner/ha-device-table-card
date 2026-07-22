@@ -74,6 +74,9 @@ export class DeviceTableCardEditor extends LitElement {
         font-size: 1.1em;
         background-color: var(--secondary-background-color, #f5f5f5);
         user-select: none;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
       }
       .section-header:hover {
         background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
@@ -103,6 +106,9 @@ export class DeviceTableCardEditor extends LitElement {
         padding: 8px 12px;
         cursor: pointer;
         user-select: none;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
       }
       .column-header:hover {
         background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
@@ -379,9 +385,11 @@ export class DeviceTableCardEditor extends LitElement {
             tabindex="0"
             role="button"
             aria-expanded=${this._generalExpanded}
+            aria-controls="general-section-content"
           >
             <span>General & Filters</span>
             <svg
+              aria-hidden="true"
               class="expand-icon ${this._generalExpanded ? 'expanded' : ''}"
               width="18"
               height="18"
@@ -398,7 +406,7 @@ export class DeviceTableCardEditor extends LitElement {
           ${
             this._generalExpanded
               ? html`
-                  <div class="section-content">
+                  <div id="general-section-content" class="section-content">
                     ${this._renderInput(
                       'Title',
                       this._config.title || '',
@@ -456,9 +464,11 @@ export class DeviceTableCardEditor extends LitElement {
             tabindex="0"
             role="button"
             aria-expanded=${this._columnsExpanded}
+            aria-controls="columns-section-content"
           >
             <span>Table Columns</span>
             <svg
+              aria-hidden="true"
               class="expand-icon ${this._columnsExpanded ? 'expanded' : ''}"
               width="18"
               height="18"
@@ -475,7 +485,7 @@ export class DeviceTableCardEditor extends LitElement {
           ${
             this._columnsExpanded
               ? html`
-                  <div class="section-content">
+                  <div id="columns-section-content" class="section-content">
                     <!-- Presets -->
                     <div>
                       <p style="margin-bottom: 4px; font-weight: bold;">Quick Presets:</p>
@@ -558,9 +568,11 @@ export class DeviceTableCardEditor extends LitElement {
           tabindex="0"
           role="button"
           aria-expanded=${isExpanded}
+          aria-controls="column-body-${index}"
         >
           <div class="column-header-title">
             <svg
+              aria-hidden="true"
               class="expand-icon ${isExpanded ? 'expanded' : ''}"
               width="16"
               height="16"
@@ -579,12 +591,13 @@ export class DeviceTableCardEditor extends LitElement {
           <div class="column-actions" @click=${(e: Event) => e.stopPropagation()}>
             <button
               class="btn-icon"
-              title="Move Up"
-              aria-label="Move Up"
+              title=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
+              aria-label=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
               .disabled=${index === 0}
               @click=${() => this._moveColumn(index, 'up')}
             >
               <svg
+                aria-hidden="true"
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
@@ -600,12 +613,13 @@ export class DeviceTableCardEditor extends LitElement {
             </button>
             <button
               class="btn-icon"
-              title="Move Down"
-              aria-label="Move Down"
+              title=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
+              aria-label=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
               .disabled=${index === columnsCount - 1}
               @click=${() => this._moveColumn(index, 'down')}
             >
               <svg
+                aria-hidden="true"
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
@@ -634,6 +648,7 @@ export class DeviceTableCardEditor extends LitElement {
                 this._confirmDeleteColumnIndex === index
                   ? html`
                       <svg
+                        aria-hidden="true"
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
@@ -648,6 +663,7 @@ export class DeviceTableCardEditor extends LitElement {
                     `
                   : html`
                       <svg
+                        aria-hidden="true"
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
@@ -673,7 +689,7 @@ export class DeviceTableCardEditor extends LitElement {
         ${
           isExpanded
             ? html`
-                <div class="column-body">
+                <div id="column-body-${index}" class="column-body">
                   <div class="form-row">
                     <label
                       for="select-type-${index}"
@@ -866,6 +882,7 @@ export class DeviceTableCardEditor extends LitElement {
                                       this._confirmDeleteHighlightIndex.hlIndex === hlIndex
                                         ? html`
                                             <svg
+                                              aria-hidden="true"
                                               width="16"
                                               height="16"
                                               viewBox="0 0 24 24"
@@ -880,6 +897,7 @@ export class DeviceTableCardEditor extends LitElement {
                                           `
                                         : html`
                                             <svg
+                                              aria-hidden="true"
                                               width="16"
                                               height="16"
                                               viewBox="0 0 24 24"

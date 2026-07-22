@@ -379,4 +379,95 @@ describe('ha-device-table-card-editor', () => {
       expect(el.shadowRoot?.activeElement).to.equal(input);
     });
   });
+
+  describe('enhanced UX and accessibility features', () => {
+    it('implements aria-controls on section and column headers linking to panels', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
+
+      const sectionHeaders = el.shadowRoot?.querySelectorAll('.section-header');
+      expect(sectionHeaders).to.have.lengthOf(2);
+
+      // Section 1 controls
+      expect(sectionHeaders![0].getAttribute('aria-controls')).to.equal('general-section-content');
+      const panel1 = el.shadowRoot?.querySelector('#general-section-content');
+      expect(panel1).to.exist;
+
+      // Section 2 controls
+      expect(sectionHeaders![1].getAttribute('aria-controls')).to.equal('columns-section-content');
+      const panel2 = el.shadowRoot?.querySelector('#columns-section-content');
+      expect(panel2).to.exist;
+
+      // Column header controls
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 0;
+      await el.updateComplete;
+
+      const columnHeader = el.shadowRoot?.querySelector('.column-header[data-index="0"]');
+      expect(columnHeader?.getAttribute('aria-controls')).to.equal('column-body-0');
+      const columnBody = el.shadowRoot?.querySelector('#column-body-0');
+      expect(columnBody).to.exist;
+    });
+
+    it('hides decorative SVGs from screen readers using aria-hidden', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 0;
+      await el.updateComplete;
+
+      const svgs = el.shadowRoot?.querySelectorAll('svg');
+      expect(svgs).to.exist;
+      expect(svgs!.length).to.be.greaterThan(0);
+
+      for (const svg of Array.from(svgs!)) {
+        expect(svg.getAttribute('aria-hidden')).to.equal('true');
+      }
+    });
+
+    it('provides descriptive disabled explanation tooltips/labels on sort buttons', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      (el as any)._columnsExpanded = true;
+      await el.updateComplete;
+
+      const columnItems = el.shadowRoot?.querySelectorAll('.column-item');
+      expect(columnItems).to.have.lengthOf(2);
+
+      // For first item (index 0): Move Up is disabled, Move Down is enabled
+      const firstItemActions = columnItems![0].querySelectorAll('.column-actions .btn-icon');
+      expect(firstItemActions).to.have.lengthOf(3);
+
+      const moveUpFirst = firstItemActions[0] as HTMLButtonElement;
+      expect(moveUpFirst.disabled).to.be.true;
+      expect(moveUpFirst.getAttribute('title')).to.equal('Cannot move up (already at top)');
+      expect(moveUpFirst.getAttribute('aria-label')).to.equal('Cannot move up (already at top)');
+
+      const moveDownFirst = firstItemActions[1] as HTMLButtonElement;
+      expect(moveDownFirst.disabled).to.be.false;
+      expect(moveDownFirst.getAttribute('title')).to.equal('Move Down');
+      expect(moveDownFirst.getAttribute('aria-label')).to.equal('Move Down');
+
+      // For last item (index 1): Move Down is disabled, Move Up is enabled
+      const lastItemActions = columnItems![1].querySelectorAll('.column-actions .btn-icon');
+      const moveUpLast = lastItemActions[0] as HTMLButtonElement;
+      expect(moveUpLast.disabled).to.be.false;
+      expect(moveUpLast.getAttribute('title')).to.equal('Move Up');
+      expect(moveUpLast.getAttribute('aria-label')).to.equal('Move Up');
+
+      const moveDownLast = lastItemActions[1] as HTMLButtonElement;
+      expect(moveDownLast.disabled).to.be.true;
+      expect(moveDownLast.getAttribute('title')).to.equal('Cannot move down (already at bottom)');
+      expect(moveDownLast.getAttribute('aria-label')).to.equal(
+        'Cannot move down (already at bottom)',
+      );
+    });
+  });
 });
