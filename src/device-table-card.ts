@@ -21,6 +21,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   @state() private _areaLookup: Record<string, string> = Object.create(null);
 
   private _dataTable: any = null;
+  private _lastProcessedData: any[] = [];
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
@@ -90,6 +91,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._dataTable.destroy();
       this._dataTable = null;
     }
+    this._lastProcessedData = [];
     this._unsubscribeRegistryUpdates();
   }
 
@@ -219,8 +221,45 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (tableElement) {
       tableElement.innerHTML = '';
     }
+    this._lastProcessedData = [];
     this._initDataTable();
     this._updateDataTable();
+  }
+
+  private _areDeviceDataListsEqual(a: any[], b: any[]): boolean {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; i++) {
+      const da = a[i];
+      const db = b[i];
+
+      if (da === db) continue;
+      if (!da || !db) return false;
+
+      // Fast check: compare properties in da
+      for (const key in da) {
+        if (key === '_entities') continue;
+        if (da[key] !== db[key]) return false;
+      }
+      // Check if db has extra properties
+      for (const key in db) {
+        if (key === '_entities') continue;
+        if (da[key] !== db[key]) return false;
+      }
+
+      const entA = da._entities || {};
+      const entB = db._entities || {};
+
+      for (const key in entA) {
+        if (entA[key] !== entB[key]) return false;
+      }
+      for (const key in entB) {
+        if (entA[key] !== entB[key]) return false;
+      }
+    }
+
+    return true;
   }
 
   private _updateDataTable(): void {
@@ -235,6 +274,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._entitiesByDevice,
       this._areaLookup,
     );
+
+    if (this._areDeviceDataListsEqual(this._lastProcessedData, data)) {
+      return;
+    }
+
+    this._lastProcessedData = data;
     this._dataTable.clear();
     this._dataTable.rows.add(data);
     this._dataTable.draw(false); // Use false to keep current paging
