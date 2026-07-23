@@ -301,6 +301,46 @@ describe('ha-device-table-card-editor', () => {
     expect(presets![3].getAttribute('aria-label')).to.equal('Add Last Seen column preset');
   });
 
+  it('has correct micro-UX and accessibility attributes on collapsible sections and reorder buttons', async () => {
+    const el = await fixture<DeviceTableCardEditor>(html`
+      <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+    `);
+    el.setConfig(config);
+    (el as any)._columnsExpanded = true;
+    (el as any)._expandedColumnIndex = 0;
+    await el.updateComplete;
+
+    // Check collapsible section header aria-controls and aria-expanded
+    const generalHeader = el.shadowRoot?.querySelector('.section-header');
+    expect(generalHeader?.getAttribute('aria-controls')).to.equal('general-section-content');
+    expect(generalHeader?.getAttribute('aria-expanded')).to.equal('true');
+
+    const columnItemHeader = el.shadowRoot?.querySelector('.column-header');
+    expect(columnItemHeader?.getAttribute('aria-controls')).to.equal('column-body-0');
+    expect(columnItemHeader?.getAttribute('aria-expanded')).to.equal('true');
+
+    // Check decorative SVGs have aria-hidden="true"
+    const svgs = el.shadowRoot?.querySelectorAll('svg');
+    expect(svgs?.length).to.be.greaterThan(0);
+    svgs?.forEach((svg) => {
+      expect(svg.getAttribute('aria-hidden')).to.equal('true');
+    });
+
+    // Check move up/down button titles and aria-labels for disabled / enabled states
+    // Column 0 is the first column, so Move Up should be disabled
+    const firstColActions = el.shadowRoot?.querySelectorAll('.column-actions');
+    expect(firstColActions?.length).to.be.greaterThan(0);
+
+    const buttons = firstColActions![0].querySelectorAll('button');
+    // Button 0 is Move Up
+    expect(buttons[0].getAttribute('title')).to.equal('Cannot move up (already at top)');
+    expect(buttons[0].getAttribute('aria-label')).to.equal('Cannot move up (already at top)');
+
+    // Button 1 is Move Down (since columns count is 2, and we are at index 0, it should be enabled)
+    expect(buttons[1].getAttribute('title')).to.equal('Move Down');
+    expect(buttons[1].getAttribute('aria-label')).to.equal('Move Down');
+  });
+
   describe('accessibility focus management', () => {
     it('focuses the new column header when a preset is added', async () => {
       const el = await fixture<DeviceTableCardEditor>(html`

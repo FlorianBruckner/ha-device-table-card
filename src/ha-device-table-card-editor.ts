@@ -74,6 +74,9 @@ export class DeviceTableCardEditor extends LitElement {
         font-size: 1.1em;
         background-color: var(--secondary-background-color, #f5f5f5);
         user-select: none;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
       }
       .section-header:hover {
         background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
@@ -103,6 +106,9 @@ export class DeviceTableCardEditor extends LitElement {
         padding: 8px 12px;
         cursor: pointer;
         user-select: none;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
       }
       .column-header:hover {
         background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
@@ -378,7 +384,8 @@ export class DeviceTableCardEditor extends LitElement {
             @keydown=${this._handleKeyDown}
             tabindex="0"
             role="button"
-            aria-expanded=${this._generalExpanded}
+            aria-expanded=${this._generalExpanded ? 'true' : 'false'}
+            aria-controls="general-section-content"
           >
             <span>General & Filters</span>
             <svg
@@ -391,6 +398,7 @@ export class DeviceTableCardEditor extends LitElement {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -398,7 +406,7 @@ export class DeviceTableCardEditor extends LitElement {
           ${
             this._generalExpanded
               ? html`
-                  <div class="section-content">
+                  <div id="general-section-content" class="section-content">
                     ${this._renderInput(
                       'Title',
                       this._config.title || '',
@@ -455,7 +463,8 @@ export class DeviceTableCardEditor extends LitElement {
             @keydown=${this._handleKeyDown}
             tabindex="0"
             role="button"
-            aria-expanded=${this._columnsExpanded}
+            aria-expanded=${this._columnsExpanded ? 'true' : 'false'}
+            aria-controls="columns-section-content"
           >
             <span>Table Columns</span>
             <svg
@@ -468,6 +477,7 @@ export class DeviceTableCardEditor extends LitElement {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -475,7 +485,7 @@ export class DeviceTableCardEditor extends LitElement {
           ${
             this._columnsExpanded
               ? html`
-                  <div class="section-content">
+                  <div id="columns-section-content" class="section-content">
                     <!-- Presets -->
                     <div>
                       <p style="margin-bottom: 4px; font-weight: bold;">Quick Presets:</p>
@@ -557,7 +567,8 @@ export class DeviceTableCardEditor extends LitElement {
           @keydown=${this._handleKeyDown}
           tabindex="0"
           role="button"
-          aria-expanded=${isExpanded}
+          aria-expanded=${isExpanded ? 'true' : 'false'}
+          aria-controls="column-body-${index}"
         >
           <div class="column-header-title">
             <svg
@@ -570,6 +581,7 @@ export class DeviceTableCardEditor extends LitElement {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -579,8 +591,8 @@ export class DeviceTableCardEditor extends LitElement {
           <div class="column-actions" @click=${(e: Event) => e.stopPropagation()}>
             <button
               class="btn-icon"
-              title="Move Up"
-              aria-label="Move Up"
+              title=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
+              aria-label=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
               .disabled=${index === 0}
               @click=${() => this._moveColumn(index, 'up')}
             >
@@ -593,6 +605,7 @@ export class DeviceTableCardEditor extends LitElement {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <line x1="12" y1="19" x2="12" y2="5"></line>
                 <polyline points="5 12 12 5 19 12"></polyline>
@@ -600,8 +613,8 @@ export class DeviceTableCardEditor extends LitElement {
             </button>
             <button
               class="btn-icon"
-              title="Move Down"
-              aria-label="Move Down"
+              title=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
+              aria-label=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
               .disabled=${index === columnsCount - 1}
               @click=${() => this._moveColumn(index, 'down')}
             >
@@ -614,6 +627,7 @@ export class DeviceTableCardEditor extends LitElement {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <polyline points="19 12 12 19 5 12"></polyline>
@@ -642,6 +656,7 @@ export class DeviceTableCardEditor extends LitElement {
                         stroke-width="2.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
+                        aria-hidden="true"
                       >
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
@@ -656,6 +671,7 @@ export class DeviceTableCardEditor extends LitElement {
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
+                        aria-hidden="true"
                       >
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path
@@ -673,7 +689,7 @@ export class DeviceTableCardEditor extends LitElement {
         ${
           isExpanded
             ? html`
-                <div class="column-body">
+                <div id="column-body-${index}" class="column-body">
                   <div class="form-row">
                     <label
                       for="select-type-${index}"
@@ -874,6 +890,7 @@ export class DeviceTableCardEditor extends LitElement {
                                               stroke-width="2.5"
                                               stroke-linecap="round"
                                               stroke-linejoin="round"
+                                              aria-hidden="true"
                                             >
                                               <polyline points="20 6 9 17 4 12"></polyline>
                                             </svg>
@@ -888,6 +905,7 @@ export class DeviceTableCardEditor extends LitElement {
                                               stroke-width="2"
                                               stroke-linecap="round"
                                               stroke-linejoin="round"
+                                              aria-hidden="true"
                                             >
                                               <polyline points="3 6 5 6 21 6"></polyline>
                                               <path
