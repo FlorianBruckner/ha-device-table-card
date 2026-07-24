@@ -1,3 +1,7 @@
+## 2026-07-14 - [State-Reference Level Redraw Short-Circuiting]
+**Learning:** In Home Assistant custom cards utilizing client-side table rendering libraries (like DataTables), state update events are dispatched very frequently, but they often result in no visual data change on the table. Checking for list-level deep-equality of properties and associated Home Assistant state object references (`_entities`) allows us to completely bypass expensive `.clear()`, `.rows.add()`, and `.draw()` calls, drastically reducing layout calculations, GC pressure, and DOM reflows.
+**Action:** Always short-circuit table library redraw pipelines with element-by-element and sub-property reference checks on the computed/processed lists.
+
 ## 2026-07-05 - [Optimize O(N*M) lookups in data processing]
 **Learning:** In loops where multiple entity attributes are checked against multiple column configurations, pre-indexing the entities into a Map/Record by the lookup key (e.g., `device_class`) significantly reduces overhead compared to repeated `.find()` calls. Also, using standard `for` loops and `for...in` instead of `.forEach()` and `.keys()` can provide measurable wins in hot paths.
 **Action:** Always check for nested searches in loops and replace with $O(1)$ lookups where possible.
