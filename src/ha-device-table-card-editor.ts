@@ -343,7 +343,25 @@ export class DeviceTableCardEditor extends LitElement {
         font-size: 0.9em;
         color: var(--secondary-text-color);
       }
+      .color-preview-swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        flex-shrink: 0;
+        box-sizing: border-box;
+        background-color: #eee;
+      }
     `;
+  }
+
+  private _sanitizeColor(color: string): string {
+    if (typeof color !== 'string' || !color) return '';
+    const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
+    if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
+      return '';
+    }
+    return sanitized;
   }
 
   private _sanitizeConfig<T>(obj: T): T {
@@ -851,6 +869,11 @@ export class DeviceTableCardEditor extends LitElement {
                                     '50',
                                     'CSS color name or hex',
                                   )}
+                                  <div
+                                    class="color-preview-swatch"
+                                    style="background-color: ${this._sanitizeColor(hl.color || 'transparent')};"
+                                    title="Color preview"
+                                  ></div>
                                   <button
                                     class="btn-icon btn-danger"
                                     style=${
