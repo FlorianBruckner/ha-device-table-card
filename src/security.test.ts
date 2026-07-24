@@ -392,6 +392,87 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card custom device class / suffix prototype safety', () => {
+    it('should prevent prototype lookup clashes when dynamic device_class/suffix matches Object.prototype properties', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: 'toString',
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'toString',
+            label: 'Battery (clash)',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const span = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(span).to.exist;
+      // It should display '10' since toString is the device_class but is protected against prototype function lookup clashing
+      expect(span.textContent?.trim()).to.equal('10');
+    });
+  });
+
+  describe('ha-device-table-card-editor valueChanged prototype safety for nested properties', () => {
+    it('should block nested prototype pollution keys like parent.__proto__.child in _valueChanged', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      el.setConfig({ type: 'custom:ha-device-table-card' } as any);
+      el.hass = { states: {} };
+      await el.updateComplete;
+
+      let eventFired = false;
+      el.addEventListener('config-changed', () => {
+        eventFired = true;
+      });
+
+      const input = document.createElement('ha-textfield') as any;
+      input.configValue = 'filter.__proto__.polluted_nested';
+      input.value = 'true';
+
+      const event = {
+        target: input,
+      };
+
+      (el as any)._valueChanged(event);
+
+      expect(eventFired).to.be.false;
+      expect((Object.prototype as any).polluted_nested).to.be.undefined;
+    });
+  });
+
   describe('ha-device-table-card areaLookup prototype safety', () => {
     it('should handle area_id values that match Object.prototype property names safely', async () => {
       const mockHass = {

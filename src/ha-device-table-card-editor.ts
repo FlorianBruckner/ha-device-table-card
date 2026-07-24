@@ -1259,15 +1259,21 @@ export class DeviceTableCardEditor extends LitElement {
       const parts = configValue.split('.');
       let current: any = newConfig;
       for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) {
-          current[parts[i]] = {};
+        const part = parts[i];
+        if (!Object.prototype.hasOwnProperty.call(current, part) || !current[part]) {
+          current[part] = {};
         }
-        current[parts[i]] = { ...current[parts[i]] };
-        current = current[parts[i]];
+        current[part] = { ...current[part] };
+        current = current[part];
       }
-      current[parts[parts.length - 1]] = value;
+      const lastPart = parts[parts.length - 1];
+      if (!forbidden.includes(lastPart)) {
+        current[lastPart] = value;
+      }
     } else {
-      newConfig[configValue] = value;
+      if (!forbidden.includes(configValue)) {
+        newConfig[configValue] = value;
+      }
     }
 
     fireEvent(this, 'config-changed', { config: newConfig });

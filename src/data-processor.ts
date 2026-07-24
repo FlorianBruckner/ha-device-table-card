@@ -261,7 +261,7 @@ export function processDevices(
       // Match by Device Class
       const dClass = stateObj.attributes.device_class || ent.device_class;
       if (dClass && requiredClasses.has(dClass)) {
-        if (!entitiesByClass[dClass]) {
+        if (!Object.prototype.hasOwnProperty.call(entitiesByClass, dClass)) {
           entitiesByClass[dClass] = stateObj;
         }
         if (!hasAnchor && dClass === anchorClass) {
@@ -273,7 +273,10 @@ export function processDevices(
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
           const { col, key } = suffixCols[k];
-          if (!entitiesBySuffix[key] && ent.entity_id.endsWith(col.suffix!)) {
+          if (
+            !Object.prototype.hasOwnProperty.call(entitiesBySuffix, key) &&
+            ent.entity_id.endsWith(col.suffix!)
+          ) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
@@ -329,7 +332,13 @@ export function processDevices(
     for (let i = 0; i < entityCols.length; i++) {
       const { key, resolveType, resolveKey } = entityCols[i];
       const stateObj =
-        resolveType === 'class' ? entitiesByClass[resolveKey] : entitiesBySuffix[resolveKey];
+        resolveType === 'class'
+          ? Object.prototype.hasOwnProperty.call(entitiesByClass, resolveKey)
+            ? entitiesByClass[resolveKey]
+            : undefined
+          : Object.prototype.hasOwnProperty.call(entitiesBySuffix, resolveKey)
+            ? entitiesBySuffix[resolveKey]
+            : undefined;
 
       if (stateObj) {
         deviceData[key] = stateObj.state;
