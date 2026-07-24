@@ -532,6 +532,54 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card config cycle and length protection', () => {
+    it('should handle circular references in config sanitization without throwing or crashing', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const config: any = {
+        type: 'custom:ha-device-table-card',
+        title: 'Circular',
+      };
+      config.self = config; // create a circular reference
+
+      expect(() => el.setConfig(config)).to.not.throw();
+      const sanitized = (el as any)._config;
+      expect(sanitized.title).to.equal('Circular');
+      expect(sanitized.self).to.be.undefined;
+    });
+
+    it('should handle circular references in editor config sanitization without throwing or crashing', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const config: any = {
+        type: 'custom:ha-device-table-card',
+        title: 'Circular Editor',
+      };
+      config.self = config; // create a circular reference
+
+      expect(() => el.setConfig(config)).to.not.throw();
+      const sanitized = (el as any)._config;
+      expect(sanitized.title).to.equal('Circular Editor');
+      expect(sanitized.self).to.be.undefined;
+    });
+
+    it('should block extremely long color values to guard against ReDoS', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const longColor = 'a'.repeat(101);
+      expect((el as any)._sanitizeColor(longColor)).to.equal('');
+
+      const borderLineColor = 'a'.repeat(100);
+      expect((el as any)._sanitizeColor(borderLineColor)).to.equal(borderLineColor);
+    });
+  });
+
   describe('ha-device-table-card interactive cell validation', () => {
     it('should navigate for safe deviceId but block malicious deviceId values', async () => {
       const mockHass = {

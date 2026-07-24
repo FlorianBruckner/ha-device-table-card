@@ -27,3 +27,8 @@
 **Vulnerability:** Using plain objects (`{}`) as key-value dictionaries for entities, areas, or metadata from external data sources allows property lookup clashes. If an external key matches inherited prototype properties (like `toString` or `hasOwnProperty`), the lookup resolves to a function, potentially leading to errors, crashes, or logical bypasses.
 **Learning:** Creating dictionaries in low-frequency/registry-fetch paths using `Object.create(null)` removes any prototype inheritance, making the lookup completely immune to prototype property clashes.
 **Prevention:** For dictionary lookups mapping dynamic external IDs, prioritize `Object.create(null)` to ensure safe, property-collision-free lookups.
+
+## 2026-07-11 - [Harden Config Sanitization Against Circular References and Color ReDoS]
+**Vulnerability:** Recursive deep sanitization of configuration objects was vulnerable to infinite loops and stack overflow (Denial of Service) when circular references were passed. Additionally, unconstrained input string lengths on color rules could lead to Regular Expression Denial of Service (ReDoS) during style attribute rendering.
+**Learning:** Integrating a `WeakSet` during recursive property validation breaks circular loops safely without memory leaks. Placing a hard 100-character boundary on user-defined style rules mitigates execution engine resource starvation on pattern matching.
+**Prevention:** Always track visited nodes in recursive traversals and strictly constrain string lengths before executing matching operations on user-controlled patterns.
