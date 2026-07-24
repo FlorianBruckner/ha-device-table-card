@@ -40,6 +40,9 @@ export const styles = css`
     transition:
       background-color 0.2s,
       color 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   table.dataTable thead th:hover {
