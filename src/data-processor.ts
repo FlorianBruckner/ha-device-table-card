@@ -14,7 +14,7 @@ interface DeviceCacheEntry {
   areaId: string | undefined;
   manufacturer: string | undefined;
   areaLookupRef: any;
-  entityStates: Record<string, any>;
+  entityStates?: Record<string, any>;
 }
 
 interface ConfigCacheEntry {
@@ -179,6 +179,12 @@ export function processDevices(
         areaLookup === cached.areaLookupRef &&
         deviceEntitiesRaw === cached.entitiesRawRef
       ) {
+        if (!cached.entityStates) {
+          if (!cached.filtered && cached.deviceData) {
+            result.push(cached.deviceData);
+          }
+          continue;
+        }
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
@@ -197,12 +203,22 @@ export function processDevices(
     }
 
     // Cache the evaluation output for this device, whether it was filtered or resolved successfully.
-    const cacheEvaluationResult = (filtered: boolean, deviceData?: DeviceData) => {
+    // Performance Optimization: If the device is excluded by a static property filter (manufacturer, area, integration),
+    // we do not need to track and verify high-frequency entity state updates. Passing isStaticFilter=true allows us
+    // to bypass state loop iteration, saving allocations and CPU cycles.
+    const cacheEvaluationResult = (
+      filtered: boolean,
+      deviceData?: DeviceData,
+      isStaticFilter = false,
+    ) => {
       if (!deviceEntitiesRaw) return;
-      const entityStates: Record<string, any> = {};
-      for (let j = 0; j < deviceEntitiesRaw.length; j++) {
-        const ent = deviceEntitiesRaw[j];
-        entityStates[ent.entity_id] = states[ent.entity_id];
+      let entityStates: Record<string, any> | undefined = undefined;
+      if (!isStaticFilter) {
+        entityStates = {};
+        for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+          const ent = deviceEntitiesRaw[j];
+          entityStates[ent.entity_id] = states[ent.entity_id];
+        }
       }
       deviceCache.set(deviceId, {
         filtered,
@@ -220,7 +236,7 @@ export function processDevices(
 
     // 1. Manufacturer filter
     if (filter.manufacturer && (d.manufacturer || 'Unknown') !== filter.manufacturer) {
-      cacheEvaluationResult(true);
+      cacheEvaluationResult(true, undefined, true);
       continue;
     }
 
@@ -229,7 +245,7 @@ export function processDevices(
       const areaId = d.area_id;
       const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
       if (areaName !== filter.area && areaId !== filter.area) {
-        cacheEvaluationResult(true);
+        cacheEvaluationResult(true, undefined, true);
         continue;
       }
     }
@@ -240,7 +256,7 @@ export function processDevices(
 
     // 3. Integration filter (using the first entity's platform as proxy for device integration)
     if (filter.integration && (deviceEntitiesRaw[0].platform || 'Unknown') !== filter.integration) {
-      cacheEvaluationResult(true);
+      cacheEvaluationResult(true, undefined, true);
       continue;
     }
 
