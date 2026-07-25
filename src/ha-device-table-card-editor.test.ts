@@ -418,5 +418,26 @@ describe('ha-device-table-card-editor', () => {
       );
       expect(el.shadowRoot?.activeElement).to.equal(input);
     });
+
+    it('shows empty-state text and descriptive titles on presets when no columns are configured', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig({ ...config, columns: [] });
+      await el.updateComplete;
+
+      const emptyStateText = el.shadowRoot?.querySelector('.empty-state-text');
+      expect(emptyStateText).to.exist;
+      expect(emptyStateText?.textContent?.trim()).to.contain('No columns defined yet');
+
+      const presets = el.shadowRoot?.querySelectorAll('.preset-badge');
+      expect(presets).to.exist;
+      expect(presets![0].getAttribute('title')).to.equal(
+        'Add a Battery column preset with low battery highlight (below 15%)',
+      );
+      expect(presets![1].getAttribute('title')).to.equal(
+        'Add a Moisture column preset with dry moisture highlight (below 30%)',
+      );
+    });
   });
 });
