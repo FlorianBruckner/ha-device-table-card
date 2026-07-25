@@ -346,19 +346,23 @@ export class DeviceTableCardEditor extends LitElement {
     `;
   }
 
-  private _sanitizeConfig<T>(obj: T): T {
+  private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>()): T {
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
+    if (seen.has(obj)) {
+      return obj;
+    }
+    seen.add(obj);
     if (Array.isArray(obj)) {
-      return obj.map((item) => this._sanitizeConfig(item)) as any;
+      return obj.map((item) => this._sanitizeConfig(item, seen)) as any;
     }
     const sanitized: any = {};
     for (const key of Object.keys(obj)) {
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         continue;
       }
-      sanitized[key] = this._sanitizeConfig((obj as any)[key]);
+      sanitized[key] = this._sanitizeConfig((obj as any)[key], seen);
     }
     return sanitized;
   }

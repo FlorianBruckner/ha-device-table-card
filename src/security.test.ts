@@ -655,4 +655,37 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card circular reference and length boundaries', () => {
+    it('should safely handle circular references in setConfig for both card and editor', async () => {
+      const card = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const editor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const circularConfig: any = { type: 'custom:ha-device-table-card' };
+      circularConfig.self = circularConfig;
+
+      // This should complete without throwing a Stack Overflow / RangeError
+      card.setConfig(circularConfig);
+      editor.setConfig(circularConfig);
+
+      expect((card as any)._config).to.exist;
+      expect((editor as any)._config).to.exist;
+    });
+
+    it('should reject color string inputs longer than 100 characters in _sanitizeColor', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const longColor = 'red' + 'a'.repeat(98); // 101 characters
+      expect((el as any)._sanitizeColor(longColor)).to.equal('');
+
+      const borderLineColor = 'red' + 'a'.repeat(97); // 100 characters
+      expect((el as any)._sanitizeColor(borderLineColor)).to.equal(borderLineColor);
+    });
+  });
 });

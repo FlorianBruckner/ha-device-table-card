@@ -27,3 +27,8 @@
 **Vulnerability:** Using plain objects (`{}`) as key-value dictionaries for entities, areas, or metadata from external data sources allows property lookup clashes. If an external key matches inherited prototype properties (like `toString` or `hasOwnProperty`), the lookup resolves to a function, potentially leading to errors, crashes, or logical bypasses.
 **Learning:** Creating dictionaries in low-frequency/registry-fetch paths using `Object.create(null)` removes any prototype inheritance, making the lookup completely immune to prototype property clashes.
 **Prevention:** For dictionary lookups mapping dynamic external IDs, prioritize `Object.create(null)` to ensure safe, property-collision-free lookups.
+
+## 2026-07-11 - [Harden Config Sanitization Against Circular References and Color String DoS]
+**Vulnerability:** Recursive deep sanitization of configuration structures (`_sanitizeConfig`) was vulnerable to infinite recursion and maximum call stack errors (Denial of Service) if loaded with circular data models. Additionally, the CSS color style validator lacked input string boundary checks, exposing the regular expression matching to RegExp Denial of Service (ReDoS) or massive style injection payloads.
+**Learning:** Checking for circular references using a `WeakSet` within recursive object-traversal methods prevents stack overflow crashes. Adding an early-return size constraint on custom string processors limits dynamic style resource allocation safely.
+**Prevention:** Always track visited objects with `WeakSet` during deep/recursive property traversals, and implement tight string length bounds on custom user-supplied CSS inputs.
