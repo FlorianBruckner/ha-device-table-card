@@ -237,6 +237,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       if (da === db) continue;
       if (!da || !db) return false;
 
+      // Fast-path check: If device IDs do not match (e.g. order changed, or devices added/removed),
+      // we can immediately return false without doing heavy nested property lookups.
+      if (da.id !== db.id) return false;
+
       // Fast check: compare properties in da
       for (const key in da) {
         if (key === '_entities') continue;
@@ -382,16 +386,27 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
   }
 
+  // Cache sanitized color results to avoid repeating regex replacement and testing
+  private _colorCache = new Map<string, string>();
+
   private _sanitizeColor(color: string): string {
     if (typeof color !== 'string' || !color) return '';
+
+    const cached = this._colorCache.get(color);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
     const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
 
     // Block potential CSS function injections like url(), expression(), image(), image-set(), etc.
     if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
+      this._colorCache.set(color, '');
       return '';
     }
 
+    this._colorCache.set(color, sanitized);
     return sanitized;
   }
 

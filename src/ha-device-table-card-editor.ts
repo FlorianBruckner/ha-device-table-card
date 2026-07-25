@@ -343,7 +343,25 @@ export class DeviceTableCardEditor extends LitElement {
         font-size: 0.9em;
         color: var(--secondary-text-color);
       }
+      .color-preview-swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        flex-shrink: 0;
+        box-sizing: border-box;
+        background-color: #eee;
+      }
     `;
+  }
+
+  private _sanitizeColor(color: string): string {
+    if (typeof color !== 'string' || !color) return '';
+    const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
+    if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
+      return '';
+    }
+    return sanitized;
   }
 
   private _sanitizeConfig<T>(obj: T): T {
@@ -496,6 +514,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          title="Add a Battery column preset with low battery highlight (below 15%)"
                           aria-label="Add Battery column preset"
                         >
                           + Battery
@@ -506,6 +525,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          title="Add a Moisture column preset with dry moisture highlight (below 30%)"
                           aria-label="Add Moisture column preset"
                         >
                           + Moisture
@@ -516,6 +536,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          title="Add a Device Name column preset"
                           aria-label="Add Device Name column preset"
                         >
                           + Device Name
@@ -526,6 +547,7 @@ export class DeviceTableCardEditor extends LitElement {
                           @keydown=${this._handleKeyDown}
                           tabindex="0"
                           role="button"
+                          title="Add a Last Seen column preset"
                           aria-label="Add Last Seen column preset"
                         >
                           + Last Seen
@@ -534,7 +556,19 @@ export class DeviceTableCardEditor extends LitElement {
                     </div>
 
                     <!-- Column Items List -->
-                    ${columns.map((col, index) => this._renderColumnItem(col, index))}
+                    ${
+                      columns.length === 0
+                        ? html`
+                            <p
+                              class="empty-state-text"
+                              style="font-style: italic; color: var(--secondary-text-color, #727272); margin-bottom: 8px;"
+                            >
+                              No columns defined yet. Use quick presets or add a custom column below
+                              to build your table.
+                            </p>
+                          `
+                        : columns.map((col, index) => this._renderColumnItem(col, index))
+                    }
 
                     <!-- Add Custom Column Button -->
                     <button
@@ -851,6 +885,11 @@ export class DeviceTableCardEditor extends LitElement {
                                     '50',
                                     'CSS color name or hex',
                                   )}
+                                  <div
+                                    class="color-preview-swatch"
+                                    style="background-color: ${this._sanitizeColor(hl.color || 'transparent')};"
+                                    title="Color preview"
+                                  ></div>
                                   <button
                                     class="btn-icon btn-danger"
                                     style=${

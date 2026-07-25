@@ -44,6 +44,8 @@ export function processDevices(
   }
 
   const states = hass.states || {};
+  let cache = configCache.get(config);
+
   const filter: any = {};
   if (config.filter && typeof config.filter === 'object') {
     for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
@@ -53,7 +55,6 @@ export function processDevices(
     }
   }
 
-  let cache = configCache.get(config);
   if (!cache) {
     const columnsRaw = config.columns || [];
     const columns = columnsRaw.map((c: any) => {
