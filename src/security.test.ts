@@ -473,6 +473,46 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card-editor circular references DoS prevention', () => {
+    it('should safely handle circular references in setConfig for editor and card', async () => {
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const circularConfig: any = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      };
+      circularConfig.self = circularConfig;
+
+      // This should not throw call stack size exceeded errors
+      expect(() => elEditor.setConfig(circularConfig)).to.not.throw();
+      expect(() => elCard.setConfig(circularConfig)).to.not.throw();
+    });
+  });
+
+  describe('ha-device-table-card _sanitizeColor length limit ReDoS prevention', () => {
+    it('should reject color values exceeding 100 characters in _sanitizeColor', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const longColor = 'red' + ' '.repeat(100);
+      expect((elCard as any)._sanitizeColor(longColor)).to.equal('');
+      expect((elEditor as any)._sanitizeColor(longColor)).to.equal('');
+
+      const safeColor = 'red' + ' '.repeat(5);
+      expect((elCard as any)._sanitizeColor(safeColor)).to.equal(safeColor);
+      expect((elEditor as any)._sanitizeColor(safeColor)).to.equal(safeColor);
+    });
+  });
+
   describe('ha-device-table-card areaLookup prototype safety', () => {
     it('should handle area_id values that match Object.prototype property names safely', async () => {
       const mockHass = {
