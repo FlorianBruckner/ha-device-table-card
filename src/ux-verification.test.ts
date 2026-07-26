@@ -182,4 +182,40 @@ describe('ha-device-table-card UX', () => {
     expect(span).to.exist;
     expect(span?.getAttribute('title')).to.equal('Value is below threshold: 90%');
   });
+
+  it('renders and operates search clear button correctly', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+
+    const clearBtn = el.shadowRoot?.querySelector('.dt-search-clear') as HTMLButtonElement;
+    expect(clearBtn).to.exist;
+    expect(clearBtn.getAttribute('aria-label')).to.equal('Clear search');
+    expect(clearBtn.style.display).to.equal('none');
+
+    // Simulate typing
+    searchInput.value = 'Device 1';
+    searchInput.dispatchEvent(new Event('input'));
+    expect(clearBtn.style.display).to.equal('flex');
+
+    // Click clear button
+    clearBtn.click();
+    expect(searchInput.value).to.equal('');
+    expect(clearBtn.style.display).to.equal('none');
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+  });
 });

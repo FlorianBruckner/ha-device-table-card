@@ -331,6 +331,36 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             searchInput.setAttribute('type', 'search');
             searchInput.setAttribute('autocapitalize', 'off');
             searchInput.setAttribute('spellcheck', 'false');
+
+            const parent = searchInput.parentElement;
+            if (parent) {
+              const clearBtn = document.createElement('button');
+              clearBtn.type = 'button';
+              clearBtn.className = 'dt-search-clear';
+              clearBtn.setAttribute('aria-label', 'Clear search');
+              clearBtn.style.display = searchInput.value ? 'flex' : 'none';
+              clearBtn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              `;
+
+              const updateClearBtn = () => {
+                clearBtn.style.display = searchInput.value ? 'flex' : 'none';
+              };
+
+              searchInput.addEventListener('input', updateClearBtn);
+
+              clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                this._dataTable.search('').draw();
+                updateClearBtn();
+                searchInput.focus();
+              });
+
+              parent.appendChild(clearBtn);
+            }
           }
 
           const lengthSelect = this.renderRoot.querySelector(

@@ -45,3 +45,7 @@
 ## 2026-07-24 - [Visual Feedback for Abstract Input Properties]
 **Learning:** In complex configuration editors where users configure visual threshold highlights, text fields like "Color: red" or "Color: #e53935" require the user to mentally translate the value into a visual color or manually type and preview it. Providing a localized, highly interactive inline visual preview swatch directly next to the text input provides immediate feedback. To prevent security vulnerabilities (such as arbitrary CSS execution/resource loading via `url()` function injections in inline styles), the preview swatch must strictly sanitize the active value.
 **Action:** When offering text fields representing colors, styles, or visual states, always render an adjacent visual preview swatch that utilizes a strict sanitation filter before setting inline CSS properties.
+
+## 2026-07-26 - [Suppressing WebKit Native Search Cancel Button]
+**Learning:** WebKit-based browsers natively append an un-styleable, non-accessible cancel button (`::-webkit-search-cancel-button`) on `<input type="search">` inputs. When building custom search interfaces with custom styled clear buttons, failing to suppress the WebKit native cancel button results in duplicate, overlapping Close/Cancel marks.
+**Action:** Always include CSS rules (`-webkit-appearance: none; appearance: none; display: none;`) on the webkit-search-cancel-button pseudo-element of your search input fields to ensure a consistent, single-button cross-browser user experience.
