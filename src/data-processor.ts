@@ -287,13 +287,12 @@ export function processDevices(
       }
 
       // Match by Suffix (pre-calculated columns)
+      // Performance Optimization: Using direct undefined check on pre-calculated suffix key (e.g. col_0)
+      // is completely safe against prototype pollution/clash since the key is always prefixed with 'col_'.
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
           const { col, key } = suffixCols[k];
-          if (
-            !Object.prototype.hasOwnProperty.call(entitiesBySuffix, key) &&
-            ent.entity_id.endsWith(col.suffix!)
-          ) {
+          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
@@ -346,6 +345,8 @@ export function processDevices(
     }
 
     // Resolve Entity Columns
+    // Performance Optimization: Bypassing hasOwnProperty check for suffix resolution
+    // because key is always a pre-generated, safe 'col_X' string.
     for (let i = 0; i < entityCols.length; i++) {
       const { key, resolveType, resolveKey } = entityCols[i];
       const stateObj =
@@ -353,9 +354,7 @@ export function processDevices(
           ? Object.prototype.hasOwnProperty.call(entitiesByClass, resolveKey)
             ? entitiesByClass[resolveKey]
             : undefined
-          : Object.prototype.hasOwnProperty.call(entitiesBySuffix, resolveKey)
-            ? entitiesBySuffix[resolveKey]
-            : undefined;
+          : entitiesBySuffix[resolveKey];
 
       if (stateObj) {
         deviceData[key] = stateObj.state;

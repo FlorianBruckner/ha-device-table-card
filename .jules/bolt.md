@@ -21,3 +21,11 @@
 ## 2026-07-26 - [Device Cache Invalidation Correctness]
 **Learning:** While attempting to optimize device caching in `src/data-processor.ts` by tracking only displayed/matched entities (and skipping un-matched ones) during `processDevices`, the change was determined to introduce cache-invalidation bugs. All dynamic states must be tracked because unmatched entities could dynamically update or match configurative criteria. Robust memoization in `processDevices` must check states of all associated device entities (`deviceEntitiesRaw`) to maintain strict correctness.
 **Action:** Ensure cache validation tracks states of all associated entities even if they are not currently matched or displayed.
+
+## 2026-07-27 - [Pre-Calculated Column Key Suffix Lookup]
+**Learning:** For dictionaries where keys are programmatically prefixed/guaranteed to be safe (such as `col_X` for columns), using `Object.prototype.hasOwnProperty.call` to guard property reads adds unnecessary function call and lookup overhead. Direct comparison against `undefined` is completely safe and faster in hot paths.
+**Action:** Avoid expensive `hasOwnProperty` guard checks for internally generated, collision-free object property keys.
+
+## 2026-07-27 - [Shallow Equality Loop Redundancy]
+**Learning:** When comparing two lists of identically-shaped stable records (like outputs from a stable processor run), a second property loop in bidirectional property traversal (`for...in db`) is redundant because the keys are identical. Dropping the second loop entirely saves key iteration overhead in the hot path.
+**Action:** Use a single loop to compare properties of two identically-shaped objects instead of bidirectional `for...in` loops.

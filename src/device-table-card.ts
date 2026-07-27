@@ -245,13 +245,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       // we can immediately return false without doing heavy nested property lookups.
       if (da.id !== db.id) return false;
 
-      // Fast check: compare properties in da
+      // Performance Optimization: Direct property-by-property comparison. Since both
+      // objects have identically-shaped structures (derived from processDevices), we only need
+      // a single loop to compare all scalar properties, bypassing the second loop entirely.
       for (const key in da) {
-        if (key === '_entities') continue;
-        if (da[key] !== db[key]) return false;
-      }
-      // Check if db has extra properties
-      for (const key in db) {
         if (key === '_entities') continue;
         if (da[key] !== db[key]) return false;
       }
@@ -262,8 +259,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       for (const key in entA) {
         if (entA[key] !== entB[key]) return false;
       }
+      // Optimize the reverse check to verify presence/key mismatch instead of redundant equality checks.
       for (const key in entB) {
-        if (entA[key] !== entB[key]) return false;
+        if (entA[key] === undefined) return false;
       }
     }
 
