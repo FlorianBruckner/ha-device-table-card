@@ -13,3 +13,11 @@
 ## 2026-07-15 - [RegExp Cache for Repeated Text Processing]
 **Learning:** Standard RegExp `replace` and matching patterns are expensive when executed repeatedly on every rendering cycle or for every cell. Using a simple, fast-lookup `Map` to cache the inputs and output of sanitization helpers (like `_sanitizeColor`) yields significant rendering speedups with almost zero memory overhead.
 **Action:** Cache the results of regex-based validation/sanitization functions using a Map keyed by input strings.
+
+## 2026-07-26 - [Column Renderer Early Exit]
+**Learning:** For table libraries like DataTables, column renderers are invoked multiple times per cell for different purposes (e.g., `'display'`, `'sort'`, `'filter'`, `'type'`). By adding a fast-path early exit `if (type !== 'display') return data;` for non-display passes, we can bypass expensive operations like string escaping, threshold color styling, and sanitization regex lookups, resulting in a ~14x speedup during column search and sort calculations.
+**Action:** Always return raw unformatted data early in render callbacks for non-display type requests to speed up sorting and search.
+
+## 2026-07-26 - [Device Cache Invalidation Correctness]
+**Learning:** While attempting to optimize device caching in `src/data-processor.ts` by tracking only displayed/matched entities (and skipping un-matched ones) during `processDevices`, the change was determined to introduce cache-invalidation bugs. All dynamic states must be tracked because unmatched entities could dynamically update or match configurative criteria. Robust memoization in `processDevices` must check states of all associated device entities (`deviceEntitiesRaw`) to maintain strict correctness.
+**Action:** Ensure cache validation tracks states of all associated entities even if they are not currently matched or displayed.

@@ -492,6 +492,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
 
           if (data === '-' || type === 'type') return data;
+          if (type !== 'display') return data;
 
           let displayValue = escape(String(data));
           let color = '';
@@ -571,7 +572,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
           }
 
-          if (color && type === 'display') {
+          if (color) {
             return `<span title="${escape(highlightReason)}" style="color: ${this._sanitizeColor(
               color,
             )}; font-weight: bold;">${displayValue}</span>`;
