@@ -180,12 +180,50 @@ export const styles = css`
     border: none;
     border-bottom: 1px solid var(--secondary-text-color);
     border-radius: 4px 4px 0 0;
-    padding: 8px 12px 8px 36px;
+    padding: 8px 32px 8px 36px;
     margin-left: 8px;
     outline: none;
     transition: border-bottom-color 0.2s;
     height: 40px;
     box-sizing: border-box;
+  }
+
+  .dt-search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--secondary-text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+    outline: none;
+    z-index: 3;
+  }
+
+  .dt-search-clear:hover {
+    background-color: var(--secondary-background-color);
+    color: var(--primary-text-color);
+  }
+
+  .dt-search-clear:focus-visible {
+    outline: 2px solid var(--primary-color);
+  }
+
+  /* Hide the WebKit-native search cancel button to prevent duplicate close icons */
+  .dt-search input[type='search']::-webkit-search-cancel-button,
+  .dataTables_wrapper .dataTables_filter input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
   }
 
   .dt-search input:focus,
