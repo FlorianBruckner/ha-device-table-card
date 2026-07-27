@@ -27,3 +27,8 @@
 **Vulnerability:** Using plain objects (`{}`) as key-value dictionaries for entities, areas, or metadata from external data sources allows property lookup clashes. If an external key matches inherited prototype properties (like `toString` or `hasOwnProperty`), the lookup resolves to a function, potentially leading to errors, crashes, or logical bypasses.
 **Learning:** Creating dictionaries in low-frequency/registry-fetch paths using `Object.create(null)` removes any prototype inheritance, making the lookup completely immune to prototype property clashes.
 **Prevention:** For dictionary lookups mapping dynamic external IDs, prioritize `Object.create(null)` to ensure safe, property-collision-free lookups.
+
+## 2026-07-11 - [Harden Configuration Sanitization & Color Sanitization Length]
+**Vulnerability:** Configuration structures loaded from user YAML parsed without tracking cyclic links could result in infinite recursive calls within `_sanitizeConfig`, causing browser crashes/DoS. Concurrently, unconstrained color string values validated via complex inline regex patterns presented ReDoS risks.
+**Learning:** Incorporating a `WeakSet` to track visited nodes during configuration sanitization prevents recursive stack exhaustion completely. Limiting the color validation scope to strings strictly under 100 characters mitigates ReDoS potential on complex color rules.
+**Prevention:** Always safeguard deep structural traversals against cycles and bound maximum input length limits on user input evaluated by regex checks.
