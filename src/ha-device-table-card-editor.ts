@@ -329,6 +329,9 @@ export class DeviceTableCardEditor extends LitElement {
         border-color: var(--primary-color, #03a9f4);
         outline: none;
       }
+      .native-input.invalid-input {
+        border-color: var(--error-color, #e53935);
+      }
       .helper-text {
         font-size: 0.8em;
         font-style: italic;
@@ -860,6 +863,8 @@ export class DeviceTableCardEditor extends LitElement {
                                       ),
                                     '100',
                                     'Trigger value below',
+                                    this._isInvalidNumber(hl.below),
+                                    'Please enter a valid number',
                                   )}
                                   ${this._renderInput(
                                     'Above',
@@ -874,6 +879,8 @@ export class DeviceTableCardEditor extends LitElement {
                                       ),
                                     '100',
                                     'Trigger value above',
+                                    this._isInvalidNumber(hl.above),
+                                    'Please enter a valid number',
                                   )}
                                   ${this._renderInput(
                                     'Color',
@@ -975,6 +982,14 @@ export class DeviceTableCardEditor extends LitElement {
     `;
   }
 
+  private _isInvalidNumber(val: any): boolean {
+    if (val === undefined || val === null) return false;
+    const str = String(val).trim();
+    if (str === '') return false;
+    if (str === '-' || str === '.' || str === '-.' || str === '+') return false;
+    return isNaN(Number(str));
+  }
+
   private _renderInput(
     label: string,
     value: string,
@@ -982,14 +997,21 @@ export class DeviceTableCardEditor extends LitElement {
     onInput: (e: any) => void,
     maxlength = '100',
     helperText?: string,
+    invalid?: boolean,
+    errorMessage?: string,
   ): TemplateResult {
+    const errorStr = invalid && errorMessage ? errorMessage : '';
+    const actualHelper = invalid && errorMessage ? errorMessage : helperText || '';
+
     if (customElements.get('ha-input')) {
       return html`
         <ha-input
           label=${label}
           .value=${value}
           .configValue=${configValue}
-          .helper=${helperText || ''}
+          .helper=${actualHelper}
+          .invalid=${!!invalid}
+          .errorMessage=${errorStr}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-input>
@@ -1001,7 +1023,9 @@ export class DeviceTableCardEditor extends LitElement {
           label=${label}
           .value=${value}
           .configValue=${configValue}
-          .helper=${helperText || ''}
+          .helper=${actualHelper}
+          .invalid=${!!invalid}
+          .errorMessage=${errorStr}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-textfield>
@@ -1018,9 +1042,20 @@ export class DeviceTableCardEditor extends LitElement {
           .configValue=${configValue}
           @input=${onInput}
           maxlength=${maxlength}
-          class="native-input"
+          class="native-input ${invalid ? 'invalid-input' : ''}"
         />
-        ${helperText ? html`<div class="helper-text">${helperText}</div>` : ''}
+        ${
+          invalid && errorMessage
+            ? html`<div
+                class="error-message"
+                style="color: var(--error-color, #e53935); font-size: 0.8em; margin-top: 4px;"
+              >
+                ${errorMessage}
+              </div>`
+            : helperText
+              ? html`<div class="helper-text">${helperText}</div>`
+              : ''
+        }
       </div>
     `;
   }

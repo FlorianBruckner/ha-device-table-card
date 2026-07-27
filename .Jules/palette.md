@@ -49,3 +49,7 @@
 ## 2026-07-26 - [Suppressing WebKit Native Search Cancel Button]
 **Learning:** WebKit-based browsers natively append an un-styleable, non-accessible cancel button (`::-webkit-search-cancel-button`) on `<input type="search">` inputs. When building custom search interfaces with custom styled clear buttons, failing to suppress the WebKit native cancel button results in duplicate, overlapping Close/Cancel marks.
 **Action:** Always include CSS rules (`-webkit-appearance: none; appearance: none; display: none;`) on the webkit-search-cancel-button pseudo-element of your search input fields to ensure a consistent, single-button cross-browser user experience.
+
+## 2026-07-27 - [Inline Validation and Error Feedback for Numeric Inputs]
+**Learning:** In complex card configuration editors, letting users enter invalid alphanumeric strings into threshold highlight rules (which expect numbers) causes broken highlight states or silent UI failures. Giving users clear, real-time, and localized validation feedback on individual fields helps them catch errors instantly without breaking intermediate typing states like `-` or `.`.
+**Action:** Provide clear inline error feedback on validation-heavy fields (such as threshold limits). Propagate `.invalid` and `.errorMessage` properties to underlying custom inputs, and render clear styled error labels next to fallback native input fields.

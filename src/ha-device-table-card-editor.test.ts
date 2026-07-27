@@ -341,6 +341,80 @@ describe('ha-device-table-card-editor', () => {
     expect(buttons[1].getAttribute('aria-label')).to.equal('Move Down');
   });
 
+  describe('validation feedback', () => {
+    it('renders invalid state and helper error messages for non-numeric below/above inputs', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      const configWithHighlight: DeviceTableCardConfig = {
+        ...config,
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 'abc' as any, above: 'def' as any, color: 'red' }],
+          },
+        ],
+      };
+      el.setConfig(configWithHighlight);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 0;
+      await el.updateComplete;
+
+      const ruleRow = el.shadowRoot?.querySelector('.highlight-rule-row');
+      expect(ruleRow).to.exist;
+
+      // Find the inputs inside the rule row
+      const haInputs = ruleRow?.querySelectorAll('ha-input, ha-textfield');
+      if (haInputs && haInputs.length > 0) {
+        // First input is Below, second is Above, third is Color
+        expect((haInputs[0] as any).invalid).to.be.true;
+        expect((haInputs[1] as any).invalid).to.be.true;
+        expect((haInputs[2] as any).invalid).to.be.false;
+        expect((haInputs[0] as any).errorMessage).to.equal('Please enter a valid number');
+        expect((haInputs[1] as any).errorMessage).to.equal('Please enter a valid number');
+      } else {
+        const invalidInputs = ruleRow?.querySelectorAll('.invalid-input');
+        const errorMsgs = ruleRow?.querySelectorAll('.error-message');
+        expect(invalidInputs?.length).to.equal(2);
+        expect(errorMsgs?.length).to.equal(2);
+        expect(errorMsgs![0].textContent).to.equal('Please enter a valid number');
+        expect(errorMsgs![1].textContent).to.equal('Please enter a valid number');
+      }
+    });
+
+    it('does not mark intermediate typing states like decimal or minus as invalid', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      const configWithHighlight: DeviceTableCardConfig = {
+        ...config,
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: '-' as any, above: '.' as any, color: 'red' }],
+          },
+        ],
+      };
+      el.setConfig(configWithHighlight);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 0;
+      await el.updateComplete;
+
+      const ruleRow = el.shadowRoot?.querySelector('.highlight-rule-row');
+      expect(ruleRow).to.exist;
+
+      const invalidInputs = ruleRow?.querySelectorAll('.invalid-input');
+      const errorMsgs = ruleRow?.querySelectorAll('.error-message');
+
+      expect(invalidInputs?.length).to.equal(0);
+      expect(errorMsgs?.length).to.equal(0);
+    });
+  });
+
   describe('color preview swatch', () => {
     it('renders color preview swatch with sanitized background color and title', async () => {
       const el = await fixture<DeviceTableCardEditor>(html`
