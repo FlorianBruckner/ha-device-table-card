@@ -695,4 +695,71 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card-editor array bounds-checking safety', () => {
+    it('should gracefully handle out-of-bounds indices in editor operations without crashing', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      const initialConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery 1',
+            highlight: [{ below: 15, color: 'red' }],
+          },
+        ],
+      };
+      el.setConfig(initialConfig as any);
+      el.hass = { states: {} };
+      await el.updateComplete;
+
+      let eventFired = false;
+      el.addEventListener('config-changed', () => {
+        eventFired = true;
+      });
+
+      // 1. _deleteColumn out-of-bounds
+      eventFired = false;
+      (el as any)._deleteColumn(-1);
+      (el as any)._deleteColumn(99);
+      expect(eventFired).to.be.false;
+
+      // 2. _moveColumn out-of-bounds
+      eventFired = false;
+      (el as any)._moveColumn(-1, 'down');
+      (el as any)._moveColumn(99, 'up');
+      expect(eventFired).to.be.false;
+
+      // 3. _updateColumnProperty out-of-bounds
+      eventFired = false;
+      (el as any)._updateColumnProperty(-1, 'label', 'New Label');
+      (el as any)._updateColumnProperty(99, 'label', 'New Label');
+      expect(eventFired).to.be.false;
+
+      // 4. _addHighlightRule out-of-bounds
+      eventFired = false;
+      (el as any)._addHighlightRule(-1);
+      (el as any)._addHighlightRule(99);
+      expect(eventFired).to.be.false;
+
+      // 5. _deleteHighlightRule out-of-bounds (colIndex or hlIndex)
+      eventFired = false;
+      (el as any)._deleteHighlightRule(-1, 0);
+      (el as any)._deleteHighlightRule(99, 0);
+      (el as any)._deleteHighlightRule(0, -1);
+      (el as any)._deleteHighlightRule(0, 99);
+      expect(eventFired).to.be.false;
+
+      // 6. _updateHighlightRule out-of-bounds (colIndex or hlIndex)
+      eventFired = false;
+      (el as any)._updateHighlightRule(-1, 0, 'color', 'blue');
+      (el as any)._updateHighlightRule(99, 0, 'color', 'blue');
+      (el as any)._updateHighlightRule(0, -1, 'color', 'blue');
+      (el as any)._updateHighlightRule(0, 99, 'color', 'blue');
+      expect(eventFired).to.be.false;
+    });
+  });
 });

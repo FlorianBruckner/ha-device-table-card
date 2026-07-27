@@ -1104,6 +1104,9 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteColumn(index: number): void {
     if (!this._config) return;
+    const newConfig = { ...this._config };
+    const columns = [...(newConfig.columns || [])];
+    if (index < 0 || index >= columns.length) return;
     if (this._confirmDeleteColumnIndex !== index) {
       this._confirmDeleteColumnIndex = index;
       this._confirmDeleteHighlightIndex = null;
@@ -1111,8 +1114,6 @@ export class DeviceTableCardEditor extends LitElement {
     }
     this._confirmDeleteColumnIndex = null;
 
-    const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
     columns.splice(index, 1);
     newConfig.columns = columns;
     if (this._expandedColumnIndex === index) {
@@ -1133,6 +1134,7 @@ export class DeviceTableCardEditor extends LitElement {
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
+    if (index < 0 || index >= columns.length) return;
 
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= columns.length) return;
@@ -1159,6 +1161,7 @@ export class DeviceTableCardEditor extends LitElement {
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
+    if (index < 0 || index >= columns.length) return;
 
     // Security check: block prototype pollution
     const forbidden = ['__proto__', 'constructor', 'prototype'];
@@ -1193,6 +1196,7 @@ export class DeviceTableCardEditor extends LitElement {
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
+    if (colIndex < 0 || colIndex >= columns.length) return;
     const col = { ...columns[colIndex] };
     const highlight = [...(col.highlight || [])];
 
@@ -1212,6 +1216,12 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
     if (!this._config || !this._config.columns) return;
+    const newConfig = { ...this._config };
+    const columns = [...this._config.columns];
+    if (colIndex < 0 || colIndex >= columns.length) return;
+    const col = { ...columns[colIndex] };
+    const highlight = [...(col.highlight || [])];
+    if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
     if (
       !this._confirmDeleteHighlightIndex ||
       this._confirmDeleteHighlightIndex.colIndex !== colIndex ||
@@ -1222,11 +1232,6 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
     this._confirmDeleteHighlightIndex = null;
-
-    const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
-    const col = { ...columns[colIndex] };
-    const highlight = [...(col.highlight || [])];
 
     highlight.splice(ruleIndex, 1);
 
@@ -1261,8 +1266,10 @@ export class DeviceTableCardEditor extends LitElement {
     if (!this._config || !this._config.columns) return;
     const newConfig = { ...this._config };
     const columns = [...this._config.columns];
+    if (colIndex < 0 || colIndex >= columns.length) return;
     const col = { ...columns[colIndex] };
     const highlight = [...(col.highlight || [])];
+    if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
 
     // Security check: block prototype pollution
     const forbidden = ['__proto__', 'constructor', 'prototype'];
