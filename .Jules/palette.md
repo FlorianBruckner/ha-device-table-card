@@ -49,3 +49,7 @@
 ## 2026-07-26 - [Suppressing WebKit Native Search Cancel Button]
 **Learning:** WebKit-based browsers natively append an un-styleable, non-accessible cancel button (`::-webkit-search-cancel-button`) on `<input type="search">` inputs. When building custom search interfaces with custom styled clear buttons, failing to suppress the WebKit native cancel button results in duplicate, overlapping Close/Cancel marks.
 **Action:** Always include CSS rules (`-webkit-appearance: none; appearance: none; display: none;`) on the webkit-search-cancel-button pseudo-element of your search input fields to ensure a consistent, single-button cross-browser user experience.
+
+## 2026-07-28 - [Keyboard-Friendly Search Inputs and Tooltip Indicators]
+**Learning:** For custom-built search interfaces where native cancel buttons are suppressed, users natively expect the `Escape` key to instantly clear any active search term. Combining this keyboard shortcut with a visual tooltip (`title`) and hidden internal SVG tags (`aria-hidden`) on the clear button ensures a complete, smooth, and fully accessible search experience for both mouse and keyboard/screen-reader users.
+**Action:** When implementing custom styled search inputs, always register an `Escape` keydown event handler to clear the search query, and provide a descriptive `title` attribute along with `aria-hidden="true"` on the icon element itself.
