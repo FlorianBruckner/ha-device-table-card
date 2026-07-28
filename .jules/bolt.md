@@ -21,3 +21,7 @@
 ## 2026-07-26 - [Device Cache Invalidation Correctness]
 **Learning:** While attempting to optimize device caching in `src/data-processor.ts` by tracking only displayed/matched entities (and skipping un-matched ones) during `processDevices`, the change was determined to introduce cache-invalidation bugs. All dynamic states must be tracked because unmatched entities could dynamically update or match configurative criteria. Robust memoization in `processDevices` must check states of all associated device entities (`deviceEntitiesRaw`) to maintain strict correctness.
 **Action:** Ensure cache validation tracks states of all associated entities even if they are not currently matched or displayed.
+
+## 2026-07-27 - [Fragile Cache Structures & Fast Null-Prototype Lookups]
+**Learning:** State-based caching optimizations utilizing positional arrays or index-based matching of entity lists are highly fragile, introducing risk of dynamic update misses or cache corruption if the lists are updated, filtered, or reordered dynamically. Instead, safe and performant lookups are best achieved by using null-prototype lookup maps (`Object.create(null)`). These totally eliminate security prototype clashes and allow hot-path iterations to use direct, fast property checks (`!== undefined`) rather than slow, high-overhead `Object.prototype.hasOwnProperty.call(...)` lookup methods.
+**Action:** Use null-prototype maps for robust lookup dictionaries to safely enable fast direct undefined checks in hot loop paths instead of hasOwnProperty invocations.
