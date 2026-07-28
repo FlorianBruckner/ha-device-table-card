@@ -261,8 +261,9 @@ export function processDevices(
     }
 
     // Single pass: Resolve states, match entities by device_class/suffix, find latest update, and check anchor filter
-    const entitiesByClass: Record<string, any> = {};
-    const entitiesBySuffix: Record<string, any> = {};
+    // Performance Optimization: Use null-prototype objects to immunize against prototype pollution while allowing fast direct checks (e.g. `!== undefined`)
+    const entitiesByClass: Record<string, any> = Object.create(null);
+    const entitiesBySuffix: Record<string, any> = Object.create(null);
     let matchedSuffixesCount = 0;
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
@@ -278,7 +279,7 @@ export function processDevices(
       // Match by Device Class
       const dClass = stateObj.attributes.device_class || ent.device_class;
       if (dClass && requiredClasses.has(dClass)) {
-        if (!Object.prototype.hasOwnProperty.call(entitiesByClass, dClass)) {
+        if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
         }
         if (!hasAnchor && dClass === anchorClass) {
@@ -290,10 +291,7 @@ export function processDevices(
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
           const { col, key } = suffixCols[k];
-          if (
-            !Object.prototype.hasOwnProperty.call(entitiesBySuffix, key) &&
-            ent.entity_id.endsWith(col.suffix!)
-          ) {
+          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
@@ -349,13 +347,7 @@ export function processDevices(
     for (let i = 0; i < entityCols.length; i++) {
       const { key, resolveType, resolveKey } = entityCols[i];
       const stateObj =
-        resolveType === 'class'
-          ? Object.prototype.hasOwnProperty.call(entitiesByClass, resolveKey)
-            ? entitiesByClass[resolveKey]
-            : undefined
-          : Object.prototype.hasOwnProperty.call(entitiesBySuffix, resolveKey)
-            ? entitiesBySuffix[resolveKey]
-            : undefined;
+        resolveType === 'class' ? entitiesByClass[resolveKey] : entitiesBySuffix[resolveKey];
 
       if (stateObj) {
         deviceData[key] = stateObj.state;
