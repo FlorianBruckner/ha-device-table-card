@@ -32,3 +32,8 @@
 **Vulnerability:** Configuration structures loaded from user YAML parsed without tracking cyclic links could result in infinite recursive calls within `_sanitizeConfig`, causing browser crashes/DoS. Concurrently, unconstrained color string values validated via complex inline regex patterns presented ReDoS risks.
 **Learning:** Incorporating a `WeakSet` to track visited nodes during configuration sanitization prevents recursive stack exhaustion completely. Limiting the color validation scope to strings strictly under 100 characters mitigates ReDoS potential on complex color rules.
 **Prevention:** Always safeguard deep structural traversals against cycles and bound maximum input length limits on user input evaluated by regex checks.
+
+## 2026-07-12 - [Strict Array Index Boundary Validation in Editor]
+**Vulnerability:** Array manipulation functions in the configuration editor (`_deleteColumn`, `_moveColumn`, `_updateColumnProperty`, `_addHighlightRule`, `_deleteHighlightRule`, `_updateHighlightRule`) lacked safety checks for user-controlled index parameters. An invalid, negative, or out-of-bounds index could lead to unhandled runtime errors, UI crashes, or corrupt array states.
+**Learning:** Checking parameter bounds explicitly (`index < 0 || index >= array.length`) is critical when working with index-based array operations triggered by user actions, preventing runtime panics and sparse array insertions.
+**Prevention:** Always validate element indices against array boundaries before performing read, write, swap, or delete operations.

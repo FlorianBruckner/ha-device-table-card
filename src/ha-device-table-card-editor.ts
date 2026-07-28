@@ -1104,6 +1104,9 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteColumn(index: number): void {
     if (!this._config) return;
+    const columns = this._config.columns || [];
+    if (index < 0 || index >= columns.length) return;
+
     if (this._confirmDeleteColumnIndex !== index) {
       this._confirmDeleteColumnIndex = index;
       this._confirmDeleteHighlightIndex = null;
@@ -1112,16 +1115,16 @@ export class DeviceTableCardEditor extends LitElement {
     this._confirmDeleteColumnIndex = null;
 
     const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
-    columns.splice(index, 1);
-    newConfig.columns = columns;
+    const newColumns = [...columns];
+    newColumns.splice(index, 1);
+    newConfig.columns = newColumns;
     if (this._expandedColumnIndex === index) {
       this._expandedColumnIndex = null;
     } else if (this._expandedColumnIndex !== null && this._expandedColumnIndex > index) {
       this._expandedColumnIndex--;
     }
-    if (columns.length > 0) {
-      const nextFocusIndex = Math.min(index, columns.length - 1);
+    if (newColumns.length > 0) {
+      const nextFocusIndex = Math.min(index, newColumns.length - 1);
       this._focusQuery = `.column-header[data-index="${nextFocusIndex}"]`;
     } else {
       this._focusQuery = '#add-column-btn';
@@ -1131,18 +1134,21 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _moveColumn(index: number, direction: 'up' | 'down'): void {
     if (!this._config || !this._config.columns) return;
-    const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
+    const columns = this._config.columns;
+    if (index < 0 || index >= columns.length) return;
 
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= columns.length) return;
 
-    // Swap elements
-    const temp = columns[index];
-    columns[index] = columns[targetIndex];
-    columns[targetIndex] = temp;
+    const newConfig = { ...this._config };
+    const newColumns = [...columns];
 
-    newConfig.columns = columns;
+    // Swap elements
+    const temp = newColumns[index];
+    newColumns[index] = newColumns[targetIndex];
+    newColumns[targetIndex] = temp;
+
+    newConfig.columns = newColumns;
 
     // Adjust expanded index if necessary
     if (this._expandedColumnIndex === index) {
@@ -1157,8 +1163,8 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _updateColumnProperty(index: number, prop: string, value: any): void {
     if (!this._config || !this._config.columns) return;
-    const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
+    const columns = this._config.columns;
+    if (index < 0 || index >= columns.length) return;
 
     // Security check: block prototype pollution
     const forbidden = ['__proto__', 'constructor', 'prototype'];
@@ -1166,34 +1172,39 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
 
-    columns[index] = { ...columns[index], [prop]: value };
+    const newConfig = { ...this._config };
+    const newColumns = [...columns];
+    newColumns[index] = { ...newColumns[index], [prop]: value };
 
     // Set standard defaults when type changes
     if (prop === 'type') {
       if (value === 'device') {
-        columns[index].prop = 'name';
-        delete columns[index].device_class;
-        delete columns[index].suffix;
-        delete columns[index].highlight;
+        newColumns[index].prop = 'name';
+        delete newColumns[index].device_class;
+        delete newColumns[index].suffix;
+        delete newColumns[index].highlight;
       } else if (value === 'entity') {
-        columns[index].device_class = 'battery';
-        delete columns[index].prop;
+        newColumns[index].device_class = 'battery';
+        delete newColumns[index].prop;
       } else if (value === 'meta') {
-        columns[index].prop = 'last_changed';
-        delete columns[index].device_class;
-        delete columns[index].suffix;
+        newColumns[index].prop = 'last_changed';
+        delete newColumns[index].device_class;
+        delete newColumns[index].suffix;
       }
     }
 
-    newConfig.columns = columns;
+    newConfig.columns = newColumns;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
   private _addHighlightRule(colIndex: number): void {
     if (!this._config || !this._config.columns) return;
+    const columns = this._config.columns;
+    if (colIndex < 0 || colIndex >= columns.length) return;
+
     const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
-    const col = { ...columns[colIndex] };
+    const newColumns = [...columns];
+    const col = { ...newColumns[colIndex] };
     const highlight = [...(col.highlight || [])];
 
     highlight.push({
@@ -1203,8 +1214,8 @@ export class DeviceTableCardEditor extends LitElement {
     });
 
     col.highlight = highlight;
-    columns[colIndex] = col;
-    newConfig.columns = columns;
+    newColumns[colIndex] = col;
+    newConfig.columns = newColumns;
     const ruleIndex = highlight.length - 1;
     this._focusQuery = `.highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] ha-input, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] ha-textfield, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${ruleIndex}"] input`;
     fireEvent(this, 'config-changed', { config: newConfig });
@@ -1212,6 +1223,13 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
     if (!this._config || !this._config.columns) return;
+    const columns = this._config.columns;
+    if (colIndex < 0 || colIndex >= columns.length) return;
+
+    const col = columns[colIndex];
+    const highlight = col.highlight || [];
+    if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
+
     if (
       !this._confirmDeleteHighlightIndex ||
       this._confirmDeleteHighlightIndex.colIndex !== colIndex ||
@@ -1224,18 +1242,18 @@ export class DeviceTableCardEditor extends LitElement {
     this._confirmDeleteHighlightIndex = null;
 
     const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
-    const col = { ...columns[colIndex] };
-    const highlight = [...(col.highlight || [])];
+    const newColumns = [...columns];
+    const newCol = { ...col };
+    const newHighlight = [...highlight];
 
-    highlight.splice(ruleIndex, 1);
+    newHighlight.splice(ruleIndex, 1);
 
-    col.highlight = highlight;
-    columns[colIndex] = col;
-    newConfig.columns = columns;
+    newCol.highlight = newHighlight;
+    newColumns[colIndex] = newCol;
+    newConfig.columns = newColumns;
 
-    if (highlight.length > 0) {
-      const nextFocusIndex = Math.min(ruleIndex, highlight.length - 1);
+    if (newHighlight.length > 0) {
+      const nextFocusIndex = Math.min(ruleIndex, newHighlight.length - 1);
       this._focusQuery = `.highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] ha-input, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] ha-textfield, .highlight-rule-row[data-col-index="${colIndex}"][data-hl-index="${nextFocusIndex}"] input`;
     } else {
       this._focusQuery = `button[data-add-rule-col-index="${colIndex}"]`;
@@ -1259,10 +1277,12 @@ export class DeviceTableCardEditor extends LitElement {
     value: any,
   ): void {
     if (!this._config || !this._config.columns) return;
-    const newConfig = { ...this._config };
-    const columns = [...this._config.columns];
-    const col = { ...columns[colIndex] };
-    const highlight = [...(col.highlight || [])];
+    const columns = this._config.columns;
+    if (colIndex < 0 || colIndex >= columns.length) return;
+
+    const col = columns[colIndex];
+    const highlight = col.highlight || [];
+    if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
 
     // Security check: block prototype pollution
     const forbidden = ['__proto__', 'constructor', 'prototype'];
@@ -1270,11 +1290,16 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
 
-    highlight[ruleIndex] = { ...highlight[ruleIndex], [prop]: value };
+    const newConfig = { ...this._config };
+    const newColumns = [...columns];
+    const newCol = { ...col };
+    const newHighlight = [...highlight];
 
-    col.highlight = highlight;
-    columns[colIndex] = col;
-    newConfig.columns = columns;
+    newHighlight[ruleIndex] = { ...newHighlight[ruleIndex], [prop]: value };
+
+    newCol.highlight = newHighlight;
+    newColumns[colIndex] = newCol;
+    newConfig.columns = newColumns;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
