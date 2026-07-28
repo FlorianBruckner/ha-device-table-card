@@ -513,6 +513,50 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card-editor array index boundary safety', () => {
+    it('should safely ignore out-of-bounds index manipulation in editor', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 15, color: 'red' }],
+          },
+        ],
+      } as any);
+      el.hass = { states: {} };
+      await el.updateComplete;
+
+      // out-of-bounds deletions should be ignored and not throw errors
+      expect(() => (el as any)._deleteColumn(-1)).to.not.throw();
+      expect(() => (el as any)._deleteColumn(5)).to.not.throw();
+      expect(() => (el as any)._deleteHighlightRule(-1, 0)).to.not.throw();
+      expect(() => (el as any)._deleteHighlightRule(0, -1)).to.not.throw();
+      expect(() => (el as any)._deleteHighlightRule(0, 5)).to.not.throw();
+
+      // out-of-bounds moves should be ignored
+      expect(() => (el as any)._moveColumn(-1, 'up')).to.not.throw();
+      expect(() => (el as any)._moveColumn(0, 'up')).to.not.throw(); // moving top item up is handled but should not throw or change anything
+      expect(() => (el as any)._moveColumn(5, 'down')).to.not.throw();
+
+      // out-of-bounds property updates should be ignored
+      expect(() => (el as any)._updateColumnProperty(-1, 'label', 'test')).to.not.throw();
+      expect(() => (el as any)._updateColumnProperty(5, 'label', 'test')).to.not.throw();
+
+      // out-of-bounds highlight rules additions / updates should be ignored
+      expect(() => (el as any)._addHighlightRule(-1)).to.not.throw();
+      expect(() => (el as any)._addHighlightRule(5)).to.not.throw();
+      expect(() => (el as any)._updateHighlightRule(-1, 0, 'color', 'blue')).to.not.throw();
+      expect(() => (el as any)._updateHighlightRule(0, -1, 'color', 'blue')).to.not.throw();
+      expect(() => (el as any)._updateHighlightRule(0, 5, 'color', 'blue')).to.not.throw();
+    });
+  });
+
   describe('ha-device-table-card areaLookup prototype safety', () => {
     it('should handle area_id values that match Object.prototype property names safely', async () => {
       const mockHass = {
