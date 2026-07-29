@@ -264,6 +264,7 @@ export function processDevices(
     // Performance Optimization: Use null-prototype objects to immunize against prototype pollution while allowing fast direct checks (e.g. `!== undefined`)
     const entitiesByClass: Record<string, any> = Object.create(null);
     const entitiesBySuffix: Record<string, any> = Object.create(null);
+    let matchedClassesCount = 0;
     let matchedSuffixesCount = 0;
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
@@ -281,6 +282,7 @@ export function processDevices(
       if (dClass && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
+          matchedClassesCount++;
         }
         if (!hasAnchor && dClass === anchorClass) {
           hasAnchor = true;
@@ -303,6 +305,17 @@ export function processDevices(
         if (iso && (latestIso === null || iso > latestIso)) {
           latestIso = iso;
         }
+      }
+
+      // Performance Optimization: Early exit if we have found all required classes and suffixes,
+      // we do not need last_changed, and anchor is already matched.
+      if (
+        !needsLastChanged &&
+        hasAnchor &&
+        matchedClassesCount === requiredClasses.size &&
+        matchedSuffixesCount === suffixCols.length
+      ) {
+        break;
       }
     }
 
