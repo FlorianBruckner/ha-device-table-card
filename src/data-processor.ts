@@ -56,7 +56,7 @@ export function processDevices(
   }
 
   if (!cache) {
-    const columnsRaw = config.columns || [];
+    const columnsRaw = Array.isArray(config.columns) ? config.columns : [];
     const columns = columnsRaw.map((c: any) => {
       if (!c || typeof c !== 'object') return {};
       const cleanCol: any = {};

@@ -158,9 +158,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         this.hass.callWS({ type: 'config/area_registry/list' }),
       ]);
 
-      this._devices = devices as any[];
-      this._entities = entities as any[];
-      this._areas = areas as any[];
+      this._devices = Array.isArray(devices) ? (devices as any[]) : [];
+      this._entities = Array.isArray(entities) ? (entities as any[]) : [];
+      this._areas = Array.isArray(areas) ? (areas as any[]) : [];
 
       const areaLookup: Record<string, string> = Object.create(null);
       for (const area of this._areas) {
@@ -172,7 +172,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
       const entitiesByDevice = new Map<string, any[]>();
       for (const ent of this._entities) {
-        if (ent.device_id) {
+        if (ent && ent.device_id) {
           if (!entitiesByDevice.has(ent.device_id)) {
             entitiesByDevice.set(ent.device_id, []);
           }
@@ -457,7 +457,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _getColumns(): any[] {
-    if (!this._config?.columns || this._config.columns.length === 0) {
+    if (
+      !this._config ||
+      !Array.isArray(this._config.columns) ||
+      this._config.columns.length === 0
+    ) {
       return [
         {
           title: 'Device',

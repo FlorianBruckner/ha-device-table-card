@@ -739,4 +739,83 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card and editor malformed array robustness', () => {
+    it('should handle non-array columns config in card and editor without crashing', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const malformedConfig: any = {
+        type: 'custom:ha-device-table-card',
+        columns: 'this-is-not-an-array',
+      };
+
+      expect(() => elCard.setConfig(malformedConfig)).to.not.throw();
+      expect(() => elEditor.setConfig(malformedConfig)).to.not.throw();
+
+      await elCard.updateComplete;
+      await elEditor.updateComplete;
+    });
+
+    it('should handle non-array highlight rules in card and editor without crashing', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const malformedHighlightConfig: any = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            highlight: 'not-an-array-either',
+          },
+        ],
+      };
+
+      expect(() => elCard.setConfig(malformedHighlightConfig)).to.not.throw();
+      expect(() => elEditor.setConfig(malformedHighlightConfig)).to.not.throw();
+
+      await elCard.updateComplete;
+      await elEditor.updateComplete;
+    });
+
+    it('should handle non-array WS registries in card without crashing', async () => {
+      const mockMalformedHass = {
+        states: {},
+        callWS: async (msg: any) => {
+          // Return non-array malformed lists
+          if (msg.type === 'config/device_registry/list') return 'malformed-devices';
+          if (msg.type === 'config/entity_registry/list') return 'malformed-entities';
+          if (msg.type === 'config/area_registry/list') return 'malformed-areas';
+          return null;
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockMalformedHass}></ha-device-table-card>
+      `);
+      elCard.setConfig({ type: 'custom:ha-device-table-card', columns: [] });
+      await elCard.updateComplete;
+
+      // Force registry fetch and wait, it should handle malformed values and not crash
+      let errorThrown = false;
+      try {
+        await (elCard as any)._fetchRegistries(true);
+      } catch {
+        errorThrown = true;
+      }
+      expect(errorThrown).to.be.false;
+    });
+  });
 });

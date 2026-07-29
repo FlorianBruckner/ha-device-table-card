@@ -394,7 +394,7 @@ export class DeviceTableCardEditor extends LitElement {
       return html``;
     }
 
-    const columns = this._config.columns || [];
+    const columns = Array.isArray(this._config.columns) ? this._config.columns : [];
 
     return html`
       <div class="card-config">
@@ -594,7 +594,8 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _renderColumnItem(col: ColumnConfig, index: number): TemplateResult {
     const isExpanded = this._expandedColumnIndex === index;
-    const columnsCount = this._config?.columns?.length || 0;
+    const columnsCount =
+      this._config && Array.isArray(this._config.columns) ? this._config.columns.length : 0;
 
     return html`
       <div class="column-item">
@@ -840,7 +841,7 @@ export class DeviceTableCardEditor extends LitElement {
                                 + Add Rule
                               </button>
                             </div>
-                            ${(col.highlight || []).map(
+                            ${(Array.isArray(col.highlight) ? col.highlight : []).map(
                               (hl, hlIndex) => html`
                                 <div
                                   class="highlight-rule-row"
@@ -1032,7 +1033,7 @@ export class DeviceTableCardEditor extends LitElement {
   private _addColumnPreset(preset: string): void {
     if (!this._config) return;
     const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
+    const columns = Array.isArray(newConfig.columns) ? [...newConfig.columns] : [];
 
     let newCol: ColumnConfig;
     if (preset === 'battery') {
@@ -1087,7 +1088,7 @@ export class DeviceTableCardEditor extends LitElement {
   private _addColumn(): void {
     if (!this._config) return;
     const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
+    const columns = Array.isArray(newConfig.columns) ? [...newConfig.columns] : [];
     const newCol: ColumnConfig = {
       type: 'device',
       prop: 'name',
@@ -1104,7 +1105,7 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteColumn(index: number): void {
     if (!this._config) return;
-    const columns = this._config.columns || [];
+    const columns = Array.isArray(this._config.columns) ? this._config.columns : [];
     if (index < 0 || index >= columns.length) return;
 
     if (this._confirmDeleteColumnIndex !== index) {
@@ -1133,7 +1134,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _moveColumn(index: number, direction: 'up' | 'down'): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (index < 0 || index >= columns.length) return;
 
@@ -1162,7 +1163,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _updateColumnProperty(index: number, prop: string, value: any): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (index < 0 || index >= columns.length) return;
 
@@ -1198,14 +1199,14 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _addHighlightRule(colIndex: number): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
     const newConfig = { ...this._config };
     const newColumns = [...columns];
     const col = { ...newColumns[colIndex] };
-    const highlight = [...(col.highlight || [])];
+    const highlight = Array.isArray(col.highlight) ? [...col.highlight] : [];
 
     highlight.push({
       below: undefined,
@@ -1222,12 +1223,12 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
     const col = columns[colIndex];
-    const highlight = col.highlight || [];
+    const highlight = Array.isArray(col.highlight) ? col.highlight : [];
     if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
 
     if (
@@ -1276,12 +1277,12 @@ export class DeviceTableCardEditor extends LitElement {
     prop: string,
     value: any,
   ): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
     const col = columns[colIndex];
-    const highlight = col.highlight || [];
+    const highlight = Array.isArray(col.highlight) ? col.highlight : [];
     if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
 
     // Security check: block prototype pollution
