@@ -234,6 +234,10 @@ export class DeviceTableCardEditor extends LitElement {
         border-color: var(--primary-color, #03a9f4);
         outline: none;
       }
+      select:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
+      }
       .presets-container {
         display: flex;
         flex-wrap: wrap;
@@ -328,6 +332,10 @@ export class DeviceTableCardEditor extends LitElement {
       .native-input:focus {
         border-color: var(--primary-color, #03a9f4);
         outline: none;
+      }
+      .native-input:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
       }
       .helper-text {
         font-size: 0.8em;
@@ -1008,6 +1016,7 @@ export class DeviceTableCardEditor extends LitElement {
       `;
     }
     const inputId = `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${configValue?.replace(/\./g, '-') || Math.random().toString(36).substring(2, 7)}`;
+    const helperId = `${inputId}-helper`;
     return html`
       <div class="native-input-container">
         <label for=${inputId}>${label}</label>
@@ -1019,8 +1028,9 @@ export class DeviceTableCardEditor extends LitElement {
           @input=${onInput}
           maxlength=${maxlength}
           class="native-input"
+          aria-describedby=${helperText ? helperId : ''}
         />
-        ${helperText ? html`<div class="helper-text">${helperText}</div>` : ''}
+        ${helperText ? html`<div id=${helperId} class="helper-text">${helperText}</div>` : ''}
       </div>
     `;
   }

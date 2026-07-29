@@ -257,14 +257,24 @@ describe('ha-device-table-card-editor', () => {
     };
 
     try {
-      const template = (el as any)._renderInput('Test Label', 'test-val', 'test-config', () => {});
+      const template = (el as any)._renderInput(
+        'Test Label',
+        'test-val',
+        'test-config',
+        () => {},
+        '100',
+        'Test Helper Text',
+      );
       const container = await fixture(html`<div>${template}</div>`);
       const nativeInput = container.querySelector('input.native-input');
       const label = container.querySelector('label');
+      const helper = container.querySelector('.helper-text');
       expect(nativeInput).to.exist;
       expect(label).to.exist;
+      expect(helper).to.exist;
       expect(nativeInput?.id).to.equal(label?.getAttribute('for'));
       expect((nativeInput as any).value).to.equal('test-val');
+      expect(nativeInput?.getAttribute('aria-describedby')).to.equal(helper?.id);
     } finally {
       customElements.get = originalGet;
     }
