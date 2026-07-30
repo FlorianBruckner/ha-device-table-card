@@ -47,6 +47,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
   private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>()): T {
     if (obj === null || typeof obj !== 'object') {
+      if (typeof obj === 'string') {
+        // Enforce maximum 1000 characters on configuration strings to prevent memory-consumption DoS
+        return (obj.length > 1000 ? obj.slice(0, 1000) : obj) as any;
+      }
       return obj;
     }
     if (seen.has(obj)) {
@@ -158,9 +162,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         this.hass.callWS({ type: 'config/area_registry/list' }),
       ]);
 
-      this._devices = devices as any[];
-      this._entities = entities as any[];
-      this._areas = areas as any[];
+      this._devices = Array.isArray(devices) ? devices : [];
+      this._entities = Array.isArray(entities) ? entities : [];
+      this._areas = Array.isArray(areas) ? areas : [];
 
       const areaLookup: Record<string, string> = Object.create(null);
       for (const area of this._areas) {
@@ -172,7 +176,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
       const entitiesByDevice = new Map<string, any[]>();
       for (const ent of this._entities) {
-        if (ent.device_id) {
+        if (ent && ent.device_id) {
           if (!entitiesByDevice.has(ent.device_id)) {
             entitiesByDevice.set(ent.device_id, []);
           }
@@ -457,7 +461,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _getColumns(): any[] {
-    if (!this._config?.columns || this._config.columns.length === 0) {
+    if (
+      !this._config ||
+      !Array.isArray(this._config.columns) ||
+      this._config.columns.length === 0
+    ) {
       return [
         {
           title: 'Device',
@@ -488,6 +496,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       ];
     }
     return this._config.columns.map((col, index) => {
+      if (!col || typeof col !== 'object') {
+        col = { type: 'device', prop: 'name', label: 'Device' };
+      }
       const colKey = `col_${index}`;
 
       // Pre-parse and pre-sanitize highlight rules once per column configuration update.

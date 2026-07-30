@@ -513,6 +513,91 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card robust type validation and boundary safety', () => {
+    it('should not crash when columns property is not an array', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      // Inject malformed columns
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: 'this-should-be-an-array' as any,
+      });
+      await el.updateComplete;
+
+      // Verify it doesn't crash and returns default columns
+      const cols = (el as any)._getColumns();
+      expect(cols).to.be.an('array');
+      expect(cols.length).to.equal(2);
+      expect(cols[0].title).to.equal('Device');
+    });
+
+    it('should handle non-array WebSocket registry payloads gracefully without throwing', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return null; // Malformed response
+          if (msg.type === 'config/entity_registry/list') return { error: 'invalid' }; // Malformed response
+          if (msg.type === 'config/area_registry/list') return 'not-an-array'; // Malformed response
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      el.setConfig({ type: 'custom:ha-device-table-card', columns: [] });
+      await el.updateComplete;
+
+      // Execute registry fetch and confirm it finishes safely
+      let threw = false;
+      try {
+        await (el as any)._fetchRegistries(true);
+      } catch {
+        threw = true;
+      }
+      expect(threw).to.be.false;
+      expect((el as any)._devices).to.deep.equal([]);
+      expect((el as any)._entities).to.deep.equal([]);
+      expect((el as any)._areas).to.deep.equal([]);
+    });
+
+    it('should enforce 1000 character limits on all configuration string parameters', async () => {
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const longTitle = 'a'.repeat(1200);
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        title: longTitle,
+        columns: [
+          {
+            type: 'device',
+            prop: 'name',
+            label: 'b'.repeat(1500),
+          },
+        ],
+      });
+
+      expect((el as any)._config.title.length).to.equal(1000);
+      expect((el as any)._config.columns[0].label.length).to.equal(1000);
+    });
+  });
+
   describe('ha-device-table-card-editor array index boundary safety', () => {
     it('should safely ignore out-of-bounds index manipulation in editor', async () => {
       const el = await fixture<DeviceTableCardEditor>(html`

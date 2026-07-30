@@ -37,3 +37,8 @@
 **Vulnerability:** Array manipulation functions in the configuration editor (`_deleteColumn`, `_moveColumn`, `_updateColumnProperty`, `_addHighlightRule`, `_deleteHighlightRule`, `_updateHighlightRule`) lacked safety checks for user-controlled index parameters. An invalid, negative, or out-of-bounds index could lead to unhandled runtime errors, UI crashes, or corrupt array states.
 **Learning:** Checking parameter bounds explicitly (`index < 0 || index >= array.length`) is critical when working with index-based array operations triggered by user actions, preventing runtime panics and sparse array insertions.
 **Prevention:** Always validate element indices against array boundaries before performing read, write, swap, or delete operations.
+
+## 2026-07-13 - [DoS Prevention & Config Type Safety Guarding]
+**Vulnerability:** Malformed WebSocket API responses or non-array values for card `columns` or registries would cause unhandled client-side TypeError runtime crashes, resulting in a localized Denial of Service (DoS) of the Home Assistant dashboard. Additionally, extremely large configuration parameters could trigger potential browser memory exhaustion.
+**Learning:** Adding robust `Array.isArray` guards on user inputs, registry lists, and configuration arrays, combined with a 1000-character ceiling on config string elements, guarantees high resilience against malformed data types and bounds exhaustion.
+**Prevention:** Always validate all external inputs (such as WebSocket responses and user-controlled configuration objects) with rigorous runtime array and string type-guards before performing iterations or accessing array/string length methods.
