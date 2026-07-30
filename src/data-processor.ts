@@ -39,7 +39,13 @@ export function processDevices(
   entitiesByDevice: Map<string, any[]>,
   areaLookup: Record<string, string>,
 ): DeviceData[] {
-  if (!hass || !config || devices.length === 0) {
+  if (
+    !hass ||
+    !config ||
+    !Array.isArray(devices) ||
+    devices.length === 0 ||
+    !(entitiesByDevice instanceof Map)
+  ) {
     return [];
   }
 
@@ -56,7 +62,7 @@ export function processDevices(
   }
 
   if (!cache) {
-    const columnsRaw = config.columns || [];
+    const columnsRaw = Array.isArray(config.columns) ? config.columns : [];
     const columns = columnsRaw.map((c: any) => {
       if (!c || typeof c !== 'object') return {};
       const cleanCol: any = {};

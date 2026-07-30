@@ -366,6 +366,10 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>()): T {
     if (obj === null || typeof obj !== 'object') {
+      if (typeof obj === 'string') {
+        // Enforce maximum 1000 characters on configuration strings to prevent memory-consumption DoS
+        return (obj.length > 1000 ? obj.slice(0, 1000) : obj) as any;
+      }
       return obj;
     }
     if (seen.has(obj)) {
@@ -394,7 +398,7 @@ export class DeviceTableCardEditor extends LitElement {
       return html``;
     }
 
-    const columns = this._config.columns || [];
+    const columns = Array.isArray(this._config.columns) ? this._config.columns : [];
 
     return html`
       <div class="card-config">
@@ -594,7 +598,7 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _renderColumnItem(col: ColumnConfig, index: number): TemplateResult {
     const isExpanded = this._expandedColumnIndex === index;
-    const columnsCount = this._config?.columns?.length || 0;
+    const columnsCount = Array.isArray(this._config?.columns) ? this._config.columns.length : 0;
 
     return html`
       <div class="column-item">
@@ -1032,7 +1036,7 @@ export class DeviceTableCardEditor extends LitElement {
   private _addColumnPreset(preset: string): void {
     if (!this._config) return;
     const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
+    const columns = Array.isArray(newConfig.columns) ? [...newConfig.columns] : [];
 
     let newCol: ColumnConfig;
     if (preset === 'battery') {
@@ -1087,7 +1091,7 @@ export class DeviceTableCardEditor extends LitElement {
   private _addColumn(): void {
     if (!this._config) return;
     const newConfig = { ...this._config };
-    const columns = [...(newConfig.columns || [])];
+    const columns = Array.isArray(newConfig.columns) ? [...newConfig.columns] : [];
     const newCol: ColumnConfig = {
       type: 'device',
       prop: 'name',
@@ -1104,7 +1108,7 @@ export class DeviceTableCardEditor extends LitElement {
 
   private _deleteColumn(index: number): void {
     if (!this._config) return;
-    const columns = this._config.columns || [];
+    const columns = Array.isArray(this._config.columns) ? this._config.columns : [];
     if (index < 0 || index >= columns.length) return;
 
     if (this._confirmDeleteColumnIndex !== index) {
@@ -1133,7 +1137,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _moveColumn(index: number, direction: 'up' | 'down'): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (index < 0 || index >= columns.length) return;
 
@@ -1162,7 +1166,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _updateColumnProperty(index: number, prop: string, value: any): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (index < 0 || index >= columns.length) return;
 
@@ -1198,7 +1202,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _addHighlightRule(colIndex: number): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
@@ -1222,7 +1226,7 @@ export class DeviceTableCardEditor extends LitElement {
   }
 
   private _deleteHighlightRule(colIndex: number, ruleIndex: number): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
@@ -1276,7 +1280,7 @@ export class DeviceTableCardEditor extends LitElement {
     prop: string,
     value: any,
   ): void {
-    if (!this._config || !this._config.columns) return;
+    if (!this._config || !Array.isArray(this._config.columns)) return;
     const columns = this._config.columns;
     if (colIndex < 0 || colIndex >= columns.length) return;
 
