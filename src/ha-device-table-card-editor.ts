@@ -352,7 +352,29 @@ export class DeviceTableCardEditor extends LitElement {
         box-sizing: border-box;
         background-color: #eee;
       }
+      .native-input.invalid-input {
+        border-color: var(--error-color, #e53935);
+      }
+      .native-input.invalid-input:focus {
+        border-color: var(--error-color, #e53935);
+        outline: none;
+        box-shadow: 0 0 0 1px var(--error-color, #e53935);
+      }
     `;
+  }
+
+  private _isInvalidNumber(val: string): boolean {
+    if (!val) return false;
+    const trimmed = val.trim();
+    if (!trimmed) return false;
+    if (trimmed === '-' || trimmed === '.' || trimmed === '-.') return false;
+    if (trimmed.endsWith('.')) {
+      const parts = trimmed.split('.');
+      if (parts.length === 2 && !isNaN(Number(parts[0]))) {
+        return false;
+      }
+    }
+    return isNaN(Number(trimmed));
   }
 
   private _sanitizeColor(color: string): string {
@@ -844,8 +866,13 @@ export class DeviceTableCardEditor extends LitElement {
                                 + Add Rule
                               </button>
                             </div>
-                            ${(col.highlight || []).map(
-                              (hl, hlIndex) => html`
+                            ${(col.highlight || []).map((hl, hlIndex) => {
+                              const belowVal = hl.below !== undefined ? String(hl.below) : '';
+                              const aboveVal = hl.above !== undefined ? String(hl.above) : '';
+                              const belowInvalid = this._isInvalidNumber(belowVal);
+                              const aboveInvalid = this._isInvalidNumber(aboveVal);
+
+                              return html`
                                 <div
                                   class="highlight-rule-row"
                                   data-col-index=${index}
@@ -853,7 +880,7 @@ export class DeviceTableCardEditor extends LitElement {
                                 >
                                   ${this._renderInput(
                                     'Below',
-                                    hl.below !== undefined ? String(hl.below) : '',
+                                    belowVal,
                                     undefined,
                                     (e: any) =>
                                       this._updateHighlightRule(
@@ -864,10 +891,12 @@ export class DeviceTableCardEditor extends LitElement {
                                       ),
                                     '100',
                                     'Trigger value below',
+                                    belowInvalid,
+                                    belowInvalid ? 'Must be a valid number' : undefined,
                                   )}
                                   ${this._renderInput(
                                     'Above',
-                                    hl.above !== undefined ? String(hl.above) : '',
+                                    aboveVal,
                                     undefined,
                                     (e: any) =>
                                       this._updateHighlightRule(
@@ -878,6 +907,8 @@ export class DeviceTableCardEditor extends LitElement {
                                       ),
                                     '100',
                                     'Trigger value above',
+                                    aboveInvalid,
+                                    aboveInvalid ? 'Must be a valid number' : undefined,
                                   )}
                                   ${this._renderInput(
                                     'Color',
@@ -965,8 +996,8 @@ export class DeviceTableCardEditor extends LitElement {
                                     }
                                   </button>
                                 </div>
-                              `,
-                            )}
+                              `;
+                            })}
                           </div>
                         `
                       : ''
@@ -986,14 +1017,19 @@ export class DeviceTableCardEditor extends LitElement {
     onInput: (e: any) => void,
     maxlength = '100',
     helperText?: string,
+    invalid = false,
+    errorMessage?: string,
   ): TemplateResult {
+    const displayedHelper = invalid && errorMessage ? errorMessage : helperText || '';
     if (customElements.get('ha-input')) {
       return html`
         <ha-input
           label=${label}
           .value=${value}
           .configValue=${configValue}
-          .helper=${helperText || ''}
+          .helper=${displayedHelper}
+          .invalid=${invalid}
+          .errorMessage=${errorMessage || ''}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-input>
@@ -1005,7 +1041,9 @@ export class DeviceTableCardEditor extends LitElement {
           label=${label}
           .value=${value}
           .configValue=${configValue}
-          .helper=${helperText || ''}
+          .helper=${displayedHelper}
+          .invalid=${invalid}
+          .errorMessage=${errorMessage || ''}
           @input=${onInput}
           maxlength=${maxlength}
         ></ha-textfield>
@@ -1022,9 +1060,23 @@ export class DeviceTableCardEditor extends LitElement {
           .configValue=${configValue}
           @input=${onInput}
           maxlength=${maxlength}
-          class="native-input"
+          class="native-input ${invalid ? 'invalid-input' : ''}"
+          aria-invalid=${invalid ? 'true' : 'false'}
+          aria-describedby=${invalid && errorMessage ? `${inputId}-error` : helperText ? `${inputId}-helper` : ''}
         />
-        ${helperText ? html`<div class="helper-text">${helperText}</div>` : ''}
+        ${
+          invalid && errorMessage
+            ? html`<div
+                id="${inputId}-error"
+                class="helper-text error-text"
+                style="color: var(--error-color, #e53935); font-weight: 500;"
+              >
+                ${errorMessage}
+              </div>`
+            : helperText
+              ? html`<div id="${inputId}-helper" class="helper-text">${helperText}</div>`
+              : ''
+        }
       </div>
     `;
   }
