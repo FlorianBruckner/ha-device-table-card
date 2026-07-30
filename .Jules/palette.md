@@ -53,3 +53,7 @@
 ## 2026-07-28 - [Keyboard-Friendly Search Inputs and Tooltip Indicators]
 **Learning:** For custom-built search interfaces where native cancel buttons are suppressed, users natively expect the `Escape` key to instantly clear any active search term. Combining this keyboard shortcut with a visual tooltip (`title`) and hidden internal SVG tags (`aria-hidden`) on the clear button ensures a complete, smooth, and fully accessible search experience for both mouse and keyboard/screen-reader users.
 **Action:** When implementing custom styled search inputs, always register an `Escape` keydown event handler to clear the search query, and provide a descriptive `title` attribute along with `aria-hidden="true"` on the icon element itself.
+
+## 2026-07-30 - [Graceful Inline Validation for Numeric Custom Inputs]
+**Learning:** Instantly validating numeric configurations as a user types can trigger frustrating false-positives for valid intermediate states (like a lone negative sign `-`, a lone decimal point `.`, or a trailing decimal `.`). Designing an validation helper that permits these intermediate states ensures smooth typing, while still providing prompt, clear, and accessible inline validation feedback (using `aria-invalid` and `aria-describedby` dynamically) when actual invalid values (like alphanumeric strings) are present.
+**Action:** Always ignore typing milestones like `-`, `.`, and trailing decimal points in keypress validation, and bind any fallback native input errors to screen readers using dynamic `aria-describedby` error element IDs.

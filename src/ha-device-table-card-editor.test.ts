@@ -493,4 +493,100 @@ describe('ha-device-table-card-editor', () => {
       );
     });
   });
+
+  describe('numeric threshold input validation', () => {
+    it('correctly evaluates _isInvalidNumber for various inputs', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+
+      // Valid numbers
+      expect((el as any)._isInvalidNumber('')).to.be.false;
+      expect((el as any)._isInvalidNumber('   ')).to.be.false;
+      expect((el as any)._isInvalidNumber('15')).to.be.false;
+      expect((el as any)._isInvalidNumber('-15')).to.be.false;
+      expect((el as any)._isInvalidNumber('12.3')).to.be.false;
+
+      // Intermediate typing states (should not trigger invalid styling)
+      expect((el as any)._isInvalidNumber('-')).to.be.false;
+      expect((el as any)._isInvalidNumber('.')).to.be.false;
+      expect((el as any)._isInvalidNumber('-.')).to.be.false;
+      expect((el as any)._isInvalidNumber('12.')).to.be.false;
+      expect((el as any)._isInvalidNumber('-15.')).to.be.false;
+
+      // Real invalid values
+      expect((el as any)._isInvalidNumber('abc')).to.be.true;
+      expect((el as any)._isInvalidNumber('12.3.4')).to.be.true;
+      expect((el as any)._isInvalidNumber('12a')).to.be.true;
+    });
+
+    it('sets invalid state and error messages on custom elements when validation fails', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      // columns[1] is type entity and has highlight battery below 15
+      const customConfig: DeviceTableCardConfig = {
+        ...config,
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+            highlight: [{ below: 'invalid-val' as any, color: 'red' }],
+          },
+        ],
+      };
+      el.setConfig(customConfig);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 0;
+      await el.updateComplete;
+
+      const belowInput = el.shadowRoot?.querySelector(
+        '.highlight-rule-row[data-col-index="0"] ha-input, .highlight-rule-row[data-col-index="0"] ha-textfield',
+      ) as any;
+      expect(belowInput).to.exist;
+      expect(belowInput.invalid).to.be.true;
+      expect(belowInput.errorMessage).to.equal('Must be a valid number');
+      expect(belowInput.helper).to.equal('Must be a valid number');
+    });
+
+    it('sets invalid-input class and aria-invalid/aria-describedby on fallback native inputs when validation fails', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+
+      const originalGet = customElements.get;
+      customElements.get = (name: string) => {
+        if (name === 'ha-input' || name === 'ha-textfield') {
+          return undefined;
+        }
+        return originalGet.call(customElements, name);
+      };
+
+      try {
+        const template = (el as any)._renderInput(
+          'Below',
+          'abc',
+          'below',
+          () => {},
+          '100',
+          'Trigger value below',
+          true,
+          'Must be a valid number',
+        );
+        const container = await fixture(html`<div>${template}</div>`);
+        const nativeInput = container.querySelector('input.native-input') as HTMLInputElement;
+        const errorDiv = container.querySelector('.error-text') as HTMLElement;
+
+        expect(nativeInput).to.exist;
+        expect(nativeInput.classList.contains('invalid-input')).to.be.true;
+        expect(nativeInput.getAttribute('aria-invalid')).to.equal('true');
+        expect(errorDiv).to.exist;
+        expect(errorDiv.textContent?.trim()).to.equal('Must be a valid number');
+        expect(nativeInput.getAttribute('aria-describedby')).to.equal(errorDiv.id);
+      } finally {
+        customElements.get = originalGet;
+      }
+    });
+  });
 });
