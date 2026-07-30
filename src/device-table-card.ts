@@ -489,6 +489,36 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
     return this._config.columns.map((col, index) => {
       const colKey = `col_${index}`;
+
+      // Pre-parse and pre-sanitize highlight rules once per column configuration update.
+      const parsedRules: Array<{
+        below?: number;
+        above?: number;
+        color: string;
+        sanitizedColor: string;
+      }> = [];
+
+      if (Array.isArray(col.highlight)) {
+        for (const rule of col.highlight) {
+          if (!rule || typeof rule !== 'object') continue;
+          const ruleBelow =
+            rule.below !== undefined && (rule.below as any) !== ''
+              ? parseFloat(rule.below as any)
+              : undefined;
+          const ruleAbove =
+            rule.above !== undefined && (rule.above as any) !== ''
+              ? parseFloat(rule.above as any)
+              : undefined;
+
+          parsedRules.push({
+            below: ruleBelow !== undefined && !isNaN(ruleBelow) ? ruleBelow : undefined,
+            above: ruleAbove !== undefined && !isNaN(ruleAbove) ? ruleAbove : undefined,
+            color: rule.color || '',
+            sanitizedColor: this._sanitizeColor(rule.color || ''),
+          });
+        }
+      }
+
       return {
         title: escape(col.label || col.prop || col.device_class || 'Unknown'),
         data: colKey,
@@ -542,6 +572,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           let displayValue = escape(String(data));
           let color = '';
+          let sanitizedColor = '';
           let highlightReason = '';
 
           if (col.type === 'entity') {
@@ -552,30 +583,20 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 displayValue = `${escape(data)} ${escape(uom)}`;
               }
 
-              // Highlighting
-              if (Array.isArray(col.highlight)) {
+              // Highlighting using pre-parsed threshold rules to avoid parseFloat/sanitization overhead in hot path
+              if (parsedRules.length > 0) {
                 const numericValue = parseFloat(data);
                 if (!isNaN(numericValue)) {
-                  for (const rule of col.highlight) {
-                    if (!rule || typeof rule !== 'object') continue;
-                    const ruleBelow =
-                      rule.below !== undefined && (rule.below as any) !== ''
-                        ? parseFloat(rule.below as any)
-                        : undefined;
-                    const ruleAbove =
-                      rule.above !== undefined && (rule.above as any) !== ''
-                        ? parseFloat(rule.above as any)
-                        : undefined;
-                    if (ruleBelow !== undefined && !isNaN(ruleBelow) && numericValue < ruleBelow) {
+                  for (let i = 0; i < parsedRules.length; i++) {
+                    const rule = parsedRules[i];
+                    if (rule.below !== undefined && numericValue < rule.below) {
                       color = rule.color;
-                      highlightReason = `Value is below threshold: ${ruleBelow}${uom || ''}`;
-                    } else if (
-                      ruleAbove !== undefined &&
-                      !isNaN(ruleAbove) &&
-                      numericValue > ruleAbove
-                    ) {
+                      sanitizedColor = rule.sanitizedColor;
+                      highlightReason = `Value is below threshold: ${rule.below}${uom || ''}`;
+                    } else if (rule.above !== undefined && numericValue > rule.above) {
                       color = rule.color;
-                      highlightReason = `Value is above threshold: ${ruleAbove}${uom || ''}`;
+                      sanitizedColor = rule.sanitizedColor;
+                      highlightReason = `Value is above threshold: ${rule.above}${uom || ''}`;
                     }
                   }
                 }
@@ -595,33 +616,25 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               displayValue = `${Math.floor(secondsAgo / 86400)}d`;
             }
 
-            if (Array.isArray(col.highlight)) {
+            if (parsedRules.length > 0) {
               const minutesAgo = Math.floor(secondsAgo / 60);
-              for (const rule of col.highlight) {
-                if (!rule || typeof rule !== 'object') continue;
-                const ruleBelow =
-                  rule.below !== undefined && (rule.below as any) !== ''
-                    ? parseFloat(rule.below as any)
-                    : undefined;
-                const ruleAbove =
-                  rule.above !== undefined && (rule.above as any) !== ''
-                    ? parseFloat(rule.above as any)
-                    : undefined;
-                if (ruleBelow !== undefined && !isNaN(ruleBelow) && minutesAgo < ruleBelow) {
+              for (let i = 0; i < parsedRules.length; i++) {
+                const rule = parsedRules[i];
+                if (rule.below !== undefined && minutesAgo < rule.below) {
                   color = rule.color;
-                  highlightReason = `Last changed ${minutesAgo}m ago (below ${ruleBelow}m threshold)`;
-                } else if (ruleAbove !== undefined && !isNaN(ruleAbove) && minutesAgo > ruleAbove) {
+                  sanitizedColor = rule.sanitizedColor;
+                  highlightReason = `Last changed ${minutesAgo}m ago (below ${rule.below}m threshold)`;
+                } else if (rule.above !== undefined && minutesAgo > rule.above) {
                   color = rule.color;
-                  highlightReason = `Last changed ${minutesAgo}m ago (above ${ruleAbove}m threshold)`;
+                  sanitizedColor = rule.sanitizedColor;
+                  highlightReason = `Last changed ${minutesAgo}m ago (above ${rule.above}m threshold)`;
                 }
               }
             }
           }
 
           if (color) {
-            return `<span title="${escape(highlightReason)}" style="color: ${this._sanitizeColor(
-              color,
-            )}; font-weight: bold;">${displayValue}</span>`;
+            return `<span title="${escape(highlightReason)}" style="color: ${sanitizedColor}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },
