@@ -103,19 +103,8 @@ export class DeviceTableCardEditor extends LitElement {
         align-items: center;
         justify-content: space-between;
         background-color: var(--secondary-background-color, #f5f5f5);
-        padding: 8px 12px;
-        cursor: pointer;
         user-select: none;
-        transition:
-          background-color 0.2s,
-          color 0.2s;
-      }
-      .column-header:hover {
-        background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
-      }
-      .column-header:focus-visible {
-        outline: 2px solid var(--primary-color, #03a9f4);
-        outline-offset: -2px;
+        padding: 0 12px 0 0;
       }
       .column-header-title {
         font-weight: bold;
@@ -124,6 +113,20 @@ export class DeviceTableCardEditor extends LitElement {
         gap: 8px;
         font-size: 0.95em;
         color: var(--primary-text-color);
+        cursor: pointer;
+        flex: 1;
+        padding: 12px;
+        align-self: stretch;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
+      }
+      .column-header-title:hover {
+        background-color: var(--divider-color, rgba(0, 0, 0, 0.1));
+      }
+      .column-header-title:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
       .column-badge {
         font-size: 0.75em;
@@ -624,17 +627,17 @@ export class DeviceTableCardEditor extends LitElement {
 
     return html`
       <div class="column-item">
-        <div
-          class="column-header"
-          data-index=${index}
-          @click=${() => this._toggleColumn(index)}
-          @keydown=${this._handleKeyDown}
-          tabindex="0"
-          role="button"
-          aria-expanded=${isExpanded ? 'true' : 'false'}
-          aria-controls="column-body-${index}"
-        >
-          <div class="column-header-title">
+        <div class="column-header">
+          <div
+            class="column-header-title"
+            data-index=${index}
+            @click=${() => this._toggleColumn(index)}
+            @keydown=${this._handleKeyDown}
+            tabindex="0"
+            role="button"
+            aria-expanded=${isExpanded ? 'true' : 'false'}
+            aria-controls="column-body-${index}"
+          >
             <svg
               class="expand-icon ${isExpanded ? 'expanded' : ''}"
               width="16"
@@ -652,7 +655,7 @@ export class DeviceTableCardEditor extends LitElement {
             <span>${col.label || col.prop || col.device_class || `Column ${index + 1}`}</span>
             <span class="column-badge">${col.type}</span>
           </div>
-          <div class="column-actions" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="column-actions">
             <button
               class="btn-icon"
               title=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
@@ -1136,7 +1139,7 @@ export class DeviceTableCardEditor extends LitElement {
     const newIndex = columns.length - 1;
     this._expandedColumnIndex = newIndex;
     this._columnsExpanded = true;
-    this._focusQuery = `.column-header[data-index="${newIndex}"]`;
+    this._focusQuery = `.column-header-title[data-index="${newIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -1154,7 +1157,7 @@ export class DeviceTableCardEditor extends LitElement {
     const newIndex = columns.length - 1;
     this._expandedColumnIndex = newIndex;
     this._columnsExpanded = true;
-    this._focusQuery = `.column-header[data-index="${newIndex}"]`;
+    this._focusQuery = `.column-header-title[data-index="${newIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -1181,7 +1184,7 @@ export class DeviceTableCardEditor extends LitElement {
     }
     if (newColumns.length > 0) {
       const nextFocusIndex = Math.min(index, newColumns.length - 1);
-      this._focusQuery = `.column-header[data-index="${nextFocusIndex}"]`;
+      this._focusQuery = `.column-header-title[data-index="${nextFocusIndex}"]`;
     } else {
       this._focusQuery = '#add-column-btn';
     }
@@ -1213,7 +1216,7 @@ export class DeviceTableCardEditor extends LitElement {
       this._expandedColumnIndex = index;
     }
 
-    this._focusQuery = `.column-header[data-index="${targetIndex}"]`;
+    this._focusQuery = `.column-header-title[data-index="${targetIndex}"]`;
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
