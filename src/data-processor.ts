@@ -220,10 +220,10 @@ export function processDevices(
       if (!deviceEntitiesRaw) return;
       let entityStates: Record<string, any> | undefined = undefined;
       if (!isStaticFilter) {
-        entityStates = {};
+        entityStates = Object.create(null);
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          entityStates[ent.entity_id] = states[ent.entity_id];
+          entityStates![ent.entity_id] = states[ent.entity_id];
         }
       }
       deviceCache.set(deviceId, {
@@ -270,6 +270,7 @@ export function processDevices(
     // Performance Optimization: Use null-prototype objects to immunize against prototype pollution while allowing fast direct checks (e.g. `!== undefined`)
     const entitiesByClass: Record<string, any> = Object.create(null);
     const entitiesBySuffix: Record<string, any> = Object.create(null);
+    let matchedClassesCount = 0;
     let matchedSuffixesCount = 0;
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
@@ -287,6 +288,7 @@ export function processDevices(
       if (dClass && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
+          matchedClassesCount++;
         }
         if (!hasAnchor && dClass === anchorClass) {
           hasAnchor = true;
@@ -309,6 +311,17 @@ export function processDevices(
         if (iso && (latestIso === null || iso > latestIso)) {
           latestIso = iso;
         }
+      }
+
+      // Performance Optimization: Break early if we do not need last changed timestamp,
+      // we have found the anchor, and we have already matched all required classes and suffix columns.
+      if (
+        !needsLastChanged &&
+        hasAnchor &&
+        matchedClassesCount === requiredClasses.size &&
+        matchedSuffixesCount === suffixCols.length
+      ) {
+        break;
       }
     }
 
