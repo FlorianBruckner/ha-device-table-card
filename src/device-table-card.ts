@@ -45,7 +45,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>()): T {
+  private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>(), depth = 0): T {
+    if (depth > 20) {
+      throw new Error('Configuration depth limit exceeded');
+    }
     if (obj === null || typeof obj !== 'object') {
       if (typeof obj === 'string') {
         // Enforce maximum 1000 characters on configuration strings to prevent memory-consumption DoS
@@ -58,14 +61,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
     seen.add(obj);
     if (Array.isArray(obj)) {
-      return obj.map((item) => this._sanitizeConfig(item, seen)) as any;
+      return obj.map((item) => this._sanitizeConfig(item, seen, depth + 1)) as any;
     }
     const sanitized: any = {};
     for (const key of Object.keys(obj)) {
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         continue;
       }
-      sanitized[key] = this._sanitizeConfig((obj as any)[key], seen);
+      sanitized[key] = this._sanitizeConfig((obj as any)[key], seen, depth + 1);
     }
     return sanitized;
   }
@@ -452,10 +455,16 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
     // Block potential CSS function injections like url(), expression(), image(), image-set(), etc.
     if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
+      if (this._colorCache.size >= 500) {
+        this._colorCache.clear();
+      }
       this._colorCache.set(color, '');
       return '';
     }
 
+    if (this._colorCache.size >= 500) {
+      this._colorCache.clear();
+    }
     this._colorCache.set(color, sanitized);
     return sanitized;
   }
