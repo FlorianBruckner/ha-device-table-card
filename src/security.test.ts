@@ -494,6 +494,56 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card depth limits DoS prevention', () => {
+    it('should reject extremely deep configurations in setConfig to prevent deep-recursion stack overflow DoS', async () => {
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      // Build a deeply nested object with depth of 22
+      const deepObj: any = {};
+      let current = deepObj;
+      for (let i = 0; i < 22; i++) {
+        current.child = {};
+        current = current.child;
+      }
+
+      const deepConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        nested: deepObj,
+      };
+
+      expect(() => elCard.setConfig(deepConfig)).to.throw('Configuration depth limit exceeded');
+      expect(() => elEditor.setConfig(deepConfig)).to.throw('Configuration depth limit exceeded');
+    });
+  });
+
+  describe('ha-device-table-card color cache memory bounding DoS prevention', () => {
+    it('should safely bound memory usage in _colorCache and clear entries when threshold is reached', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const cacheMap = (elCard as any)._colorCache;
+      expect(cacheMap).to.exist;
+
+      // Populate up to 500 entries (the threshold limit of 500)
+      for (let i = 0; i < 500; i++) {
+        (elCard as any)._sanitizeColor(`color${i}`);
+      }
+      expect(cacheMap.size).to.equal(500);
+
+      // Triggering 501st entry should reset cache size or handle correctly
+      (elCard as any)._sanitizeColor('newUniqueColor');
+      // The 501st unique color check should trigger clean/clear to keep map size bounded
+      expect(cacheMap.size).to.be.below(500);
+    });
+  });
+
   describe('ha-device-table-card _sanitizeColor length limit ReDoS prevention', () => {
     it('should reject color values exceeding 100 characters in _sanitizeColor', async () => {
       const elCard = await fixture<DeviceTableCard>(html`
