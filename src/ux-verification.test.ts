@@ -205,7 +205,8 @@ describe('ha-device-table-card UX', () => {
 
     // Stub matches method or simulate hover/focus on el
     Object.defineProperty(el, 'matches', {
-      value: (selector: string) => selector === ':hover' || selector === ':focus' || selector === ':focus-within',
+      value: (selector: string) =>
+        selector === ':hover' || selector === ':focus' || selector === ':focus-within',
       writable: true,
       configurable: true,
     });
