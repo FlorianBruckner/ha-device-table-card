@@ -1,3 +1,7 @@
+## 2026-07-29 - [Multi-Criteria Early Exit in High-Frequency Loops]
+**Learning:** In loops processing many child objects (such as entities of a device), we can break early if all query criteria (such as required column classes and suffixes) are fully matched. However, the early-exit condition must explicitly verify that any anchor criteria (e.g., `hasAnchor`) are met and that we do not need any aggregate properties (e.g., `needsLastChanged` for finding the latest timestamp across all children) to guarantee correct data resolution.
+**Action:** Always include complete, explicit state verification checks (like `hasAnchor` and `!needsLastChanged`) in loop early-exit conditions to prevent premature terminations.
+
 ## 2026-07-15 - [Static Filter Cache Bypassing]
 **Learning:** Devices that are excluded from display by static configuration filters (such as `manufacturer`, `area`, or `integration`) do not need to track dynamic entity state updates. Marking these cached entries with an `isStaticFilter` flag and setting `entityStates` to `undefined` allows us to skip the high-frequency entity iteration loop during device processing and avoid redundant state-checking lookups on consecutive updates. This yields a ~1.87x speedup for cards with highly targeted static filters.
 **Action:** Skip dynamic attribute or state tracking for elements that fail static pre-filtering steps to eliminate GC and iteration overhead.
