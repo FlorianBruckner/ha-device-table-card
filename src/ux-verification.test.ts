@@ -87,7 +87,7 @@ describe('ha-device-table-card UX', () => {
     const searchInput = el.shadowRoot?.querySelector('.dt-search input, .dataTables_filter input');
     expect(searchInput).to.exist;
     expect(searchInput?.getAttribute('aria-label')).to.equal('Search devices');
-    expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices...');
+    expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices... (Press /)');
     expect(searchInput?.getAttribute('type')).to.equal('search');
 
     const lengthSelect = el.shadowRoot?.querySelector(
@@ -181,6 +181,38 @@ describe('ha-device-table-card UX', () => {
     const span = cells[0].querySelector('span');
     expect(span).to.exist;
     expect(span?.getAttribute('title')).to.equal('Value is below threshold: 90%');
+  });
+
+  it('focuses search input when global "/" key is pressed', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+    expect(el.shadowRoot?.activeElement).to.not.equal(searchInput);
+
+    // Stub matches method or simulate hover/focus on el
+    Object.defineProperty(el, 'matches', {
+      value: (selector: string) => selector === ':hover' || selector === ':focus' || selector === ':focus-within',
+      writable: true,
+      configurable: true,
+    });
+
+    // Press "/" key globally
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '/' }));
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
   });
 
   it('renders and operates search clear button correctly', async () => {

@@ -81,12 +81,54 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return 3;
   }
 
+  private _handleGlobalKeyDown = (ev: KeyboardEvent): void => {
+    if (ev.key === '/') {
+      let deepActive = document.activeElement;
+      while (deepActive && deepActive.shadowRoot && deepActive.shadowRoot.activeElement) {
+        deepActive = deepActive.shadowRoot.activeElement;
+      }
+      if (deepActive) {
+        const deepTagName = deepActive.tagName.toLowerCase();
+        if (
+          deepTagName === 'input' ||
+          deepTagName === 'textarea' ||
+          deepTagName === 'select' ||
+          deepTagName.includes('textfield') ||
+          deepTagName.includes('input') ||
+          deepActive.hasAttribute('contenteditable')
+        ) {
+          return;
+        }
+      }
+
+      // Avoid focus hijacking or multi-instance focus conflict:
+      // Only trigger the shortcut if the mouse is hovering over this card
+      // or if focus is already somewhere within this card.
+      const isHovered = this.matches(':hover');
+      const isFocused = deepActive && this.contains(deepActive);
+
+      if (!isHovered && !isFocused) {
+        return;
+      }
+
+      const searchInput = this.shadowRoot?.querySelector(
+        '.dt-search input, .dataTables_filter input',
+      ) as HTMLInputElement | null;
+      if (searchInput) {
+        ev.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  };
+
   public connectedCallback(): void {
     super.connectedCallback();
     if (this._config) {
       this._startRefreshInterval();
     }
     this._subscribeRegistryUpdates();
+    window.addEventListener('keydown', this._handleGlobalKeyDown);
   }
 
   public disconnectedCallback(): void {
@@ -101,6 +143,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
     this._lastProcessedData = [];
     this._unsubscribeRegistryUpdates();
+    window.removeEventListener('keydown', this._handleGlobalKeyDown);
   }
 
   private _startRefreshInterval(): void {
@@ -322,7 +365,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         ],
         language: {
           search: '',
-          searchPlaceholder: 'Search devices...',
+          searchPlaceholder: 'Search devices... (Press /)',
           info: 'Showing _START_ to _END_ of _TOTAL_ devices',
           infoEmpty: 'Showing 0 to 0 of 0 devices',
           infoFiltered: '(filtered from _MAX_ total devices)',
