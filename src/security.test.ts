@@ -824,4 +824,72 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card recursion depth limit protection', () => {
+    it('should safely limit recursion depth in config sanitization without call stack overflow', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      // Create an extremely deeply nested object structure
+      const deepObject: any = { type: 'custom:ha-device-table-card' };
+      let current = deepObject;
+      for (let i = 0; i < 50; i++) {
+        current.child = {};
+        current = current.child;
+      }
+
+      // This should not throw call stack size exceeded or crash the browser
+      let cardThrew = false;
+      let editorThrew = false;
+      try {
+        elCard.setConfig(deepObject);
+      } catch {
+        cardThrew = true;
+      }
+      try {
+        elEditor.setConfig(deepObject);
+      } catch {
+        editorThrew = true;
+      }
+
+      expect(cardThrew).to.be.false;
+      expect(editorThrew).to.be.false;
+
+      // Verify that the config was safely truncated/handled
+      const cardConfig = (elCard as any)._config;
+      let depth = 0;
+      let check = cardConfig;
+      while (check && typeof check === 'object') {
+        depth++;
+        check = check.child;
+      }
+      // Depth should be limited to at most 22 (the limit is 20, plus some levels)
+      expect(depth).to.be.at.most(22);
+    });
+  });
+
+  describe('ha-device-table-card color cache bounding', () => {
+    it('should limit color cache size to 500 entries to prevent memory exhaustion', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+
+      const cache = (elCard as any)._colorCache;
+      cache.clear();
+
+      // Populate color cache with 500 unique entries
+      for (let i = 0; i < 500; i++) {
+        (elCard as any)._sanitizeColor(`color-${i}`);
+      }
+      expect(cache.size).to.equal(500);
+
+      // Adding 1 more unique entry should trigger cache clearing
+      (elCard as any)._sanitizeColor('color-501');
+      expect(cache.size).to.equal(1);
+    });
+  });
 });

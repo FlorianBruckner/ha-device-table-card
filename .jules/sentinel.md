@@ -42,3 +42,8 @@
 **Vulnerability:** Malformed WebSocket API responses or non-array values for card `columns` or registries would cause unhandled client-side TypeError runtime crashes, resulting in a localized Denial of Service (DoS) of the Home Assistant dashboard. Additionally, extremely large configuration parameters could trigger potential browser memory exhaustion.
 **Learning:** Adding robust `Array.isArray` guards on user inputs, registry lists, and configuration arrays, combined with a 1000-character ceiling on config string elements, guarantees high resilience against malformed data types and bounds exhaustion.
 **Prevention:** Always validate all external inputs (such as WebSocket responses and user-controlled configuration objects) with rigorous runtime array and string type-guards before performing iterations or accessing array/string length methods.
+
+## 2026-07-14 - [Config Sanitization Recursion Depth & Color Cache Bounding]
+**Vulnerability:** Malicious deeply nested dashboard configurations without cyclic references could trigger a call stack overflow ("Maximum call stack size exceeded") DoS crash. Concurrently, an unbounded color sanitization cache (`_colorCache`) posed a memory-exhaustion/leak vector under highly dynamic inputs.
+**Learning:** Enforcing a hard depth limit of 20 in recursive structural traversals prevents Call Stack Exhaustion completely. Limiting the color cache size to 500 entries (clearing when exceeded) ensures deterministic memory consumption.
+**Prevention:** Always define hard recursion depth limits on structural parser boundaries and clear or bound cache maps dynamically to protect against client-side memory-exhaustion vectors.
