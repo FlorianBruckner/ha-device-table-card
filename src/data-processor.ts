@@ -271,6 +271,7 @@ export function processDevices(
     const entitiesByClass: Record<string, any> = Object.create(null);
     const entitiesBySuffix: Record<string, any> = Object.create(null);
     let matchedSuffixesCount = 0;
+    let matchedClassesCount = 0;
     let latestIso: string | null = null;
     let hasAnchor = !anchorClass;
     let hasValidEntities = false;
@@ -287,6 +288,7 @@ export function processDevices(
       if (dClass && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
+          matchedClassesCount++;
         }
         if (!hasAnchor && dClass === anchorClass) {
           hasAnchor = true;
@@ -309,6 +311,17 @@ export function processDevices(
         if (iso && (latestIso === null || iso > latestIso)) {
           latestIso = iso;
         }
+      }
+
+      // Performance Optimization: Early exit if all required entities are found, and we do not need last_changed tracking.
+      // Ensuring hasAnchor is true prevents breaking before resolving the anchor filter.
+      if (
+        !needsLastChanged &&
+        hasAnchor &&
+        matchedClassesCount === requiredClasses.size &&
+        matchedSuffixesCount === suffixCols.length
+      ) {
+        break;
       }
     }
 
