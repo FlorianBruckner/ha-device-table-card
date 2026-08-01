@@ -315,7 +315,7 @@ describe('ha-device-table-card-editor', () => {
     expect(generalHeader?.getAttribute('aria-controls')).to.equal('general-section-content');
     expect(generalHeader?.getAttribute('aria-expanded')).to.equal('true');
 
-    const columnItemHeader = el.shadowRoot?.querySelector('.column-header');
+    const columnItemHeader = el.shadowRoot?.querySelector('.column-header-title');
     expect(columnItemHeader?.getAttribute('aria-controls')).to.equal('column-body-0');
     expect(columnItemHeader?.getAttribute('aria-expanded')).to.equal('true');
 
@@ -409,7 +409,7 @@ describe('ha-device-table-card-editor', () => {
       (el as any)._addColumnPreset('moisture');
       await el.updateComplete;
 
-      const header = el.shadowRoot?.querySelector('.column-header[data-index="0"]');
+      const header = el.shadowRoot?.querySelector('.column-header-title[data-index="0"]');
       expect(el.shadowRoot?.activeElement).to.equal(header);
     });
 
@@ -429,7 +429,7 @@ describe('ha-device-table-card-editor', () => {
       (el as any)._deleteColumn(1);
       await el.updateComplete;
 
-      const header = el.shadowRoot?.querySelector('.column-header[data-index="0"]');
+      const header = el.shadowRoot?.querySelector('.column-header-title[data-index="0"]');
       expect(el.shadowRoot?.activeElement).to.equal(header);
     });
 
@@ -447,7 +447,7 @@ describe('ha-device-table-card-editor', () => {
       (el as any)._moveColumn(0, 'down');
       await el.updateComplete;
 
-      const header = el.shadowRoot?.querySelector('.column-header[data-index="1"]');
+      const header = el.shadowRoot?.querySelector('.column-header-title[data-index="1"]');
       expect(el.shadowRoot?.activeElement).to.equal(header);
     });
 
