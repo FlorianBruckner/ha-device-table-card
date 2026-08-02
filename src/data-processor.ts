@@ -194,7 +194,10 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          if (cached.entityStates[ent.entity_id] !== states[ent.entity_id]) {
+          const currentState = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+            ? states[ent.entity_id]
+            : undefined;
+          if (cached.entityStates[ent.entity_id] !== currentState) {
             statesMatch = false;
             break;
           }
@@ -223,7 +226,9 @@ export function processDevices(
         entityStates = Object.create(null);
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          entityStates![ent.entity_id] = states[ent.entity_id];
+          entityStates![ent.entity_id] = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+            ? states[ent.entity_id]
+            : undefined;
         }
       }
       deviceCache.set(deviceId, {
@@ -278,13 +283,20 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      const stateObj = states[ent.entity_id];
+      const stateObj = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+        ? states[ent.entity_id]
+        : undefined;
       if (!stateObj) continue;
 
       hasValidEntities = true;
 
+      if (typeof stateObj !== 'object') continue;
+
       // Match by Device Class
-      const dClass = stateObj.attributes.device_class || ent.device_class;
+      const dClass =
+        stateObj.attributes && typeof stateObj.attributes === 'object'
+          ? stateObj.attributes.device_class || ent.device_class
+          : ent.device_class;
       if (dClass && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
