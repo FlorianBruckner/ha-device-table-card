@@ -87,7 +87,7 @@ describe('ha-device-table-card UX', () => {
     const searchInput = el.shadowRoot?.querySelector('.dt-search input, .dataTables_filter input');
     expect(searchInput).to.exist;
     expect(searchInput?.getAttribute('aria-label')).to.equal('Search devices');
-    expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices...');
+    expect(searchInput?.getAttribute('placeholder')).to.equal('Search devices... (Press /)');
     expect(searchInput?.getAttribute('type')).to.equal('search');
 
     const lengthSelect = el.shadowRoot?.querySelector(
@@ -217,5 +217,42 @@ describe('ha-device-table-card UX', () => {
     expect(searchInput.value).to.equal('');
     expect(clearBtn.style.display).to.equal('none');
     expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+  });
+
+  it('focuses search input when / keyboard shortcut is pressed while hovering', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+    expect(el.shadowRoot?.activeElement).to.not.equal(searchInput);
+
+    // Mock matches(':hover') to return true
+    const originalMatches = el.matches;
+    el.matches = (selector: string) => {
+      if (selector === ':hover') return true;
+      return originalMatches.call(el, selector);
+    };
+
+    // Trigger keydown with '/' key on window
+    const event = new KeyboardEvent('keydown', { key: '/' });
+    window.dispatchEvent(event);
+
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+
+    // Clean up mock
+    el.matches = originalMatches;
   });
 });
