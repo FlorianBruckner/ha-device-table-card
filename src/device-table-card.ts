@@ -180,10 +180,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       const entitiesByDevice = new Map<string, any[]>();
       for (const ent of this._entities) {
         if (ent && ent.device_id) {
-          if (!entitiesByDevice.has(ent.device_id)) {
-            entitiesByDevice.set(ent.device_id, []);
+          let list = entitiesByDevice.get(ent.device_id);
+          if (list === undefined) {
+            list = [];
+            entitiesByDevice.set(ent.device_id, list);
           }
-          entitiesByDevice.get(ent.device_id)!.push(ent);
+          list.push(ent);
         }
       }
       this._entitiesByDevice = entitiesByDevice;
@@ -257,11 +259,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         if (key === '_entities') continue;
         if (da[key] !== db[key]) return false;
       }
-      // Check if db has extra properties
-      for (const key in db) {
-        if (key === '_entities') continue;
-        if (da[key] !== db[key]) return false;
-      }
 
       const entA = da._entities || {};
       const entB = db._entities || {};
@@ -270,7 +267,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         if (entA[key] !== entB[key]) return false;
       }
       for (const key in entB) {
-        if (entA[key] !== entB[key]) return false;
+        if (entA[key] === undefined) return false;
       }
     }
 
@@ -600,7 +597,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (stateObj) {
               const uom = stateObj.attributes.unit_of_measurement;
               if (uom) {
-                displayValue = `${escape(data)} ${escape(uom)}`;
+                displayValue = `${displayValue} ${escape(uom)}`;
               }
 
               // Highlighting using pre-parsed threshold rules to avoid parseFloat/sanitization overhead in hot path
