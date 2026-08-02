@@ -73,6 +73,45 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     return sanitized;
   }
 
+  private _getDeepActiveElement(): Element | null {
+    let el = document.activeElement;
+    while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+      el = el.shadowRoot.activeElement;
+    }
+    return el;
+  }
+
+  private _handleGlobalKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === '/') {
+      const activeEl = this._getDeepActiveElement();
+      if (activeEl) {
+        const tagName = activeEl.tagName.toLowerCase();
+        if (
+          tagName === 'input' ||
+          tagName === 'textarea' ||
+          activeEl.hasAttribute('contenteditable') ||
+          (activeEl instanceof HTMLElement && activeEl.isContentEditable)
+        ) {
+          return;
+        }
+      }
+
+      const isHovering = this.matches(':hover');
+      const isFocusInside = activeEl ? this.contains(activeEl) : false;
+
+      if (isHovering || isFocusInside) {
+        const searchInput = this.renderRoot.querySelector(
+          '.dt-search input, .dataTables_filter input',
+        ) as HTMLInputElement | null;
+        if (searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+    }
+  };
+
   public setConfig(config: DeviceTableCardConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
@@ -90,6 +129,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._startRefreshInterval();
     }
     this._subscribeRegistryUpdates();
+    window.addEventListener('keydown', this._handleGlobalKeyDown);
   }
 
   public disconnectedCallback(): void {
@@ -104,6 +144,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     }
     this._lastProcessedData = [];
     this._unsubscribeRegistryUpdates();
+    window.removeEventListener('keydown', this._handleGlobalKeyDown);
   }
 
   private _startRefreshInterval(): void {
@@ -322,7 +363,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         ],
         language: {
           search: '',
-          searchPlaceholder: 'Search devices...',
+          searchPlaceholder: 'Search devices... (Press /)',
           info: 'Showing _START_ to _END_ of _TOTAL_ devices',
           infoEmpty: 'Showing 0 to 0 of 0 devices',
           infoFiltered: '(filtered from _MAX_ total devices)',
