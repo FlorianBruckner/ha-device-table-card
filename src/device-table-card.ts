@@ -371,6 +371,30 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           zeroRecords: 'No matching devices found',
           emptyTable: 'No devices available',
         },
+        drawCallback: () => {
+          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
+          headers.forEach((th) => {
+            const titleSpan = th.querySelector('.dt-column-title');
+            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
+            if (cleanText) {
+              const isAsc = th.classList.contains('dt-ordering-asc');
+              const isDesc = th.classList.contains('dt-ordering-desc');
+              let actionText = '';
+
+              if (isAsc) {
+                actionText = ` - sorted ascending, click to sort descending`;
+              } else if (isDesc) {
+                actionText = ` - sorted descending, click to sort ascending`;
+              } else {
+                actionText = ` - click to sort ascending`;
+              }
+
+              const tooltipText = `${cleanText}${actionText}`;
+              th.setAttribute('title', tooltipText);
+              th.setAttribute('aria-label', tooltipText);
+            }
+          });
+        },
         initComplete: () => {
           const searchInput = this.renderRoot.querySelector(
             '.dt-search input, .dataTables_filter input',
@@ -430,15 +454,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (lengthSelect) {
             lengthSelect.setAttribute('aria-label', 'Items per page');
           }
-
-          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
-          headers.forEach((th) => {
-            const titleSpan = th.querySelector('.dt-column-title');
-            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
-            if (cleanText) {
-              th.setAttribute('title', cleanText);
-            }
-          });
         },
       });
 
