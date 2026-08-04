@@ -3,6 +3,10 @@ import { DeviceData, DeviceTableCardConfig } from './types';
 const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
 
+// Performance Optimization: Cache Object.prototype.hasOwnProperty as a local constant
+// to bypass expensive dynamic prototype lookups in hot loop paths.
+const hasOwn = Object.prototype.hasOwnProperty;
+
 // Fine-grained cache structure for individual devices.
 interface DeviceCacheEntry {
   filtered: boolean;
@@ -55,7 +59,7 @@ export function processDevices(
   const filter: any = {};
   if (config.filter && typeof config.filter === 'object') {
     for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
-      if (Object.prototype.hasOwnProperty.call(config.filter, key)) {
+      if (hasOwn.call(config.filter, key)) {
         filter[key] = (config.filter as any)[key];
       }
     }
@@ -67,7 +71,7 @@ export function processDevices(
       if (!c || typeof c !== 'object') return {};
       const cleanCol: any = {};
       for (const key of ['type', 'prop', 'device_class', 'suffix', 'label', 'highlight']) {
-        if (Object.prototype.hasOwnProperty.call(c, key)) {
+        if (hasOwn.call(c, key)) {
           cleanCol[key] = c[key];
         }
       }
@@ -194,7 +198,7 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+          const currentState = hasOwn.call(states, ent.entity_id)
             ? states[ent.entity_id]
             : undefined;
           if (cached.entityStates[ent.entity_id] !== currentState) {
@@ -226,7 +230,7 @@ export function processDevices(
         entityStates = Object.create(null);
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          entityStates![ent.entity_id] = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+          entityStates![ent.entity_id] = hasOwn.call(states, ent.entity_id)
             ? states[ent.entity_id]
             : undefined;
         }
@@ -283,9 +287,7 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      const stateObj = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
-        ? states[ent.entity_id]
-        : undefined;
+      const stateObj = hasOwn.call(states, ent.entity_id) ? states[ent.entity_id] : undefined;
       if (!stateObj) continue;
 
       hasValidEntities = true;
@@ -293,25 +295,34 @@ export function processDevices(
       if (typeof stateObj !== 'object') continue;
 
       // Match by Device Class
-      const dClass =
-        stateObj.attributes && typeof stateObj.attributes === 'object'
-          ? stateObj.attributes.device_class || ent.device_class
-          : ent.device_class;
-      if (dClass && requiredClasses.has(dClass)) {
-        if (entitiesByClass[dClass] === undefined) {
-          entitiesByClass[dClass] = stateObj;
-          matchedClassesCount++;
-        }
-        if (!hasAnchor && dClass === anchorClass) {
-          hasAnchor = true;
+      // Performance Optimization: Guard device class matching with matchedClassesCount < requiredClasses.size
+      // to bypass property lookups and Set check operations entirely once all required classes have been matched.
+      if (matchedClassesCount < requiredClasses.size || !hasAnchor) {
+        const dClass =
+          stateObj.attributes && typeof stateObj.attributes === 'object'
+            ? stateObj.attributes.device_class || ent.device_class
+            : ent.device_class;
+        if (dClass && requiredClasses.has(dClass)) {
+          if (entitiesByClass[dClass] === undefined) {
+            entitiesByClass[dClass] = stateObj;
+            matchedClassesCount++;
+          }
+          if (!hasAnchor && dClass === anchorClass) {
+            hasAnchor = true;
+          }
         }
       }
 
       // Match by Suffix (pre-calculated columns)
+      // Performance Optimization: Check entitiesBySuffix[key] !== undefined and continue early
+      // to avoid calling the relatively slow String.prototype.endsWith check for columns already matched.
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
           const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          if (entitiesBySuffix[key] !== undefined) {
+            continue;
+          }
+          if (ent.entity_id.endsWith(col.suffix!)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }

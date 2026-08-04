@@ -33,3 +33,7 @@
 ## 2026-07-28 - [Preserving DOM Side Effects in Hot-Path Optimization]
 **Learning:** When extracting and pre-calculating/pre-sanitizing properties (like colors or text) out of high-frequency loop paths to optimize rendering, ensure that empty/neutralized values (e.g. sanitized empty strings) do not inadvertently short-circuit conditional rendering blocks (such as conditional HTML element generation `if (color)`). Failing to preserve the presence of these elements can cause unit/security tests evaluating sanitization states to fail because they expect the DOM element to exist but contain the sanitized/cleared properties.
 **Action:** Always track highlight match states independently of the sanitized property values, preserving both original matching indicators and pre-sanitized rendering parameters.
+
+## 2026-07-30 - [Class and Suffix Matching Guards in Entities Iteration]
+**Learning:** In hot loops checking a list of entities against columns, we can guard device class checking so it only executes when `matchedClassesCount < requiredClasses.size`. In addition, when resolving entity columns by suffix, we can do an early check of `entitiesBySuffix[key] !== undefined` and continue early, bypassing the expensive `String.prototype.endsWith` operation for columns that have already been matched. This avoids redundant property accesses, Set lookups, and regex/suffix computations during state updates.
+**Action:** Guard matching logic and perform fast-exit/continue checks within entity loops to avoid redundant property lookups and string matching operations.
