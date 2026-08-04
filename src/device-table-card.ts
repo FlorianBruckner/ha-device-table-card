@@ -340,6 +340,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
   private _initDataTable(): void {
     const tableElement = this.renderRoot.querySelector('#deviceTable') as HTMLElement;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
     if (tableElement && !this._dataTable) {
       this._dataTable = new DataTable(tableElement, {
         responsive: true,
@@ -361,6 +363,45 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           [10, 25, 50, 100, -1],
           [10, 25, 50, 100, 'All'],
         ],
+        drawCallback: function (this: any, settings: any) {
+          const api =
+            typeof this.api === 'function'
+              ? this.api()
+              : self._dataTable || (DataTable.Api ? new DataTable.Api(settings) : null);
+          if (!api || typeof api.order !== 'function') return;
+          const order = api.order() || [];
+          const headers = self.renderRoot.querySelectorAll('table.dataTable thead th');
+          headers.forEach((th: any, idx: number) => {
+            const titleSpan = th.querySelector('.dt-column-title');
+            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
+            if (!cleanText) return;
+
+            // Find if this column is sorted
+            const colOrder = order.find((item: any) => item[0] === idx);
+            let sortStateText = '';
+            let nextSortText = 'click to sort ascending';
+
+            if (colOrder) {
+              const dir = colOrder[1];
+              if (dir === 'asc') {
+                sortStateText = 'sorted ascending';
+                nextSortText = 'click to sort descending';
+              } else if (dir === 'desc') {
+                sortStateText = 'sorted descending';
+                nextSortText = 'click to sort ascending';
+              }
+            }
+
+            const ariaLabel = sortStateText
+              ? `${cleanText} - ${sortStateText}, ${nextSortText}`
+              : `${cleanText} - ${nextSortText}`;
+
+            const title = sortStateText ? `${cleanText} (${sortStateText})` : cleanText;
+
+            th.setAttribute('aria-label', ariaLabel);
+            th.setAttribute('title', title);
+          });
+        },
         language: {
           search: '',
           searchPlaceholder: 'Search devices... (Press /)',
@@ -430,15 +471,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (lengthSelect) {
             lengthSelect.setAttribute('aria-label', 'Items per page');
           }
-
-          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
-          headers.forEach((th) => {
-            const titleSpan = th.querySelector('.dt-column-title');
-            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
-            if (cleanText) {
-              th.setAttribute('title', cleanText);
-            }
-          });
         },
       });
 

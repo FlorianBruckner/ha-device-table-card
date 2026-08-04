@@ -62,12 +62,17 @@ describe('ha-device-table-card UX', () => {
     // Column 2: Last Seen Meta
     expect(cells[2].title).to.contain('Last updated: ');
 
-    // Verify headers have title attribute matching their text (truncated labels visible on hover)
+    // Verify headers have title attribute matching their text (truncated labels visible on hover) and ARIA attributes for sorting states
     const headers = el.shadowRoot?.querySelectorAll('table.dataTable thead th');
     expect(headers?.length).to.be.greaterThan(0);
-    expect(headers![0].getAttribute('title')).to.equal('Device');
+    expect(headers![0].getAttribute('title')).to.equal('Device (sorted ascending)');
+    expect(headers![0].getAttribute('aria-label')).to.equal(
+      'Device - sorted ascending, click to sort descending',
+    );
     expect(headers![1].getAttribute('title')).to.equal('Battery');
+    expect(headers![1].getAttribute('aria-label')).to.equal('Battery - click to sort ascending');
     expect(headers![2].getAttribute('title')).to.equal('Last Seen');
+    expect(headers![2].getAttribute('aria-label')).to.equal('Last Seen - click to sort ascending');
   });
 
   it('has correct search accessibility attributes', async () => {
