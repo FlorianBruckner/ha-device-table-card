@@ -793,6 +793,58 @@ describe('Security Vulnerabilities', () => {
       expect(span).to.exist;
       expect(span.textContent?.trim()).to.equal('-');
     });
+
+    it('should handle state entries with missing or null attributes gracefully without crashing', async () => {
+      const mockHass = {
+        states: {
+          'sensor.no_attrs': {
+            entity_id: 'sensor.no_attrs',
+            state: '45',
+            attributes: null as any, // Missing/null attributes
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.no_attrs', device_id: 'dev1', device_class: 'battery' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize and make sure it does not crash
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const dataTable = (el as any)._dataTable;
+      if (dataTable) {
+        dataTable.search('').draw();
+      }
+
+      const cell = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(cell).to.exist;
+      expect(cell.textContent?.trim()).to.equal('45');
+    });
   });
 
   describe('ha-device-table-card areaLookup prototype safety', () => {

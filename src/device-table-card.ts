@@ -595,7 +595,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
-              td.title = `View ${stateObj.attributes.friendly_name || stateObj.entity_id} details`;
+              td.title = `View ${stateObj.attributes?.friendly_name || stateObj.entity_id} details`;
               td.tabIndex = 0;
               td.setAttribute('role', 'button');
             }
@@ -636,7 +636,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (col.type === 'entity') {
             const stateObj = row._entities[colKey];
             if (stateObj) {
-              const uom = stateObj.attributes.unit_of_measurement;
+              const uom = stateObj.attributes?.unit_of_measurement;
               if (uom) {
                 displayValue = `${displayValue} ${escape(uom)}`;
               }
