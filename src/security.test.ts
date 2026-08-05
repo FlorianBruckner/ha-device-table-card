@@ -693,6 +693,61 @@ describe('Security Vulnerabilities', () => {
   });
 
   describe('ha-device-table-card states registry prototype and types safety', () => {
+    it('should handle state objects with missing or undefined attributes safely', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: undefined, // undefined attributes
+            last_updated: new Date().toISOString(),
+          },
+          'sensor.test_null': {
+            entity_id: 'sensor.test_null',
+            state: '20',
+            attributes: null, // null attributes
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [
+              { entity_id: 'sensor.test', device_id: 'dev1', device_class: 'battery' },
+              { entity_id: 'sensor.test_null', device_id: 'dev1', device_class: 'battery' },
+            ];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize and make sure it doesn't crash on undefined attributes
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const span = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(span).to.exist;
+    });
+
     it('should handle entity_id values that clash with Object.prototype properties safely', async () => {
       const mockHass = {
         states: {
