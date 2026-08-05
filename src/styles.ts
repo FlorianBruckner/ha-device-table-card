@@ -274,6 +274,10 @@ export const styles = css`
     margin-left: 4px;
     cursor: pointer;
     background: transparent !important;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      color 0.2s;
   }
 
   .dt-paging-button:focus-visible,

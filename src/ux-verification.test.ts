@@ -62,12 +62,14 @@ describe('ha-device-table-card UX', () => {
     // Column 2: Last Seen Meta
     expect(cells[2].title).to.contain('Last updated: ');
 
-    // Verify headers have title attribute matching their text (truncated labels visible on hover)
+    // Verify headers have descriptive title attribute matching their text and sorting state
     const headers = el.shadowRoot?.querySelectorAll('table.dataTable thead th');
     expect(headers?.length).to.be.greaterThan(0);
-    expect(headers![0].getAttribute('title')).to.equal('Device');
-    expect(headers![1].getAttribute('title')).to.equal('Battery');
-    expect(headers![2].getAttribute('title')).to.equal('Last Seen');
+    expect(headers![0].getAttribute('title')).to.equal(
+      'Device - sorted ascending, click to sort descending',
+    );
+    expect(headers![1].getAttribute('title')).to.equal('Battery - click to sort ascending');
+    expect(headers![2].getAttribute('title')).to.equal('Last Seen - click to sort ascending');
   });
 
   it('has correct search accessibility attributes', async () => {
@@ -254,5 +256,50 @@ describe('ha-device-table-card UX', () => {
 
     // Clean up mock
     el.matches = originalMatches;
+  });
+
+  it('has correct sorting header states and pagination accessibility labels', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const headers = el.shadowRoot?.querySelectorAll('table.dataTable thead th');
+    expect(headers?.length).to.be.greaterThan(0);
+
+    const firstHeader = headers![0];
+    const cleanText = 'Device';
+    if (firstHeader.classList.contains('dt-ordering-asc')) {
+      expect(firstHeader.getAttribute('title')).to.equal(
+        `${cleanText} - sorted ascending, click to sort descending`,
+      );
+      expect(firstHeader.getAttribute('aria-label')).to.equal(
+        `${cleanText} - sorted ascending, click to sort descending`,
+      );
+    } else {
+      expect(firstHeader.getAttribute('title')).to.contain(cleanText);
+    }
+
+    const pagingButtons = el.shadowRoot?.querySelectorAll(
+      '.dt-paging-button, .dataTables_wrapper .dataTables_paginate .paginate_button',
+    );
+    pagingButtons?.forEach((btn) => {
+      const text = (btn.textContent || '').trim();
+      const isCurrent = btn.classList.contains('current');
+      if (text === '1') {
+        expect(btn.getAttribute('aria-label')).to.equal(
+          isCurrent ? 'Page 1 (current page)' : 'Page 1',
+        );
+        expect(btn.getAttribute('title')).to.equal(isCurrent ? 'Page 1 (current page)' : 'Page 1');
+      }
+    });
   });
 });
