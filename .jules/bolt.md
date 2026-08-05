@@ -1,3 +1,7 @@
+## 2026-07-30 - [Direct Type-Check Fast Paths in Sorting Redraws]
+**Learning:** During sorting passes in custom cell renderers, coercing numeric or already-parsed values (such as UNIX timestamps) with `parseFloat()` is extremely expensive because JS engines convert the value to a string first and then parse it back. Adding an explicit `typeof data === 'number'` type-guard fast-path totally avoids string coercion, reducing CPU and GC overhead in table redraws. If the input is indeed a serialized string, it can safely fall back to the standard `parseFloat()` path.
+**Action:** Always type-guard raw numeric properties to skip `parseFloat` coercion during hot path loops like table sorting renderers.
+
 ## 2026-07-29 - [Multi-Criteria Early Exit in High-Frequency Loops]
 **Learning:** In loops processing many child objects (such as entities of a device), we can break early if all query criteria (such as required column classes and suffixes) are fully matched. However, the early-exit condition must explicitly verify that any anchor criteria (e.g., `hasAnchor`) are met and that we do not need any aggregate properties (e.g., `needsLastChanged` for finding the latest timestamp across all children) to guarantee correct data resolution.
 **Action:** Always include complete, explicit state verification checks (like `hasAnchor` and `!needsLastChanged`) in loop early-exit conditions to prevent premature terminations.
