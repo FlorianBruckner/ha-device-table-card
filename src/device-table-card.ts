@@ -371,6 +371,52 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           zeroRecords: 'No matching devices found',
           emptyTable: 'No devices available',
         },
+        drawCallback: () => {
+          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
+          headers.forEach((th) => {
+            const titleSpan = th.querySelector('.dt-column-title');
+            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
+            if (cleanText) {
+              let suffix = ' - click to sort ascending';
+              if (th.classList.contains('dt-ordering-asc')) {
+                suffix = ' - sorted ascending, click to sort descending';
+              } else if (th.classList.contains('dt-ordering-desc')) {
+                suffix = ' - sorted descending, click to sort ascending';
+              }
+              th.setAttribute('title', cleanText + suffix);
+              th.setAttribute('aria-label', cleanText + suffix);
+            }
+          });
+
+          const pagingButtons = this.renderRoot.querySelectorAll(
+            '.dt-paging-button, .dataTables_wrapper .dataTables_paginate .paginate_button',
+          );
+          pagingButtons.forEach((btn) => {
+            const text = (btn.textContent || '').trim();
+            const isCurrent = btn.classList.contains('current');
+            let label = '';
+
+            if (text === '‹' || btn.classList.contains('previous')) {
+              label = 'Previous page';
+            } else if (text === '›' || btn.classList.contains('next')) {
+              label = 'Next page';
+            } else if (text === '«' || btn.classList.contains('first')) {
+              label = 'First page';
+            } else if (text === '»' || btn.classList.contains('last')) {
+              label = 'Last page';
+            } else if (/^\d+$/.test(text)) {
+              label = `Page ${text}`;
+            }
+
+            if (label) {
+              if (isCurrent) {
+                label += ' (current page)';
+              }
+              btn.setAttribute('aria-label', label);
+              btn.setAttribute('title', label);
+            }
+          });
+        },
         initComplete: () => {
           const searchInput = this.renderRoot.querySelector(
             '.dt-search input, .dataTables_filter input',
@@ -430,15 +476,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (lengthSelect) {
             lengthSelect.setAttribute('aria-label', 'Items per page');
           }
-
-          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
-          headers.forEach((th) => {
-            const titleSpan = th.querySelector('.dt-column-title');
-            const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
-            if (cleanText) {
-              th.setAttribute('title', cleanText);
-            }
-          });
         },
       });
 
