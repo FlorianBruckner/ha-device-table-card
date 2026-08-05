@@ -3,6 +3,8 @@ import { DeviceData, DeviceTableCardConfig } from './types';
 const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 // Fine-grained cache structure for individual devices.
 interface DeviceCacheEntry {
   filtered: boolean;
@@ -55,7 +57,7 @@ export function processDevices(
   const filter: any = {};
   if (config.filter && typeof config.filter === 'object') {
     for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
-      if (Object.prototype.hasOwnProperty.call(config.filter, key)) {
+      if (hasOwn.call(config.filter, key)) {
         filter[key] = (config.filter as any)[key];
       }
     }
@@ -67,7 +69,7 @@ export function processDevices(
       if (!c || typeof c !== 'object') return {};
       const cleanCol: any = {};
       for (const key of ['type', 'prop', 'device_class', 'suffix', 'label', 'highlight']) {
-        if (Object.prototype.hasOwnProperty.call(c, key)) {
+        if (hasOwn.call(c, key)) {
           cleanCol[key] = c[key];
         }
       }
@@ -194,7 +196,7 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+          const currentState = hasOwn.call(states, ent.entity_id)
             ? states[ent.entity_id]
             : undefined;
           if (cached.entityStates[ent.entity_id] !== currentState) {
@@ -226,7 +228,7 @@ export function processDevices(
         entityStates = Object.create(null);
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          entityStates![ent.entity_id] = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
+          entityStates![ent.entity_id] = hasOwn.call(states, ent.entity_id)
             ? states[ent.entity_id]
             : undefined;
         }
@@ -283,9 +285,7 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      const stateObj = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
-        ? states[ent.entity_id]
-        : undefined;
+      const stateObj = hasOwn.call(states, ent.entity_id) ? states[ent.entity_id] : undefined;
       if (!stateObj) continue;
 
       hasValidEntities = true;
@@ -355,7 +355,7 @@ export function processDevices(
       area: areaName,
       integration: integration,
       manufacturer: manufacturer,
-      _entities: {},
+      _entities: Object.create(null),
     };
 
     // Resolve Device Columns
