@@ -1,71 +1,11 @@
-## 2025-05-15 - [Descriptive Context in Tooltips]
-**Learning:** Generic tooltips like "View entity details" are less helpful than specific ones like "View [Entity Name] details". Providing the specific name in the tooltip improves accessibility for screen reader users and discoverability for mouse users.
-**Action:** When creating interactive elements for specific data objects, always include the object's name or a unique identifier in the `title` or `aria-label`.
+## 2026-08-05 - [Escape Key Blur on Empty Search Inputs]
+**Learning:** For custom-built search interfaces where active inputs are cleared with a custom cancel button or an `Escape` key handler, when the user presses `Escape` on an already empty search input, they expect the input to unfocus (`blur()`) to return keyboard focus back to the page context.
+**Action:** When implementing custom styled search keydown handlers, ensure that pressing `Escape` on an empty textfield blurs focus gracefully.
 
-## 2025-05-15 - [Domain-Specific Language in Third-Party Components]
-**Learning:** Default terms in libraries (like "entries" in DataTables) can feel out of place in a specialized application like Home Assistant. Customizing these strings to use domain terms ("devices") makes the UI feel more integrated and professional.
-**Action:** Always review and customize the language/localization settings of third-party UI components to match the application's vocabulary.
+## 2026-08-05 - [Accessible Disabled State Messaging on Pagination Components]
+**Learning:** Dynamic pagination buttons in complex widgets often transition between interactive and non-interactive (disabled) states. For screen readers, simply appending standard raw characters is not enough. Dynamically modifying `aria-disabled="true"` and appending "(disabled)" context directly onto the button's `aria-label` ensures screen reader users are kept fully aware of inactive boundaries.
+**Action:** Always pair `aria-disabled="true"` with specific disabled-state text suffixes (e.g. "(disabled)") on pagination buttons when they become inactive.
 
-## 2025-05-16 - [Collapsible Accordion Form Layouts for Dashboard Card Editors]
-**Learning:** Dashboard card editors in Home Assistant can grow incredibly long and confusing when multiple complex nested objects (like columns and threshold highlights) are added. Employing a collapsible accordion layout with single-item expansion state tracking simplifies visual noise and dramatically improves the user experience.
-**Action:** When designing custom card config editors, group inputs into logical collapsible sections, and track a single active expanded item to keep the editor clean and focus-driven.
-
-## 2025-05-18 - [Fixing Cursor Jumps and Input Loss in Custom Lit Editors]
-**Learning:** For high-frequency state updates in Lit-based text editors (like Home Assistant card editors), immediately converting inputs to numbers on keypress causes the value to reset on re-render. This deletes intermediate characters like decimal points (`.`) and minus signs (`-`), preventing users from typing valid decimal or negative numbers.
-**Action:** Always allow inputs in custom textfields to be handled and stored as strings in configuration state, and only parse them to float or integer during rendering or evaluation stages.
-
-## 2025-05-20 - [Safe Keyboard Event Handlers for Nested Interactivity]
-**Learning:** Adding a `keydown` handler to a parent container (like an accordion header) that also contains native buttons can cause "double-triggering". If a user focuses a child button and presses Enter, the button clicks, the event bubbles to the parent, and the parent's handler may programmatically click the button again.
-**Action:** In keyboard handlers for composite components, always verify `ev.target === ev.currentTarget` before programmatically triggering a click, or use `ev.stopPropagation()` on child elements.
-
-## 2025-05-20 - [Communicating State with aria-expanded]
-**Learning:** Marking an element with `role="button"` is not enough for toggleable UI sections. Screen reader users need to know if the section is currently open or closed to navigate effectively.
-**Action:** Always pair `role="button"` with `aria-expanded` (set to "true" or "false") for elements that control the visibility of other content.
-
-## 2025-05-22 - [Contextual Explanations for Visual Highlights]
-**Learning:** Visual highlights (like color changes or bold text) draw attention but don't always explain *why* something is highlighted. Providing a descriptive tooltip (via `title` attribute) explaining the triggered threshold rule (e.g., "Value is below threshold: 15") provides essential context for all users and improves accessibility for screen readers.
-**Action:** Whenever a visual style is applied based on a conditional rule or threshold, always include a descriptive text explanation as a tooltip or ARIA description.
-
-## 2025-05-22 - [Improving Header Affordance and Feedback]
-**Learning:** In data-dense tables, the fact that headers are interactive (sortable) can be easily missed if they look static. Adding clear hover states (`background-color`), transitions, and high-contrast color indicators for active sorted states significantly improves the discoverability of sorting features.
-**Action:** Ensure all interactive table headers have distinct hover styles, focus-visible indicators, and clear visual feedback for their active state (e.g., sorted ascending/descending).
-
-## 2025-10-24 - [Focus Management in Dynamic List-Editing Interfaces]
-**Learning:** In dynamic custom card config editors, adding, deleting, or reordering elements causes keyboard focus to drop completely to the document body, trapping or disorienting screen reader and keyboard users. Programmatically shifting focus to the newly relevant interactive element (such as the header of a newly added column, a neighboring element, or a fallback button) maintains a coherent tab order and prevents "focus drops". Additionally, calling `this.updateComplete.then` inside LitElement's `updated` callback can cause microtask timing deadlocks in headless browsers; instead, focus elements directly in `updated` since DOM rendering is already finished.
-**Action:** Implement a private `_focusQuery` property in composite list editors, assign unique semantic query attributes (like `data-index`), and apply focus immediately inside the `updated` lifecycle method.
-
-## 2025-10-25 - [Double-Tap click-to-confirm Deletion Pattern]
-**Learning:** Destructive actions like deleting dashboard columns or threshold rules can be easily misclicked by users, causing frustration and data loss. Standard confirmation modals are often heavy and break the flow of editing. Implementing an inline click-to-confirm deletion pattern dynamically alters the style, text labels, and icons of the individual delete button on the first click, requiring a second click to execute the deletion. Additionally, a global window click handler is required to safely reset the confirmation states when clicking anywhere outside of the delete buttons, preventing accidental clicks from locking the buttons in a dangerous deletion state.
-**Action:** Implement a localized `_confirmDelete...` state, adjust styles (e.g., solid red background and a checkmark icon) and ARIA descriptions on the first click, and reset the confirmation state globally when any click event falls outside of the active deletion context.
-
-## 2025-10-26 - [Collapsible and Icon Reordering Accessibility Polish]
-**Learning:** For collapsible accordion menus and list-reordering editors, accessibility requires connecting toggle triggers to their target panels via explicit `aria-controls` linking, casting boolean expanded states to precise `'true'`/`'false'` string literals, and hiding purely visual SVGs from screen readers via `aria-hidden="true"`. Furthermore, dynamically updating disabled reordering button attributes with highly descriptive labels (e.g., "Cannot move up (already at top)") provides much clearer feedback to screen reader and keyboard-only users about interactive non-actionability.
-**Action:** Always link accordion headers with targets using `aria-controls`, specify string-literal expanded states, hide decorative SVGs, and provide dynamic descriptive `aria-label` / `title` messages for disabled list action buttons.
-
-## 2026-07-24 - [Visual Feedback for Abstract Input Properties]
-**Learning:** In complex configuration editors where users configure visual threshold highlights, text fields like "Color: red" or "Color: #e53935" require the user to mentally translate the value into a visual color or manually type and preview it. Providing a localized, highly interactive inline visual preview swatch directly next to the text input provides immediate feedback. To prevent security vulnerabilities (such as arbitrary CSS execution/resource loading via `url()` function injections in inline styles), the preview swatch must strictly sanitize the active value.
-**Action:** When offering text fields representing colors, styles, or visual states, always render an adjacent visual preview swatch that utilizes a strict sanitation filter before setting inline CSS properties.
-
-## 2026-07-26 - [Suppressing WebKit Native Search Cancel Button]
-**Learning:** WebKit-based browsers natively append an un-styleable, non-accessible cancel button (`::-webkit-search-cancel-button`) on `<input type="search">` inputs. When building custom search interfaces with custom styled clear buttons, failing to suppress the WebKit native cancel button results in duplicate, overlapping Close/Cancel marks.
-**Action:** Always include CSS rules (`-webkit-appearance: none; appearance: none; display: none;`) on the webkit-search-cancel-button pseudo-element of your search input fields to ensure a consistent, single-button cross-browser user experience.
-
-## 2026-07-28 - [Keyboard-Friendly Search Inputs and Tooltip Indicators]
-**Learning:** For custom-built search interfaces where native cancel buttons are suppressed, users natively expect the `Escape` key to instantly clear any active search term. Combining this keyboard shortcut with a visual tooltip (`title`) and hidden internal SVG tags (`aria-hidden`) on the clear button ensures a complete, smooth, and fully accessible search experience for both mouse and keyboard/screen-reader users.
-**Action:** When implementing custom styled search inputs, always register an `Escape` keydown event handler to clear the search query, and provide a descriptive `title` attribute along with `aria-hidden="true"` on the icon element itself.
-
-## 2026-07-30 - [Graceful Inline Validation for Numeric Custom Inputs]
-**Learning:** Instantly validating numeric configurations as a user types can trigger frustrating false-positives for valid intermediate states (like a lone negative sign `-`, a lone decimal point `.`, or a trailing decimal `.`). Designing an validation helper that permits these intermediate states ensures smooth typing, while still providing prompt, clear, and accessible inline validation feedback (using `aria-invalid` and `aria-describedby` dynamically) when actual invalid values (like alphanumeric strings) are present.
-**Action:** Always ignore typing milestones like `-`, `.`, and trailing decimal points in keypress validation, and bind any fallback native input errors to screen readers using dynamic `aria-describedby` error element IDs.
-
-## 2026-07-31 - [Nesting Interactive Elements Accessibility Violation]
-**Learning:** Nesting interactive elements (such as placing action buttons like "Move Up/Down" or "Delete" inside a parent element with `role="button"` and `tabindex="0"`) is a severe accessibility violation that confuses screen readers and breaks keyboard navigation flows. Restructuring the DOM so that the toggle trigger and the action buttons are sibling elements (while using CSS layout to keep them visually aligned) resolves the violation while retaining full functionality.
-**Action:** In composite widgets or list editors, always make the specific text label or toggle icon the interactive trigger (`role="button"`, `tabindex="0"`, etc.) and keep action buttons as siblings, rather than nesting them inside the larger clickable parent container.
-
-## 2026-08-02 - [Card-scoped Global Keyboard Shortcuts for Multi-Instance Safety]
-**Learning:** Adding standard global keydown listener shortcuts (such as `/` to search) can trigger conflicts or unexpected focus jumps in multi-instance dashboards if not scoped properly. Binding listeners to `window` but strictly validating conditions—such as ensuring the cursor is hovering over the card (`matches(':hover')`) or focus is already inside it (`contains(activeElement)`)—effectively scopes the shortcut to the specific card instance the user is interacting with. Additionally, using a deep active element helper is necessary to correctly traverse Web Component shadow roots.
-**Action:** When implementing global keyboard shortcuts on custom dashboard cards, always scope triggers using matches(':hover') or contains(deepActiveElement) checks, and ignore events when the user is already typing in editable inputs/textareas.
-
-## 2026-08-04 - [Dynamic Localization and Accessibility for Third-Party Tables]
-**Learning:** Third-party table libraries (like DataTables) often use raw characters (like "‹", "›") or static terms for sorting and pagination, which are poorly voiced by screen readers. Hooking into the table's redraw callback (`drawCallback`) to dynamically recalculate and inject descriptive sorting states (e.g., "Device - sorted ascending, click to sort descending") and detailed pagination labels (e.g., "Page 1 (current page)") keeps accessibility attributes in sync with active states.
-**Action:** Always use active redraw/render callbacks of complex third-party widgets to programmatically keep assistive titles and aria-labels updated as pagination, sorting, or filtering states change.
+## 2026-08-05 - [Explicit Color Context on Interactive Swatches]
+**Learning:** Visual color-preview swatches in dashboard configuration editors require contextual feedback for screen reader and keyboard-only users. Presenting a static tooltip such as "Color preview" is less informative than dynamic tooltips containing the actual whitelisted value, such as "Color preview: red".
+**Action:** When showing custom style or color swatches, dynamically append the whitelisted/sanitized color parameter value onto the `title` and `aria-label` attributes to maximize descriptive context.
