@@ -1032,4 +1032,125 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card prototype-pollution attribute safety', () => {
+    it('should not inherit friendly_name, unit_of_measurement, or device_class from object prototypes', async () => {
+      // Create a localized polluted prototype chain for attributes and registry entities to safely verify isolation
+      const customAttrProto = Object.create(Object.prototype);
+      customAttrProto.friendly_name = 'Polluted Friendly Name';
+      customAttrProto.unit_of_measurement = 'Polluted UOM';
+      customAttrProto.device_class = 'battery';
+
+      const customEntProto = Object.create(Object.prototype);
+      customEntProto.device_class = 'battery';
+
+      const mockAttributes = Object.create(customAttrProto);
+      const mockEntityRegistryEntry = Object.create(customEntProto);
+      mockEntityRegistryEntry.entity_id = 'sensor.test';
+      mockEntityRegistryEntry.device_id = 'dev1';
+
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: mockAttributes,
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list') return [mockEntityRegistryEntry];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-card .hass=${mockHass}>
+          <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+        </ha-card>
+      `);
+      const card = el.querySelector('ha-device-table-card') as DeviceTableCard;
+      card.setConfig(config as any);
+      await card.updateComplete;
+
+      // Wait for DataTables to draw
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // It should NOT resolve 'sensor.test' as 'battery' device class since the attributes are inherited from prototype,
+      // and thus the cell text content should be empty '-'
+      const td = card.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(td).to.exist;
+      expect(td.textContent?.trim()).to.equal('-');
+      expect(td.title).to.not.contain('Polluted Friendly Name');
+    });
+
+    it('should handle malformed, non-string, or object-valued state attributes gracefully without crashing', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: {
+              device_class: { malicious: 'object' }, // non-string
+              friendly_name: ['malicious', 'array'], // non-string
+              unit_of_measurement: { complex: 'uom' }, // non-string
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize and make sure it does not throw or crash on malformed properties
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const td = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(td).to.exist;
+      // It should fall back safely without showing [object Object] or throwing TypeErrors
+      expect(td.textContent?.trim()).to.equal('-');
+      expect(td.title).to.not.contain('object');
+    });
+  });
 });

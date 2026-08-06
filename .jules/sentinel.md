@@ -57,3 +57,8 @@
 **Vulnerability:** Potential client-side unhandled TypeErrors and card UI Denial of Service (DoS) could occur if entity state objects in `hass.states` returned by Home Assistant were missing `attributes` or had them set to null, causing attempts to access nested properties like `friendly_name` or `unit_of_measurement` to crash the card render cycle.
 **Learning:** Utilizing optional chaining (`attributes?.friendly_name`, `attributes?.unit_of_measurement`) guarantees that nested attribute properties are safely resolved, completely immunizing the UI against crashes caused by custom integrations or malformed/incomplete state objects.
 **Prevention:** Always employ optional chaining or explicit property existence checks before navigating nested properties of objects received from external dynamic registries.
+
+## 2026-07-17 - [Prototype-Safe State Attributes & Localized Pollution Testing]
+**Vulnerability:** Inheriting unvalidated state attribute properties (`friendly_name`, `unit_of_measurement`, `device_class`) on Home Assistant state objects via prototype lookup could allow visual spoofing or UI crashes.
+**Learning:** Checking property ownership explicitly (`Object.prototype.hasOwnProperty.call`) before resolving values from dynamic entity state/attributes, and type-guarding against non-strings, completely immunizes attribute resolution. To test this without globally polluting `Object.prototype` (which crashes downstream testing dependencies like jQuery/DataTables during iterations), mock objects with localized prototype chains (`Object.create(customProto)`) must be used.
+**Prevention:** Avoid global prototype pollution in test files to keep test runners stable; test prototype isolation using targeted, isolated custom prototypes on input payloads.

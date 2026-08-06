@@ -292,11 +292,22 @@ export function processDevices(
 
       if (typeof stateObj !== 'object') continue;
 
-      // Match by Device Class
+      // Match by Device Class (guarded against prototype pollution and type mismatches)
+      const attributes = stateObj.attributes;
+      const attrDeviceClass =
+        attributes && typeof attributes === 'object' && hasOwn.call(attributes, 'device_class')
+          ? attributes.device_class
+          : undefined;
+      const entDeviceClass =
+        ent && typeof ent === 'object' && hasOwn.call(ent, 'device_class')
+          ? ent.device_class
+          : undefined;
       const dClass =
-        stateObj.attributes && typeof stateObj.attributes === 'object'
-          ? stateObj.attributes.device_class || ent.device_class
-          : ent.device_class;
+        typeof attrDeviceClass === 'string'
+          ? attrDeviceClass
+          : typeof entDeviceClass === 'string'
+            ? entDeviceClass
+            : undefined;
       if (dClass && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
