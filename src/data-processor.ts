@@ -19,6 +19,44 @@ interface DeviceCacheEntry {
   entityStates?: Record<string, any>;
 }
 
+// Performance Optimization: Extracted cacheDeviceEvaluation helper outside of processDevices loop
+// to avoid dynamic closure creation and GC pressure during high-frequency updates.
+function cacheDeviceEvaluation(
+  deviceCache: Map<string, DeviceCacheEntry>,
+  deviceId: string,
+  d: any,
+  deviceEntitiesRaw: any[] | undefined,
+  states: any,
+  areaLookup: Record<string, string>,
+  filtered: boolean,
+  deviceData?: DeviceData,
+  isStaticFilter = false,
+) {
+  if (!deviceEntitiesRaw) return;
+  let entityStates: Record<string, any> | undefined = undefined;
+  if (!isStaticFilter) {
+    entityStates = Object.create(null);
+    for (let j = 0; j < deviceEntitiesRaw.length; j++) {
+      const ent = deviceEntitiesRaw[j];
+      entityStates![ent.entity_id] = hasOwn.call(states, ent.entity_id)
+        ? states[ent.entity_id]
+        : undefined;
+    }
+  }
+  deviceCache.set(deviceId, {
+    filtered,
+    deviceData,
+    deviceRef: d,
+    entitiesRawRef: deviceEntitiesRaw,
+    nameByUser: d.name_by_user,
+    name: d.name,
+    areaId: d.area_id,
+    manufacturer: d.manufacturer,
+    areaLookupRef: areaLookup,
+    entityStates,
+  });
+}
+
 interface ConfigCacheEntry {
   entityCols: any[];
   deviceCols: any[];
@@ -213,43 +251,19 @@ export function processDevices(
       }
     }
 
-    // Cache the evaluation output for this device, whether it was filtered or resolved successfully.
-    // Performance Optimization: If the device is excluded by a static property filter (manufacturer, area, integration),
-    // we do not need to track and verify high-frequency entity state updates. Passing isStaticFilter=true allows us
-    // to bypass state loop iteration, saving allocations and CPU cycles.
-    const cacheEvaluationResult = (
-      filtered: boolean,
-      deviceData?: DeviceData,
-      isStaticFilter = false,
-    ) => {
-      if (!deviceEntitiesRaw) return;
-      let entityStates: Record<string, any> | undefined = undefined;
-      if (!isStaticFilter) {
-        entityStates = Object.create(null);
-        for (let j = 0; j < deviceEntitiesRaw.length; j++) {
-          const ent = deviceEntitiesRaw[j];
-          entityStates![ent.entity_id] = hasOwn.call(states, ent.entity_id)
-            ? states[ent.entity_id]
-            : undefined;
-        }
-      }
-      deviceCache.set(deviceId, {
-        filtered,
-        deviceData,
-        deviceRef: d,
-        entitiesRawRef: deviceEntitiesRaw,
-        nameByUser: d.name_by_user,
-        name: d.name,
-        areaId: d.area_id,
-        manufacturer: d.manufacturer,
-        areaLookupRef: areaLookup,
-        entityStates,
-      });
-    };
-
     // 1. Manufacturer filter
     if (filter.manufacturer && (d.manufacturer || 'Unknown') !== filter.manufacturer) {
-      cacheEvaluationResult(true, undefined, true);
+      cacheDeviceEvaluation(
+        deviceCache,
+        deviceId,
+        d,
+        deviceEntitiesRaw,
+        states,
+        areaLookup,
+        true,
+        undefined,
+        true,
+      );
       continue;
     }
 
@@ -258,7 +272,17 @@ export function processDevices(
       const areaId = d.area_id;
       const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
       if (areaName !== filter.area && areaId !== filter.area) {
-        cacheEvaluationResult(true, undefined, true);
+        cacheDeviceEvaluation(
+          deviceCache,
+          deviceId,
+          d,
+          deviceEntitiesRaw,
+          states,
+          areaLookup,
+          true,
+          undefined,
+          true,
+        );
         continue;
       }
     }
@@ -269,7 +293,17 @@ export function processDevices(
 
     // 3. Integration filter (using the first entity's platform as proxy for device integration)
     if (filter.integration && (deviceEntitiesRaw[0].platform || 'Unknown') !== filter.integration) {
-      cacheEvaluationResult(true, undefined, true);
+      cacheDeviceEvaluation(
+        deviceCache,
+        deviceId,
+        d,
+        deviceEntitiesRaw,
+        states,
+        areaLookup,
+        true,
+        undefined,
+        true,
+      );
       continue;
     }
 
@@ -338,7 +372,7 @@ export function processDevices(
     }
 
     if (!hasAnchor || !hasValidEntities) {
-      cacheEvaluationResult(true);
+      cacheDeviceEvaluation(deviceCache, deviceId, d, deviceEntitiesRaw, states, areaLookup, true);
       continue;
     }
 
@@ -398,7 +432,16 @@ export function processDevices(
       }
     }
 
-    cacheEvaluationResult(false, deviceData);
+    cacheDeviceEvaluation(
+      deviceCache,
+      deviceId,
+      d,
+      deviceEntitiesRaw,
+      states,
+      areaLookup,
+      false,
+      deviceData,
+    );
     result.push(deviceData);
   }
 
