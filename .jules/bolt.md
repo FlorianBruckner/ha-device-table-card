@@ -1,3 +1,7 @@
+## 2026-07-31 - [Avoid High-Frequency Inner Loop Closures]
+**Learning:** Declaring or initializing helper function closures inside high-frequency loops (such as device-processing iteration loops) forces JavaScript engines to allocate new function context objects on every iteration. Extracting these closures into module-scoped static helpers that receive dependencies as arguments completely eliminates this allocation overhead, significantly reducing memory churn and Garbage Collection (GC) pressure.
+**Action:** Always extract inner-loop helper function closures into module-scoped or static helpers to prevent unnecessary object allocation and garbage collection.
+
 ## 2026-07-30 - [Direct Type-Check Fast Paths in Sorting Redraws]
 **Learning:** During sorting passes in custom cell renderers, coercing numeric or already-parsed values (such as UNIX timestamps) with `parseFloat()` is extremely expensive because JS engines convert the value to a string first and then parse it back. Adding an explicit `typeof data === 'number'` type-guard fast-path totally avoids string coercion, reducing CPU and GC overhead in table redraws. If the input is indeed a serialized string, it can safely fall back to the standard `parseFloat()` path.
 **Action:** Always type-guard raw numeric properties to skip `parseFloat` coercion during hot path loops like table sorting renderers.
