@@ -933,7 +933,8 @@ export class DeviceTableCardEditor extends LitElement {
                                   <div
                                     class="color-preview-swatch"
                                     style="background-color: ${this._sanitizeColor(hl.color || 'transparent')};"
-                                    title="Color preview"
+                                    title="Color preview: ${this._sanitizeColor(hl.color || 'transparent')}"
+                                    aria-label="Color preview: ${this._sanitizeColor(hl.color || 'transparent')}"
                                   ></div>
                                   <button
                                     class="btn-icon btn-danger"

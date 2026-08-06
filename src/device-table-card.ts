@@ -409,8 +409,15 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             }
 
             if (label) {
+              const isDisabled = btn.classList.contains('disabled');
               if (isCurrent) {
                 label += ' (current page)';
+              }
+              if (isDisabled) {
+                label += ' (disabled)';
+                btn.setAttribute('aria-disabled', 'true');
+              } else {
+                btn.removeAttribute('aria-disabled');
               }
               btn.setAttribute('aria-label', label);
               btn.setAttribute('title', label);
@@ -455,6 +462,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                     searchInput.value = '';
                     this._dataTable.search('').draw();
                     updateClearBtn();
+                  } else {
+                    searchInput.blur();
                   }
                 }
               });

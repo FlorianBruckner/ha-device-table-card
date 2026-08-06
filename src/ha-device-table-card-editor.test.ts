@@ -365,7 +365,7 @@ describe('ha-device-table-card-editor', () => {
       const swatch = el.shadowRoot?.querySelector('.color-preview-swatch') as HTMLElement;
       expect(swatch).to.exist;
       expect(swatch.style.backgroundColor).to.equal('red');
-      expect(swatch.getAttribute('title')).to.equal('Color preview');
+      expect(swatch.getAttribute('title')).to.equal('Color preview: red');
     });
 
     it('sanitizes unsafe color values in the preview swatch', async () => {
