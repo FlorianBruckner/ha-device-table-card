@@ -632,7 +632,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
-              td.title = `View ${stateObj.attributes?.friendly_name || stateObj.entity_id} details`;
+              const attrs = stateObj.attributes;
+              const friendlyName =
+                attrs &&
+                typeof attrs === 'object' &&
+                Object.prototype.hasOwnProperty.call(attrs, 'friendly_name')
+                  ? attrs.friendly_name
+                  : undefined;
+              td.title = `View ${typeof friendlyName === 'string' ? friendlyName : stateObj.entity_id} details`;
               td.tabIndex = 0;
               td.setAttribute('role', 'button');
             }
@@ -674,8 +681,14 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (col.type === 'entity') {
             const stateObj = row._entities[colKey];
             if (stateObj) {
-              const uom = stateObj.attributes?.unit_of_measurement;
-              if (uom) {
+              const attrs = stateObj.attributes;
+              const uom =
+                attrs &&
+                typeof attrs === 'object' &&
+                Object.prototype.hasOwnProperty.call(attrs, 'unit_of_measurement')
+                  ? attrs.unit_of_measurement
+                  : undefined;
+              if (typeof uom === 'string' && uom) {
                 displayValue = `${displayValue} ${escape(uom)}`;
               }
 
