@@ -10,6 +10,23 @@ import { styles } from './styles';
 import { processDevices } from './data-processor';
 import './ha-device-table-card-editor';
 
+// Shared Registry Caching for multiple card instances to avoid redundant API calls and parsing.
+interface SharedRegistryData {
+  devices: any[];
+  entities: any[];
+  areas: any[];
+  areaLookup: Record<string, string>;
+  entitiesByDevice: Map<string, any[]>;
+}
+
+interface SharedRegistryCacheEntry {
+  promise: Promise<SharedRegistryData> | null;
+  data?: SharedRegistryData;
+  callWS?: any;
+}
+
+const registryCache = new WeakMap<any, SharedRegistryCacheEntry>();
+
 @customElement('ha-device-table-card')
 export class DeviceTableCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass!: any;
@@ -200,38 +217,93 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
     this._fetchingRegistries = true;
     try {
-      const [devices, entities, areas] = await Promise.all([
-        this.hass.callWS({ type: 'config/device_registry/list' }),
-        this.hass.callWS({ type: 'config/entity_registry/list' }),
-        this.hass.callWS({ type: 'config/area_registry/list' }),
-      ]);
+      const key = this.hass.connection || this.hass;
+      let entry = registryCache.get(key);
 
-      this._devices = Array.isArray(devices) ? devices : [];
-      this._entities = Array.isArray(entities) ? entities : [];
-      this._areas = Array.isArray(areas) ? areas : [];
+      if (entry && entry.callWS !== this.hass.callWS) {
+        entry = undefined;
+        registryCache.delete(key);
+      }
 
-      const areaLookup: Record<string, string> = Object.create(null);
-      for (const area of this._areas) {
-        if (area && area.area_id) {
-          areaLookup[area.area_id] = area.name;
+      if (force && entry) {
+        if (entry.data) {
+          entry.data = undefined;
         }
       }
-      this._areaLookup = areaLookup;
 
-      const entitiesByDevice = new Map<string, any[]>();
-      for (const ent of this._entities) {
-        if (ent && ent.device_id) {
-          let list = entitiesByDevice.get(ent.device_id);
-          if (list === undefined) {
-            list = [];
-            entitiesByDevice.set(ent.device_id, list);
-          }
-          list.push(ent);
-        }
+      if (!entry) {
+        entry = { promise: null, callWS: this.hass.callWS };
+        registryCache.set(key, entry);
       }
-      this._entitiesByDevice = entitiesByDevice;
+
+      if (!entry.data) {
+        if (!entry.promise) {
+          entry.promise = (async () => {
+            const [devices, entities, areas] = await Promise.all([
+              this.hass.callWS({ type: 'config/device_registry/list' }),
+              this.hass.callWS({ type: 'config/entity_registry/list' }),
+              this.hass.callWS({ type: 'config/area_registry/list' }),
+            ]);
+
+            const devicesArr = Array.isArray(devices) ? devices : [];
+            const entitiesArr = Array.isArray(entities) ? entities : [];
+            const areasArr = Array.isArray(areas) ? areas : [];
+
+            const areaLookup: Record<string, string> = Object.create(null);
+            for (const area of areasArr) {
+              if (area && area.area_id) {
+                areaLookup[area.area_id] = area.name;
+              }
+            }
+
+            const entitiesByDevice = new Map<string, any[]>();
+            for (const ent of entitiesArr) {
+              if (ent && ent.device_id) {
+                let list = entitiesByDevice.get(ent.device_id);
+                if (list === undefined) {
+                  list = [];
+                  entitiesByDevice.set(ent.device_id, list);
+                }
+                list.push(ent);
+              }
+            }
+
+            const resultData: SharedRegistryData = {
+              devices: devicesArr,
+              entities: entitiesArr,
+              areas: areasArr,
+              areaLookup,
+              entitiesByDevice,
+            };
+
+            if (entry) {
+              entry.data = resultData;
+              entry.promise = null;
+            }
+            return resultData;
+          })();
+        }
+
+        const sharedData = await entry.promise;
+        this._devices = sharedData.devices;
+        this._entities = sharedData.entities;
+        this._areas = sharedData.areas;
+        this._areaLookup = sharedData.areaLookup;
+        this._entitiesByDevice = sharedData.entitiesByDevice;
+      } else {
+        this._devices = entry.data.devices;
+        this._entities = entry.data.entities;
+        this._areas = entry.data.areas;
+        this._areaLookup = entry.data.areaLookup;
+        this._entitiesByDevice = entry.data.entitiesByDevice;
+      }
     } catch (e) {
       console.error('Failed to fetch Home Assistant registries', e);
+      const key = this.hass.connection || this.hass;
+      const entry = registryCache.get(key);
+      if (entry) {
+        entry.promise = null;
+      }
     } finally {
       this._fetchingRegistries = false;
     }
