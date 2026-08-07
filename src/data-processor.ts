@@ -293,11 +293,25 @@ export function processDevices(
       if (typeof stateObj !== 'object') continue;
 
       // Match by Device Class
-      const dClass =
-        stateObj.attributes && typeof stateObj.attributes === 'object'
-          ? stateObj.attributes.device_class || ent.device_class
-          : ent.device_class;
-      if (dClass && requiredClasses.has(dClass)) {
+      let dClass: any = undefined;
+      if (stateObj.attributes && typeof stateObj.attributes === 'object') {
+        if (hasOwn.call(stateObj.attributes, 'device_class')) {
+          const val = stateObj.attributes.device_class;
+          if (typeof val === 'string') {
+            dClass = val;
+          }
+        }
+      }
+      if (dClass === undefined && ent && typeof ent === 'object') {
+        if (hasOwn.call(ent, 'device_class')) {
+          const val = ent.device_class;
+          if (typeof val === 'string') {
+            dClass = val;
+          }
+        }
+      }
+
+      if (dClass && typeof dClass === 'string' && requiredClasses.has(dClass)) {
         if (entitiesByClass[dClass] === undefined) {
           entitiesByClass[dClass] = stateObj;
           matchedClassesCount++;

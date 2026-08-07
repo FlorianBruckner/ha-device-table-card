@@ -632,7 +632,17 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             const stateObj = rowData._entities[colKey];
             if (stateObj) {
               td.setAttribute('data-entity-id', stateObj.entity_id);
-              td.title = `View ${stateObj.attributes?.friendly_name || stateObj.entity_id} details`;
+              let friendlyName: string | undefined = undefined;
+              if (stateObj.attributes && typeof stateObj.attributes === 'object') {
+                const hasOwnProp = Object.prototype.hasOwnProperty;
+                if (hasOwnProp.call(stateObj.attributes, 'friendly_name')) {
+                  const val = stateObj.attributes.friendly_name;
+                  if (typeof val === 'string') {
+                    friendlyName = val;
+                  }
+                }
+              }
+              td.title = `View ${friendlyName || stateObj.entity_id} details`;
               td.tabIndex = 0;
               td.setAttribute('role', 'button');
             }
@@ -674,7 +684,16 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (col.type === 'entity') {
             const stateObj = row._entities[colKey];
             if (stateObj) {
-              const uom = stateObj.attributes?.unit_of_measurement;
+              let uom: string | undefined = undefined;
+              if (stateObj.attributes && typeof stateObj.attributes === 'object') {
+                const hasOwnProp = Object.prototype.hasOwnProperty;
+                if (hasOwnProp.call(stateObj.attributes, 'unit_of_measurement')) {
+                  const val = stateObj.attributes.unit_of_measurement;
+                  if (typeof val === 'string') {
+                    uom = val;
+                  }
+                }
+              }
               if (uom) {
                 displayValue = `${displayValue} ${escape(uom)}`;
               }
