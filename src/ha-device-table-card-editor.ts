@@ -97,6 +97,15 @@ export class DeviceTableCardEditor extends LitElement {
         border-radius: 4px;
         margin-bottom: 8px;
         overflow: hidden;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          background-color 0.2s;
+      }
+      .column-item.confirm-delete {
+        border-color: var(--error-color, #e53935);
+        box-shadow: 0 0 4px rgba(229, 57, 53, 0.3);
+        background-color: rgba(229, 57, 53, 0.02);
       }
       .column-header {
         display: flex;
@@ -258,7 +267,8 @@ export class DeviceTableCardEditor extends LitElement {
         font-weight: 500;
         transition:
           background-color 0.2s,
-          color 0.2s;
+          color 0.2s,
+          transform 0.1s ease;
       }
       .preset-badge:hover {
         background-color: var(--primary-color, #03a9f4);
@@ -267,6 +277,9 @@ export class DeviceTableCardEditor extends LitElement {
       .preset-badge:focus-visible {
         outline: 2px solid var(--primary-color, #03a9f4);
         outline-offset: 2px;
+      }
+      .preset-badge:active {
+        transform: scale(0.95);
       }
       .highlights-editor {
         border-top: 1px dashed var(--divider-color, #e0e0e0);
@@ -287,6 +300,17 @@ export class DeviceTableCardEditor extends LitElement {
         gap: 8px;
         align-items: center;
         margin-bottom: 8px;
+        transition:
+          background-color 0.2s,
+          box-shadow 0.2s,
+          border-radius 0.2s;
+      }
+      .highlight-rule-row.confirm-delete {
+        background-color: rgba(229, 57, 53, 0.05);
+        box-shadow:
+          0 0 4px rgba(229, 57, 53, 0.3),
+          inset 0 0 0 1px var(--error-color, #e53935);
+        border-radius: 4px;
       }
       .highlight-rule-row ha-textfield,
       .highlight-rule-row ha-input,
@@ -629,7 +653,7 @@ export class DeviceTableCardEditor extends LitElement {
     const columnsCount = Array.isArray(this._config?.columns) ? this._config.columns.length : 0;
 
     return html`
-      <div class="column-item">
+      <div class="column-item ${this._confirmDeleteColumnIndex === index ? 'confirm-delete' : ''}">
         <div class="column-header">
           <div
             class="column-header-title"
@@ -877,10 +901,14 @@ export class DeviceTableCardEditor extends LitElement {
                               const aboveVal = hl.above !== undefined ? String(hl.above) : '';
                               const belowInvalid = this._isInvalidNumber(belowVal);
                               const aboveInvalid = this._isInvalidNumber(aboveVal);
+                              const isHlConfirmDelete =
+                                this._confirmDeleteHighlightIndex &&
+                                this._confirmDeleteHighlightIndex.colIndex === index &&
+                                this._confirmDeleteHighlightIndex.hlIndex === hlIndex;
 
                               return html`
                                 <div
-                                  class="highlight-rule-row"
+                                  class="highlight-rule-row ${isHlConfirmDelete ? 'confirm-delete' : ''}"
                                   data-col-index=${index}
                                   data-hl-index=${hlIndex}
                                 >

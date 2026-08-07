@@ -455,6 +455,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                     searchInput.value = '';
                     this._dataTable.search('').draw();
                     updateClearBtn();
+                  } else {
+                    searchInput.blur();
                   }
                 }
               });

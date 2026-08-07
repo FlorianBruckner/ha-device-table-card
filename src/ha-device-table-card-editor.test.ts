@@ -100,11 +100,12 @@ describe('ha-device-table-card-editor', () => {
     expect(receivedConfig!.columns![2].label).to.equal('Column 3');
   });
 
-  it('deletes columns with click-to-confirm', async () => {
+  it('deletes columns with click-to-confirm and applies styling', async () => {
     const el = await fixture<DeviceTableCardEditor>(html`
       <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
     `);
     el.setConfig(config);
+    (el as any)._columnsExpanded = true;
     await el.updateComplete;
 
     let receivedConfig: DeviceTableCardConfig | null = null;
@@ -114,8 +115,13 @@ describe('ha-device-table-card-editor', () => {
 
     // First click: sets confirmation state, does not emit config-changed yet
     (el as any)._deleteColumn(0);
+    await el.updateComplete;
     expect(receivedConfig).to.be.null;
     expect((el as any)._confirmDeleteColumnIndex).to.equal(0);
+
+    // Verify .confirm-delete class is added
+    const colItem = el.shadowRoot?.querySelector('.column-item');
+    expect(colItem?.classList.contains('confirm-delete')).to.be.true;
 
     // Second click: executes deletion
     (el as any)._deleteColumn(0);
@@ -198,12 +204,14 @@ describe('ha-device-table-card-editor', () => {
     expect((Object.prototype as any).polluted).to.be.undefined;
   });
 
-  it('adds, updates, and deletes highlight rules', async () => {
+  it('adds, updates, and deletes highlight rules with styling confirmation', async () => {
     const el = await fixture<DeviceTableCardEditor>(html`
       <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
     `);
     // Start with a config where columns[1] (entity class battery) has no highlights
     el.setConfig(config);
+    (el as any)._columnsExpanded = true;
+    (el as any)._expandedColumnIndex = 1;
     await el.updateComplete;
 
     let receivedConfig: DeviceTableCardConfig | null = null;
@@ -221,6 +229,7 @@ describe('ha-device-table-card-editor', () => {
     el.setConfig(receivedConfig!);
     receivedConfig = null;
     (el as any)._updateHighlightRule(1, 0, 'below', 15);
+    await el.updateComplete;
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns![1].highlight![0].below).to.equal(15);
 
@@ -230,8 +239,13 @@ describe('ha-device-table-card-editor', () => {
 
     // First click: sets confirmation state, does not delete
     (el as any)._deleteHighlightRule(1, 0);
+    await el.updateComplete;
     expect(receivedConfig).to.be.null;
     expect((el as any)._confirmDeleteHighlightIndex).to.deep.equal({ colIndex: 1, hlIndex: 0 });
+
+    // Verify .confirm-delete class is added on the rule row
+    const ruleRow = el.shadowRoot?.querySelector('.highlight-rule-row');
+    expect(ruleRow?.classList.contains('confirm-delete')).to.be.true;
 
     // Second click: executes deletion
     (el as any)._deleteHighlightRule(1, 0);
