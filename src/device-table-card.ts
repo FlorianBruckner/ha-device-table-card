@@ -42,6 +42,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
+  private _tableListenersAttached = false;
 
   static get styles() {
     return styles;
@@ -162,6 +163,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     this._lastProcessedData = [];
     this._unsubscribeRegistryUpdates();
     window.removeEventListener('keydown', this._handleGlobalKeyDown);
+    this._tableListenersAttached = false;
   }
 
   private _startRefreshInterval(): void {
@@ -551,38 +553,41 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         },
       });
 
-      tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+      if (!this._tableListenersAttached) {
+        tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            const target = e.target as HTMLElement;
+            if (
+              target.tagName === 'TD' &&
+              (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
+            ) {
+              e.preventDefault();
+              target.click();
+            }
+          }
+        });
+
+        tableElement.addEventListener('click', (e: Event) => {
           const target = e.target as HTMLElement;
-          if (
-            target.tagName === 'TD' &&
-            (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
-          ) {
-            e.preventDefault();
-            target.click();
-          }
-        }
-      });
+          const cell = target.closest('td');
+          if (!cell) return;
 
-      tableElement.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement;
-        const cell = target.closest('td');
-        if (!cell) return;
-
-        if (cell.classList.contains('cell-entity')) {
-          const entityId = cell.getAttribute('data-entity-id');
-          // Security Hardening: strictly validate entityId before firing more-info action
-          if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
-            fireEvent(this, 'hass-more-info', { entityId });
+          if (cell.classList.contains('cell-entity')) {
+            const entityId = cell.getAttribute('data-entity-id');
+            // Security Hardening: strictly validate entityId before firing more-info action
+            if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
+              fireEvent(this, 'hass-more-info', { entityId });
+            }
+          } else if (cell.classList.contains('cell-device')) {
+            const deviceId = cell.getAttribute('data-device-id');
+            // Security Hardening: strictly validate deviceId before triggering navigation
+            if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
+              navigate(this, `/config/devices/device/${deviceId}`);
+            }
           }
-        } else if (cell.classList.contains('cell-device')) {
-          const deviceId = cell.getAttribute('data-device-id');
-          // Security Hardening: strictly validate deviceId before triggering navigation
-          if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
-            navigate(this, `/config/devices/device/${deviceId}`);
-          }
-        }
-      });
+        });
+        this._tableListenersAttached = true;
+      }
     }
   }
 

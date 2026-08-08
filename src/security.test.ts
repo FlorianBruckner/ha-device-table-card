@@ -1147,4 +1147,46 @@ describe('Security Vulnerabilities', () => {
       expect(cell.title).to.not.contain('not a string');
     });
   });
+
+  describe('ha-device-table-card event listener accumulation prevention', () => {
+    it('should not register duplicate keydown or click event listeners on table re-initialization', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      const tableElement = el.shadowRoot?.querySelector('#deviceTable') as HTMLElement;
+      expect(tableElement).to.exist;
+
+      let keydownListenerCount = 0;
+      const originalAddEventListener = tableElement.addEventListener;
+      tableElement.addEventListener = function (type: string, listener: any, options?: any) {
+        if (type === 'keydown' || type === 'click') {
+          keydownListenerCount++;
+        }
+        return originalAddEventListener.call(this, type, listener, options);
+      };
+
+      // Trigger re-initialization multiple times
+      (el as any)._reinitDataTable();
+      (el as any)._reinitDataTable();
+
+      // Since we guarded it with _tableListenersAttached, it should NOT add extra keydown or click listeners.
+      expect(keydownListenerCount).to.equal(0);
+    });
+  });
 });

@@ -60,5 +60,10 @@
 
 ## 2026-07-17 - [Harden State Attributes Lookup & Type Validation]
 **Vulnerability:** Prototype pollution on properties like `friendly_name`, `unit_of_measurement`, and `device_class` nested inside `stateObj.attributes` could pollute lookup calculations or rendering, leading to client-side data leaks or logic bypasses.
-**Learning:** Direct property checks using secure `hasOwnProperty` pattern combined with strict string type-guards (`typeof val === 'string'`) ensures that only explicit, valid string values declared on the attributes object are resolved.
+**Learning:** Direct property checks using secure `hasOwnProperty` pattern combined with strict security checks ensures that only explicit, valid string values declared on the attributes object are resolved.
 **Prevention:** Always guard custom nested property resolutions on API payload and Home Assistant objects using safe `hasOwnProperty` calls and strict string type-guard checks.
+
+## 2026-07-18 - [Event Listener Accumulation and DoS Prevention]
+**Vulnerability:** Successive table re-initializations during dashboard customization edits or configuration mutations triggered redundant registration of click and keydown event listeners on persistent DOM elements, leading to memory leaks and duplicate handler executions (client-side Resource Exhaustion / Denial of Service).
+**Learning:** Checking state flags (like `_tableListenersAttached`) and resetting them cleanly on component destruction guarantees that handlers on reused or persistent DOM structures are bound exactly once across the component lifecycle.
+**Prevention:** Always guard registration of anonymous/inline event listeners on persistent or reused DOM elements to prevent accumulation and leaks during re-render cycles.
