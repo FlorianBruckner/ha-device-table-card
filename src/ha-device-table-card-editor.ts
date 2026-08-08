@@ -60,9 +60,19 @@ export class DeviceTableCardEditor extends LitElement {
       }
       .section {
         border: 1px solid var(--divider-color, #e0e0e0);
+        border-left: 3px solid transparent;
         border-radius: 4px;
         background-color: var(--card-background-color, #fff);
         overflow: hidden;
+        transition:
+          border-color 0.2s,
+          border-left-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .section.expanded {
+        border-color: var(--primary-color, #03a9f4);
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .section-header {
         display: flex;
@@ -94,9 +104,19 @@ export class DeviceTableCardEditor extends LitElement {
       }
       .column-item {
         border: 1px solid var(--divider-color, #e0e0e0);
+        border-left: 3px solid transparent;
         border-radius: 4px;
         margin-bottom: 8px;
         overflow: hidden;
+        transition:
+          border-color 0.2s,
+          border-left-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .column-item.expanded {
+        border-color: var(--primary-color, #03a9f4);
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .column-header {
         display: flex;
@@ -431,7 +451,7 @@ export class DeviceTableCardEditor extends LitElement {
     return html`
       <div class="card-config">
         <!-- Section 1: General & Filters -->
-        <div class="section">
+        <div class="section ${this._generalExpanded ? 'expanded' : ''}">
           <div
             class="section-header"
             @click=${() => (this._generalExpanded = !this._generalExpanded)}
@@ -510,7 +530,7 @@ export class DeviceTableCardEditor extends LitElement {
         </div>
 
         <!-- Section 2: Columns -->
-        <div class="section">
+        <div class="section ${this._columnsExpanded ? 'expanded' : ''}">
           <div
             class="section-header"
             @click=${() => (this._columnsExpanded = !this._columnsExpanded)}
@@ -629,7 +649,7 @@ export class DeviceTableCardEditor extends LitElement {
     const columnsCount = Array.isArray(this._config?.columns) ? this._config.columns.length : 0;
 
     return html`
-      <div class="column-item">
+      <div class="column-item ${isExpanded ? 'expanded' : ''}">
         <div class="column-header">
           <div
             class="column-header-title"

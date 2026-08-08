@@ -319,6 +319,30 @@ describe('ha-device-table-card-editor', () => {
     expect(columnItemHeader?.getAttribute('aria-controls')).to.equal('column-body-0');
     expect(columnItemHeader?.getAttribute('aria-expanded')).to.equal('true');
 
+    // Verify .section and .column-item elements have the 'expanded' class when expanded
+    const sections = el.shadowRoot?.querySelectorAll('.section');
+    expect(sections).to.exist;
+    expect(sections![0].classList.contains('expanded')).to.be.true;
+    expect(sections![1].classList.contains('expanded')).to.be.true;
+
+    const columnItems = el.shadowRoot?.querySelectorAll('.column-item');
+    expect(columnItems).to.exist;
+    expect(columnItems![0].classList.contains('expanded')).to.be.true;
+    expect(columnItems![1].classList.contains('expanded')).to.be.false;
+
+    // Verify collapsing them removes 'expanded' class
+    (el as any)._generalExpanded = false;
+    (el as any)._expandedColumnIndex = null;
+    await el.updateComplete;
+
+    expect(sections![0].classList.contains('expanded')).to.be.false;
+    expect(columnItems![0].classList.contains('expanded')).to.be.false;
+
+    // Restore expanded state for subsequent assertions
+    (el as any)._generalExpanded = true;
+    (el as any)._expandedColumnIndex = 0;
+    await el.updateComplete;
+
     // Check decorative SVGs have aria-hidden="true"
     const svgs = el.shadowRoot?.querySelectorAll('svg');
     expect(svgs?.length).to.be.greaterThan(0);
