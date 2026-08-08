@@ -27,6 +27,20 @@ interface SharedRegistryCacheEntry {
 
 const registryCache = new WeakMap<any, SharedRegistryCacheEntry>();
 
+const SPECIAL_CHAR_REGEX = /[&<>"']/;
+
+/**
+ * Performance Optimization: Bypasses html-escaper's escape function for safe values
+ * to avoid regular expression replacement overhead and unnecessary allocations.
+ */
+function fastEscape(data: any): string {
+  if (typeof data === 'number') {
+    return String(data);
+  }
+  const str = String(data);
+  return SPECIAL_CHAR_REGEX.test(str) ? escape(str) : str;
+}
+
 @customElement('ha-device-table-card')
 export class DeviceTableCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass!: any;
@@ -634,7 +648,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
+          render: (data: any) => (data && data !== '-' ? fastEscape(data) : data),
         },
         {
           title: 'Area',
@@ -647,7 +661,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
+          render: (data: any) => (data && data !== '-' ? fastEscape(data) : data),
         },
       ];
     }
@@ -687,7 +701,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       }
 
       return {
-        title: escape(col.label || col.prop || col.device_class || 'Unknown'),
+        title: fastEscape(col.label || col.prop || col.device_class || 'Unknown'),
         data: colKey,
         defaultContent: '-',
         type:
@@ -748,7 +762,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (data === '-' || type === 'type') return data;
           if (type !== 'display') return data;
 
-          let displayValue = escape(String(data));
+          let displayValue = fastEscape(data);
           let color = '';
           let sanitizedColor = '';
           let highlightReason = '';
@@ -767,7 +781,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 }
               }
               if (uom) {
-                displayValue = `${displayValue} ${escape(uom)}`;
+                displayValue = `${displayValue} ${fastEscape(uom)}`;
               }
 
               // Highlighting using pre-parsed threshold rules to avoid parseFloat/sanitization overhead in hot path
@@ -821,7 +835,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
 
           if (color) {
-            return `<span title="${escape(highlightReason)}" style="color: ${sanitizedColor}; font-weight: bold;">${displayValue}</span>`;
+            return `<span title="${fastEscape(highlightReason)}" style="color: ${sanitizedColor}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },
