@@ -57,3 +57,8 @@
 **Vulnerability:** Potential client-side unhandled TypeErrors and card UI Denial of Service (DoS) could occur if entity state objects in `hass.states` returned by Home Assistant were missing `attributes` or had them set to null, causing attempts to access nested properties like `friendly_name` or `unit_of_measurement` to crash the card render cycle.
 **Learning:** Utilizing optional chaining (`attributes?.friendly_name`, `attributes?.unit_of_measurement`) guarantees that nested attribute properties are safely resolved, completely immunizing the UI against crashes caused by custom integrations or malformed/incomplete state objects.
 **Prevention:** Always employ optional chaining or explicit property existence checks before navigating nested properties of objects received from external dynamic registries.
+
+## 2026-07-17 - [Harden State Attributes Lookup & Type Validation]
+**Vulnerability:** Prototype pollution on properties like `friendly_name`, `unit_of_measurement`, and `device_class` nested inside `stateObj.attributes` could pollute lookup calculations or rendering, leading to client-side data leaks or logic bypasses.
+**Learning:** Direct property checks using secure `hasOwnProperty` pattern combined with strict string type-guards (`typeof val === 'string'`) ensures that only explicit, valid string values declared on the attributes object are resolved.
+**Prevention:** Always guard custom nested property resolutions on API payload and Home Assistant objects using safe `hasOwnProperty` calls and strict string type-guard checks.

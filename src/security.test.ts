@@ -1032,4 +1032,119 @@ describe('Security Vulnerabilities', () => {
       expect(firedDetail).to.be.null;
     });
   });
+
+  describe('ha-device-table-card state attributes safety', () => {
+    it('should ignore prototype polluted properties on attributes object', async () => {
+      // Pollute Object prototype properties locally using Object.create
+      const attributesWithPollution = Object.create({
+        friendly_name: 'Polluted Name',
+        unit_of_measurement: 'Polluted Unit',
+        device_class: 'battery',
+      });
+
+      const mockHass = {
+        states: {
+          'sensor.polluted': {
+            entity_id: 'sensor.polluted',
+            state: '100',
+            attributes: attributesWithPollution,
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list')
+            return [{ id: 'dev_polluted', name: 'Device Polluted' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.polluted', device_id: 'dev_polluted' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery status',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const cell = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(cell).to.exist;
+      // Since device_class was on the prototype, it shouldn't match, so we shouldn't have a value '100' matched in column or have polluted name details
+      expect(cell.textContent?.trim()).to.equal('-');
+      expect(cell.title).to.not.contain('Polluted Name');
+    });
+
+    it('should not crash or use non-string type values for state attributes', async () => {
+      const mockHass = {
+        states: {
+          'sensor.malformed_attr': {
+            entity_id: 'sensor.malformed_attr',
+            state: '42',
+            attributes: {
+              friendly_name: { nested: 'not a string' },
+              unit_of_measurement: ['not a string'],
+              device_class: 'battery', // valid so the entity is matched, but others are malformed
+            },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list')
+            return [{ id: 'dev_malformed', name: 'Device Malformed' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.malformed_attr', device_id: 'dev_malformed' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery status',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      // Wait for DataTables to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const cell = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(cell).to.exist;
+      // Because device_class is correct, the state value is displayed
+      expect(cell.textContent?.trim()).to.equal('42');
+      // title should fallback gracefully to the entity_id because friendly_name is a non-string object and thus ignored
+      expect(cell.title).to.contain('sensor.malformed_attr');
+      expect(cell.title).to.not.contain('not a string');
+    });
+  });
 });
