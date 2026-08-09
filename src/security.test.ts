@@ -1147,4 +1147,62 @@ describe('Security Vulnerabilities', () => {
       expect(cell.title).to.not.contain('not a string');
     });
   });
+
+  describe('ha-device-table-card event listener leak and accumulation protection', () => {
+    it('should not register duplicate table-level keydown and click listeners across configuration updates', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      const tableElement = el.shadowRoot?.querySelector('#deviceTable') as HTMLElement;
+      expect(tableElement).to.exist;
+
+      let keydownListenerCount = 0;
+      let clickListenerCount = 0;
+
+      const originalAddEventListener = tableElement.addEventListener;
+      tableElement.addEventListener = function (type: string, listener: any, options?: any) {
+        if (type === 'keydown') {
+          keydownListenerCount++;
+        } else if (type === 'click') {
+          clickListenerCount++;
+        }
+        return originalAddEventListener.call(this, type, listener, options);
+      };
+
+      // Trigger multiple re-initializations (config updates)
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        title: 'Updated Config 1',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        title: 'Updated Config 2',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      // Without the fix, these counts would be 2 (one for each updated config)
+      // With the fix, these counts should be 0 (as listeners are guarded and already attached)
+      expect(keydownListenerCount).to.equal(0);
+      expect(clickListenerCount).to.equal(0);
+    });
+  });
 });
