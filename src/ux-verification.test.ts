@@ -127,6 +127,53 @@ describe('ha-device-table-card UX', () => {
     expect(emptyMsg?.textContent).to.equal('No devices available');
   });
 
+  it('renders a clear search link when zero records are found and resets the search when clicked', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Type a term that yields no matches
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+
+    // Explicitly clean search state from potential prior tests
+    (el as any)._dataTable.search('').draw();
+
+    searchInput.value = 'NonExistentDevice12345';
+    searchInput.dispatchEvent(new Event('input'));
+    (el as any)._dataTable.search('NonExistentDevice12345').draw();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // The zero records row should contain the clear search link
+    const emptyRow = el.shadowRoot?.querySelector('.dt-empty');
+    expect(emptyRow).to.exist;
+
+    const clearLink = emptyRow?.querySelector('.clear-search-link') as HTMLElement;
+    expect(clearLink).to.exist;
+    expect(clearLink.getAttribute('role')).to.equal('button');
+    expect(clearLink.getAttribute('tabindex')).to.equal('0');
+
+    // Click the clear search link
+    clearLink.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Verifications: input is cleared, search matches returned, and search input gains focus
+    expect(searchInput.value).to.equal('');
+    expect((el as any)._dataTable.search()).to.equal('');
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+  });
+
   it('has correct keyboard accessibility attributes on interactive cells', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',
