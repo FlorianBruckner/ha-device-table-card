@@ -114,11 +114,16 @@ describe('ha-device-table-card-editor', () => {
 
     // First click: sets confirmation state, does not emit config-changed yet
     (el as any)._deleteColumn(0);
+    await el.updateComplete;
     expect(receivedConfig).to.be.null;
     expect((el as any)._confirmDeleteColumnIndex).to.equal(0);
 
+    const colItem = el.shadowRoot?.querySelectorAll('.column-item')[0];
+    expect(colItem?.classList.contains('confirm-delete')).to.be.true;
+
     // Second click: executes deletion
     (el as any)._deleteColumn(0);
+    await el.updateComplete;
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns).to.have.lengthOf(1);
     expect(receivedConfig!.columns![0].device_class).to.equal('battery');
@@ -229,12 +234,18 @@ describe('ha-device-table-card-editor', () => {
     receivedConfig = null;
 
     // First click: sets confirmation state, does not delete
+    (el as any)._expandedColumnIndex = 1;
     (el as any)._deleteHighlightRule(1, 0);
+    await el.updateComplete;
     expect(receivedConfig).to.be.null;
     expect((el as any)._confirmDeleteHighlightIndex).to.deep.equal({ colIndex: 1, hlIndex: 0 });
 
+    const ruleRow = el.shadowRoot?.querySelector('.highlight-rule-row');
+    expect(ruleRow?.classList.contains('confirm-delete')).to.be.true;
+
     // Second click: executes deletion
     (el as any)._deleteHighlightRule(1, 0);
+    await el.updateComplete;
     expect(receivedConfig).to.not.be.null;
     expect(receivedConfig!.columns![1].highlight).to.have.lengthOf(0);
     expect((el as any)._confirmDeleteHighlightIndex).to.be.null;
