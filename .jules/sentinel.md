@@ -62,3 +62,8 @@
 **Vulnerability:** Prototype pollution on properties like `friendly_name`, `unit_of_measurement`, and `device_class` nested inside `stateObj.attributes` could pollute lookup calculations or rendering, leading to client-side data leaks or logic bypasses.
 **Learning:** Direct property checks using secure `hasOwnProperty` pattern combined with strict string type-guards (`typeof val === 'string'`) ensures that only explicit, valid string values declared on the attributes object are resolved.
 **Prevention:** Always guard custom nested property resolutions on API payload and Home Assistant objects using safe `hasOwnProperty` calls and strict string type-guard checks.
+
+## 2026-07-18 - [Event Listener Accumulation & Leak Prevention]
+**Vulnerability:** Repeatedly registering keydown and click listeners on `#deviceTable` inside `_initDataTable` upon configuration/state updates resulted in listener accumulation, duplicate handler execution, memory leaks, and performance degradation (DoS).
+**Learning:** Using an instance-level flag can cause regressions if the target element is recreated but the flag remains true. Instead, checking a custom DOM property `__listenersAttached` on the element itself ensures proper state binding.
+**Prevention:** Always map event listener tracking state directly to the life of the target DOM element using custom element properties or robust removal/addition cycles.

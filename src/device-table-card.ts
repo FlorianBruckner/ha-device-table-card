@@ -551,38 +551,42 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         },
       });
 
-      tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+      if (!(tableElement as any).__listenersAttached) {
+        tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            const target = e.target as HTMLElement;
+            if (
+              target.tagName === 'TD' &&
+              (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
+            ) {
+              e.preventDefault();
+              target.click();
+            }
+          }
+        });
+
+        tableElement.addEventListener('click', (e: Event) => {
           const target = e.target as HTMLElement;
-          if (
-            target.tagName === 'TD' &&
-            (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
-          ) {
-            e.preventDefault();
-            target.click();
-          }
-        }
-      });
+          const cell = target.closest('td');
+          if (!cell) return;
 
-      tableElement.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement;
-        const cell = target.closest('td');
-        if (!cell) return;
+          if (cell.classList.contains('cell-entity')) {
+            const entityId = cell.getAttribute('data-entity-id');
+            // Security Hardening: strictly validate entityId before firing more-info action
+            if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
+              fireEvent(this, 'hass-more-info', { entityId });
+            }
+          } else if (cell.classList.contains('cell-device')) {
+            const deviceId = cell.getAttribute('data-device-id');
+            // Security Hardening: strictly validate deviceId before triggering navigation
+            if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
+              navigate(this, `/config/devices/device/${deviceId}`);
+            }
+          }
+        });
 
-        if (cell.classList.contains('cell-entity')) {
-          const entityId = cell.getAttribute('data-entity-id');
-          // Security Hardening: strictly validate entityId before firing more-info action
-          if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
-            fireEvent(this, 'hass-more-info', { entityId });
-          }
-        } else if (cell.classList.contains('cell-device')) {
-          const deviceId = cell.getAttribute('data-device-id');
-          // Security Hardening: strictly validate deviceId before triggering navigation
-          if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
-            navigate(this, `/config/devices/device/${deviceId}`);
-          }
-        }
-      });
+        (tableElement as any).__listenersAttached = true;
+      }
     }
   }
 
