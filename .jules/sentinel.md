@@ -1,3 +1,8 @@
+## 2026-07-19 - [Config Structure Size Limits DoS Prevention]
+**Vulnerability:** Excessively large configuration arrays or objects with thousands of keys loaded from YAML or created programmatically could cause massive CPU or memory consumption during recursive sanitization, potentially freezing the browser tab or causing a client-side Denial of Service (DoS).
+**Learning:** Hardening configuration traversals requires bounding not only the depth but also the structural size of nested properties. Enforcing limits of 5000 elements for arrays and 5000 keys for objects provides a highly generous ceiling for power users while robustly neutralizing extreme payloads from crashing the UI thread.
+**Prevention:** Always bound array lengths and object key sizes when recursively parsing, sanitizing, or traversing deeply nested configurations.
+
 ## 2026-07-06 - [Enhanced XSS Protection with html-escaper]
 **Vulnerability:** Manual HTML escaping was used in DataTables rendering, which is error-prone and can lead to XSS if edge cases are missed.
 **Learning:** Replaced manual regex-based escaping with the robust `html-escaper` library as recommended by architectural guidelines.

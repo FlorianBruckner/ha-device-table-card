@@ -1205,4 +1205,80 @@ describe('Security Vulnerabilities', () => {
       expect(clickListenerCount).to.equal(0);
     });
   });
+
+  describe('ha-device-table-card config structure size limits DoS prevention', () => {
+    it('should reject configurations with arrays exceeding 5000 elements in setConfig', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const largeArray = Array.from({ length: 5001 }, (_, i) => i);
+      const invalidConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        malicious_array: largeArray,
+      };
+
+      expect(() => elCard.setConfig(invalidConfig)).to.throw(
+        'Configuration array size limit exceeded',
+      );
+      expect(() => elEditor.setConfig(invalidConfig)).to.throw(
+        'Configuration array size limit exceeded',
+      );
+
+      const safeArray = Array.from({ length: 5000 }, (_, i) => i);
+      const validConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        malicious_array: safeArray,
+      };
+
+      expect(() => elCard.setConfig(validConfig)).to.not.throw();
+      expect(() => elEditor.setConfig(validConfig)).to.not.throw();
+    });
+
+    it('should reject configurations with objects exceeding 5000 keys in setConfig', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const largeObject: any = {};
+      for (let i = 0; i < 5001; i++) {
+        largeObject[`key_${i}`] = i;
+      }
+
+      const invalidConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        malicious_obj: largeObject,
+      };
+
+      expect(() => elCard.setConfig(invalidConfig)).to.throw(
+        'Configuration object size limit exceeded',
+      );
+      expect(() => elEditor.setConfig(invalidConfig)).to.throw(
+        'Configuration object size limit exceeded',
+      );
+
+      const safeObject: any = {};
+      for (let i = 0; i < 5000; i++) {
+        safeObject[`key_${i}`] = i;
+      }
+
+      const validConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        malicious_obj: safeObject,
+      };
+
+      expect(() => elCard.setConfig(validConfig)).to.not.throw();
+      expect(() => elEditor.setConfig(validConfig)).to.not.throw();
+    });
+  });
 });
