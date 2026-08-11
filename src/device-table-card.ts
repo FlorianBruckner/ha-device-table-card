@@ -10,6 +10,21 @@ import { styles } from './styles';
 import { processDevices } from './data-processor';
 import './ha-device-table-card-editor';
 
+// Performance Optimization: Fast-path HTML escaping to avoid regex overhead on safe strings & numbers
+function fastEscape(val: any): string {
+  if (val === null || val === undefined) {
+    return '';
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') {
+    return String(val);
+  }
+  const str = String(val);
+  if (/[&<>"']/.test(str)) {
+    return escape(str);
+  }
+  return str;
+}
+
 // Shared Registry Caching for multiple card instances to avoid redundant API calls and parsing.
 interface SharedRegistryData {
   devices: any[];
@@ -638,7 +653,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
+          render: (data: any) => (data && data !== '-' ? fastEscape(data) : data),
         },
         {
           title: 'Area',
@@ -651,7 +666,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
-          render: (data: any) => (data && data !== '-' ? escape(String(data)) : data),
+          render: (data: any) => (data && data !== '-' ? fastEscape(data) : data),
         },
       ];
     }
@@ -691,7 +706,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       }
 
       return {
-        title: escape(col.label || col.prop || col.device_class || 'Unknown'),
+        title: fastEscape(col.label || col.prop || col.device_class || 'Unknown'),
         data: colKey,
         defaultContent: '-',
         type:
@@ -752,7 +767,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (data === '-' || type === 'type') return data;
           if (type !== 'display') return data;
 
-          let displayValue = escape(String(data));
+          let displayValue = fastEscape(data);
           let color = '';
           let sanitizedColor = '';
           let highlightReason = '';
@@ -771,7 +786,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 }
               }
               if (uom) {
-                displayValue = `${displayValue} ${escape(uom)}`;
+                displayValue = `${displayValue} ${fastEscape(uom)}`;
               }
 
               // Highlighting using pre-parsed threshold rules to avoid parseFloat/sanitization overhead in hot path
@@ -825,7 +840,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
 
           if (color) {
-            return `<span title="${escape(highlightReason)}" style="color: ${sanitizedColor}; font-weight: bold;">${displayValue}</span>`;
+            return `<span title="${fastEscape(highlightReason)}" style="color: ${sanitizedColor}; font-weight: bold;">${displayValue}</span>`;
           }
           return displayValue;
         },
