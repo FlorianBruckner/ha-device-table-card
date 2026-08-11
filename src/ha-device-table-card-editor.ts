@@ -431,10 +431,17 @@ export class DeviceTableCardEditor extends LitElement {
     }
     seen.add(obj);
     if (Array.isArray(obj)) {
+      if (obj.length > 5000) {
+        throw new Error('Configuration array size limit exceeded');
+      }
       return obj.map((item) => this._sanitizeConfig(item, seen, depth + 1)) as any;
     }
+    const keys = Object.keys(obj);
+    if (keys.length > 5000) {
+      throw new Error('Configuration object size limit exceeded');
+    }
     const sanitized: any = {};
-    for (const key of Object.keys(obj)) {
+    for (const key of keys) {
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         continue;
       }

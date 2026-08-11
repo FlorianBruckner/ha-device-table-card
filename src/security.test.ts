@@ -1205,4 +1205,55 @@ describe('Security Vulnerabilities', () => {
       expect(clickListenerCount).to.equal(0);
     });
   });
+
+  describe('ha-device-table-card configuration size limits DoS prevention', () => {
+    it('should reject configurations with arrays exceeding 5000 elements', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const hugeArray = Array.from({ length: 5001 }, () => 1);
+      const badConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        hugeArray,
+      };
+
+      expect(() => elCard.setConfig(badConfig as any)).to.throw(
+        'Configuration array size limit exceeded',
+      );
+      expect(() => elEditor.setConfig(badConfig as any)).to.throw(
+        'Configuration array size limit exceeded',
+      );
+    });
+
+    it('should reject configurations with objects exceeding 5000 keys', async () => {
+      const elCard = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card></ha-device-table-card>
+      `);
+      const elEditor = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+
+      const hugeObject: any = {};
+      for (let i = 0; i < 5001; i++) {
+        hugeObject[`key${i}`] = 1;
+      }
+      const badConfig = {
+        type: 'custom:ha-device-table-card',
+        columns: [],
+        hugeObject,
+      };
+
+      expect(() => elCard.setConfig(badConfig as any)).to.throw(
+        'Configuration object size limit exceeded',
+      );
+      expect(() => elEditor.setConfig(badConfig as any)).to.throw(
+        'Configuration object size limit exceeded',
+      );
+    });
+  });
 });
