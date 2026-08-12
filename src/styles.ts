@@ -106,6 +106,12 @@ export const styles = css`
     text-decoration: underline;
   }
 
+  .clear-search-link:focus-visible {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px !important;
+    border-radius: 2px;
+  }
+
   /* DataTables 2.x Layout styling */
   .dt-container {
     padding: 0;

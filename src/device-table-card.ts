@@ -462,7 +462,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           infoEmpty: 'Showing 0 to 0 of 0 devices',
           infoFiltered: '(filtered from _MAX_ total devices)',
           lengthMenu: 'Show _MENU_ devices',
-          zeroRecords: 'No matching devices found',
+          zeroRecords:
+            'No matching devices found. <span class="clear-search-link" role="button" tabindex="0" style="color: var(--primary-color); text-decoration: underline; cursor: pointer; margin-left: 8px;">Clear search</span>',
           emptyTable: 'No devices available',
         },
         drawCallback: () => {
@@ -577,6 +578,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         tableElement.addEventListener('keydown', (e: KeyboardEvent) => {
           if (e.key === 'Enter' || e.key === ' ') {
             const target = e.target as HTMLElement;
+            if (target.classList.contains('clear-search-link')) {
+              e.preventDefault();
+              target.click();
+              return;
+            }
             if (
               target.tagName === 'TD' &&
               (target.classList.contains('cell-entity') || target.classList.contains('cell-device'))
@@ -589,6 +595,25 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
         tableElement.addEventListener('click', (e: Event) => {
           const target = e.target as HTMLElement;
+          if (target.classList.contains('clear-search-link')) {
+            e.preventDefault();
+            const searchInput = this.renderRoot.querySelector(
+              '.dt-search input, .dataTables_filter input',
+            ) as HTMLInputElement | null;
+            if (searchInput) {
+              searchInput.value = '';
+              const clearBtn = this.renderRoot.querySelector(
+                '.dt-search-clear',
+              ) as HTMLElement | null;
+              if (clearBtn) {
+                clearBtn.style.display = 'none';
+              }
+              this._dataTable.search('').draw();
+              searchInput.focus();
+            }
+            return;
+          }
+
           const cell = target.closest('td');
           if (!cell) return;
 

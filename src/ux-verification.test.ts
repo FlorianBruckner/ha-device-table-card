@@ -221,6 +221,71 @@ describe('ha-device-table-card UX', () => {
     expect(el.shadowRoot?.activeElement).to.equal(searchInput);
   });
 
+  it('renders Clear search link in empty search state, and clicking/keydown-ing it resets the search query and focuses the input', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+
+    // Simulate search query that results in 0 matches
+    (el as any)._dataTable.search('nonexistent-device-query').draw();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify empty search matches text and clear search link is present
+    const emptyRow = el.shadowRoot?.querySelector('.dt-empty, .dataTables_empty');
+    expect(emptyRow).to.exist;
+    expect(emptyRow?.textContent).to.contain('No matching devices found');
+
+    const clearSearchLink = emptyRow?.querySelector('.clear-search-link') as HTMLElement;
+    expect(clearSearchLink).to.exist;
+    expect(clearSearchLink.getAttribute('role')).to.equal('button');
+    expect(clearSearchLink.getAttribute('tabindex')).to.equal('0');
+
+    // Let's type value into searchInput to simulate user typing
+    searchInput.value = 'nonexistent-device-query';
+    const clearBtn = el.shadowRoot?.querySelector('.dt-search-clear') as HTMLElement;
+    clearBtn.style.display = 'flex';
+
+    // Click the clear search link
+    clearSearchLink.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify search is cleared, rows are restored, and focus is returned
+    expect(searchInput.value).to.equal('');
+    expect(clearBtn.style.display).to.equal('none');
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+    expect(el.shadowRoot?.querySelectorAll('tbody tr')?.length).to.be.greaterThan(0);
+
+    // Test with keydown keyboard access (Enter key)
+    searchInput.value = 'nonexistent-device-query-again';
+    (el as any)._dataTable.search('nonexistent-device-query-again').draw();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const clearSearchLink2 = el.shadowRoot?.querySelector('.clear-search-link') as HTMLElement;
+    expect(clearSearchLink2).to.exist;
+
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    Object.defineProperty(enterEvent, 'target', { value: clearSearchLink2, enumerable: true });
+    el.shadowRoot?.querySelector('#deviceTable')?.dispatchEvent(enterEvent);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(searchInput.value).to.equal('');
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+  });
+
   it('focuses search input when / keyboard shortcut is pressed while hovering', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',
