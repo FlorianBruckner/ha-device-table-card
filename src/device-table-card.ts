@@ -53,6 +53,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   @state() private _areaLookup: Record<string, string> = Object.create(null);
 
   private _dataTable: any = null;
+  private _cachedHeaders: NodeListOf<Element> | null = null;
   private _lastProcessedData: any[] = [];
   private _updateTimeout?: any;
   private _refreshInterval?: any;
@@ -364,6 +365,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       this._dataTable.destroy();
       this._dataTable = null;
     }
+    this._cachedHeaders = null;
     // Clear the table element content to be safe and remove any DataTables-injected elements
     const tableElement = this.renderRoot.querySelector('#deviceTable');
     if (tableElement) {
@@ -435,6 +437,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _initDataTable(): void {
     const tableElement = this.renderRoot.querySelector('#deviceTable') as HTMLElement;
     if (tableElement && !this._dataTable) {
+      this._cachedHeaders = null;
       this._dataTable = new DataTable(tableElement, {
         responsive: true,
         paging: true,
@@ -466,8 +469,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           emptyTable: 'No devices available',
         },
         drawCallback: () => {
-          const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
-          headers.forEach((th) => {
+          if (!this._cachedHeaders) {
+            this._cachedHeaders = this.renderRoot.querySelectorAll('table.dataTable thead th');
+          }
+          this._cachedHeaders.forEach((th) => {
             const titleSpan = th.querySelector('.dt-column-title');
             const cleanText = (titleSpan ? titleSpan.textContent : th.textContent || '').trim();
             if (cleanText) {
@@ -757,6 +762,10 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           }
         },
         render: (data: any, type: any, row: any) => {
+          if (type !== 'display' && type !== 'sort') {
+            return data;
+          }
+
           if (type === 'sort') {
             if (data === '-') return Infinity;
             if (col.type === 'entity') {
@@ -771,8 +780,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             return data;
           }
 
-          if (data === '-' || type === 'type') return data;
-          if (type !== 'display') return data;
+          if (data === '-') return data;
 
           let displayValue = fastEscape(data);
           let color = '';
