@@ -57,6 +57,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
+  private _subscribedConnection: any = undefined;
 
   static get styles() {
     return styles;
@@ -209,9 +210,21 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
-    if (changedProperties.has('hass') && this.hass) {
-      this._fetchRegistries();
-      this._subscribeRegistryUpdates();
+    if (changedProperties.has('hass')) {
+      const oldConn = this._subscribedConnection;
+      const newConn = this.hass?.connection;
+
+      if (oldConn !== newConn) {
+        if (oldConn) {
+          this._unsubscribeRegistryUpdates();
+        }
+        if (this.hass) {
+          this._subscribeRegistryUpdates();
+        }
+      }
+      if (this.hass) {
+        this._fetchRegistries();
+      }
     }
 
     if (changedProperties.has('_config')) {
@@ -341,15 +354,18 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'device_registry_updated'));
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'entity_registry_updated'));
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'area_registry_updated'));
+    this._subscribedConnection = this.hass.connection;
   }
 
   private _unsubscribeRegistryUpdates(): void {
-    while (this._unsubs.length) {
-      const unsub = this._unsubs.pop();
+    const unsubsToProcess = [...this._unsubs];
+    this._unsubs = [];
+    for (const unsub of unsubsToProcess) {
       if (unsub) {
         unsub.then((u) => u());
       }
     }
+    this._subscribedConnection = undefined;
   }
 
   private _debouncedUpdate(): void {

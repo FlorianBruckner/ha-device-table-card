@@ -1256,4 +1256,67 @@ describe('Security Vulnerabilities', () => {
       );
     });
   });
+
+  describe('ha-device-table-card connection lifecycle and resource leak prevention', () => {
+    it('should unsubscribe from old connection and subscribe to new connection when hass.connection updates', async () => {
+      let unsub1Count = 0;
+      let unsub2Count = 0;
+      let sub1Count = 0;
+      let sub2Count = 0;
+
+      const conn1 = {
+        subscribeEvents: () => {
+          sub1Count++;
+          return Promise.resolve(() => {
+            unsub1Count++;
+          });
+        },
+      };
+
+      const conn2 = {
+        subscribeEvents: () => {
+          sub2Count++;
+          return Promise.resolve(() => {
+            unsub2Count++;
+          });
+        },
+      };
+
+      const mockHass1 = {
+        states: {},
+        callWS: async () => [],
+        connection: conn1,
+      };
+
+      const mockHass2 = {
+        states: {},
+        callWS: async () => [],
+        connection: conn2,
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass1}></ha-device-table-card>
+      `);
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      // Expect connection 1 to have 3 subscriptions (device, entity, area registry updates)
+      expect(sub1Count).to.equal(3);
+      expect(unsub1Count).to.equal(0);
+
+      // Now change the connection reference
+      el.hass = mockHass2;
+      await el.updateComplete;
+
+      // Expect previous subscriptions to be disposed of (3 unsubscriptions on connection 1)
+      expect(unsub1Count).to.equal(3);
+      // Expect 3 new subscriptions to be established on connection 2
+      expect(sub2Count).to.equal(3);
+      expect(unsub2Count).to.equal(0);
+    });
+  });
 });
