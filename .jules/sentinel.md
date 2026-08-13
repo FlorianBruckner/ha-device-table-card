@@ -67,3 +67,8 @@
 **Vulnerability:** Repeatedly registering keydown and click listeners on `#deviceTable` inside `_initDataTable` upon configuration/state updates resulted in listener accumulation, duplicate handler execution, memory leaks, and performance degradation (DoS).
 **Learning:** Using an instance-level flag can cause regressions if the target element is recreated but the flag remains true. Instead, checking a custom DOM property `__listenersAttached` on the element itself ensures proper state binding.
 **Prevention:** Always map event listener tracking state directly to the life of the target DOM element using custom element properties or robust removal/addition cycles.
+
+## 2026-07-19 - [Connection Lifecycle & Subscription Leak Prevention]
+**Vulnerability:** Redundant WebSocket registry subscriptions were accumulating across reconnection cycles or when the connection reference changed/was lost. This led to resource exhaustion, duplicate event processing, and memory leaks (client-side DoS).
+**Learning:** Tracking the active connection reference (`_subscribedConnection`) allows comparing connection updates directly. If a connection reference changed or went away, we must cleanly unsubscribe from the previous connection before establishing new listeners.
+**Prevention:** Always track connection states explicitly and perform a clean teardown of prior WebSocket listeners before re-establishing subscriptions on new connection instances.

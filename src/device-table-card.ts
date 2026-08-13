@@ -57,6 +57,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   private _updateTimeout?: any;
   private _refreshInterval?: any;
   private _unsubs: Array<Promise<() => void>> = [];
+  private _subscribedConnection: any = null;
 
   static get styles() {
     return styles;
@@ -209,9 +210,19 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
-    if (changedProperties.has('hass') && this.hass) {
-      this._fetchRegistries();
-      this._subscribeRegistryUpdates();
+    if (changedProperties.has('hass')) {
+      const oldHass = changedProperties.get('hass') as any;
+      const oldConn = oldHass ? oldHass.connection : null;
+      const newConn = this.hass ? this.hass.connection : null;
+
+      if (oldConn !== newConn) {
+        this._unsubscribeRegistryUpdates();
+      }
+
+      if (this.hass) {
+        this._fetchRegistries();
+        this._subscribeRegistryUpdates();
+      }
     }
 
     if (changedProperties.has('_config')) {
@@ -332,15 +343,22 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
   }
 
   private _subscribeRegistryUpdates(): void {
-    if (!this.hass || !this.hass.connection || this._unsubs.length > 0) {
+    if (!this.hass || !this.hass.connection) {
       return;
     }
+
+    if (this._subscribedConnection === this.hass.connection) {
+      return;
+    }
+
+    this._unsubscribeRegistryUpdates();
 
     const callback = () => this._fetchRegistries(true);
 
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'device_registry_updated'));
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'entity_registry_updated'));
     this._unsubs.push(this.hass.connection.subscribeEvents(callback, 'area_registry_updated'));
+    this._subscribedConnection = this.hass.connection;
   }
 
   private _unsubscribeRegistryUpdates(): void {
@@ -350,6 +368,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         unsub.then((u) => u());
       }
     }
+    this._subscribedConnection = null;
   }
 
   private _debouncedUpdate(): void {

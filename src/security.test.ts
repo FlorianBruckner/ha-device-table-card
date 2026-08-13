@@ -1206,6 +1206,91 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card connection lifecycle and subscription leak prevention', () => {
+    it('should unsubscribe and re-subscribe cleanly when connection reference changes', async () => {
+      const mockHass1 = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: async () => {
+            return () => {};
+          },
+        },
+      };
+
+      const mockHass2 = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: async () => {
+            return () => {};
+          },
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass1}></ha-device-table-card>
+      `);
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      let unsubscribeCalled = false;
+      const originalUnsubscribe = (el as any)._unsubscribeRegistryUpdates;
+      (el as any)._unsubscribeRegistryUpdates = function () {
+        unsubscribeCalled = true;
+        originalUnsubscribe.call(this);
+      };
+
+      // Change hass property to trigger connection reference change
+      el.hass = mockHass2;
+      await el.updateComplete;
+
+      expect(unsubscribeCalled).to.be.true;
+      expect((el as any)._subscribedConnection).to.equal(mockHass2.connection);
+    });
+
+    it('should cleanly unsubscribe when disconnected', async () => {
+      const mockHass = {
+        states: {},
+        callWS: async () => [],
+        connection: {
+          subscribeEvents: async () => {
+            return () => {};
+          },
+        },
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      expect((el as any)._subscribedConnection).to.equal(mockHass.connection);
+
+      let unsubscribeCalled = false;
+      const originalUnsubscribe = (el as any)._unsubscribeRegistryUpdates;
+      (el as any)._unsubscribeRegistryUpdates = function () {
+        unsubscribeCalled = true;
+        originalUnsubscribe.call(this);
+      };
+
+      // Disconnect the element
+      el.disconnectedCallback();
+
+      expect(unsubscribeCalled).to.be.true;
+      expect((el as any)._subscribedConnection).to.be.null;
+    });
+  });
+
   describe('ha-device-table-card configuration size limits DoS prevention', () => {
     it('should reject configurations with arrays exceeding 5000 elements', async () => {
       const elCard = await fixture<DeviceTableCard>(html`
