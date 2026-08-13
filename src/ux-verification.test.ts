@@ -185,6 +185,35 @@ describe('ha-device-table-card UX', () => {
     expect(span?.getAttribute('title')).to.equal('Value is below threshold: 90%');
   });
 
+  it('blurs search input when Escape is pressed and search is empty', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+
+    searchInput.focus();
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+
+    // Trigger keydown with 'Escape'
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+    searchInput.dispatchEvent(escapeEvent);
+
+    expect(el.shadowRoot?.activeElement).to.not.equal(searchInput);
+  });
+
   it('renders and operates search clear button correctly', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',
@@ -294,11 +323,17 @@ describe('ha-device-table-card UX', () => {
     pagingButtons?.forEach((btn) => {
       const text = (btn.textContent || '').trim();
       const isCurrent = btn.classList.contains('current');
+      const isDisabled = btn.classList.contains('disabled');
       if (text === '1') {
-        expect(btn.getAttribute('aria-label')).to.equal(
-          isCurrent ? 'Page 1 (current page)' : 'Page 1',
-        );
-        expect(btn.getAttribute('title')).to.equal(isCurrent ? 'Page 1 (current page)' : 'Page 1');
+        let expected = 'Page 1';
+        if (isCurrent) {
+          expected += ' (current page)';
+        } else if (isDisabled) {
+          expected += ' (disabled)';
+          expect(btn.getAttribute('aria-disabled')).to.equal('true');
+        }
+        expect(btn.getAttribute('aria-label')).to.equal(expected);
+        expect(btn.getAttribute('title')).to.equal(expected);
       }
     });
   });
