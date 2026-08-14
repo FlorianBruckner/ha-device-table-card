@@ -58,15 +58,26 @@ function cacheDeviceEvaluation(
         : undefined;
     }
   }
+  const nameByUser =
+    hasOwn.call(d, 'name_by_user') && typeof d.name_by_user === 'string'
+      ? d.name_by_user
+      : undefined;
+  const name = hasOwn.call(d, 'name') && typeof d.name === 'string' ? d.name : undefined;
+  const areaId = hasOwn.call(d, 'area_id') && typeof d.area_id === 'string' ? d.area_id : undefined;
+  const manufacturer =
+    hasOwn.call(d, 'manufacturer') && typeof d.manufacturer === 'string'
+      ? d.manufacturer
+      : undefined;
+
   deviceCache.set(deviceId, {
     filtered,
     deviceData,
     deviceRef: d,
     entitiesRawRef: deviceEntitiesRaw,
-    nameByUser: d.name_by_user,
-    name: d.name,
-    areaId: d.area_id,
-    manufacturer: d.manufacturer,
+    nameByUser,
+    name,
+    areaId,
+    manufacturer,
     areaLookupRef: areaLookup,
     entityStates,
   });
@@ -207,8 +218,23 @@ export function processDevices(
 
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
-    const deviceId = d.id;
+    if (!d || typeof d !== 'object') continue;
+    const deviceId = hasOwn.call(d, 'id') && typeof d.id === 'string' ? d.id : undefined;
+    if (!deviceId) continue;
+
     const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
+
+    const dNameByUser =
+      hasOwn.call(d, 'name_by_user') && typeof d.name_by_user === 'string'
+        ? d.name_by_user
+        : undefined;
+    const dName = hasOwn.call(d, 'name') && typeof d.name === 'string' ? d.name : undefined;
+    const dAreaId =
+      hasOwn.call(d, 'area_id') && typeof d.area_id === 'string' ? d.area_id : undefined;
+    const dManufacturer =
+      hasOwn.call(d, 'manufacturer') && typeof d.manufacturer === 'string'
+        ? d.manufacturer
+        : undefined;
 
     // Performance Optimization: Fine-grained, state-reference based memoization for individual devices.
     // If device properties, area lookup context, entity registry arrays, and state objects remain unchanged,
@@ -218,10 +244,10 @@ export function processDevices(
       if (
         cached &&
         (d === cached.deviceRef ||
-          (d.name_by_user === cached.nameByUser &&
-            d.name === cached.name &&
-            d.area_id === cached.areaId &&
-            d.manufacturer === cached.manufacturer)) &&
+          (dNameByUser === cached.nameByUser &&
+            dName === cached.name &&
+            dAreaId === cached.areaId &&
+            dManufacturer === cached.manufacturer)) &&
         areaLookup === cached.areaLookupRef &&
         deviceEntitiesRaw === cached.entitiesRawRef
       ) {
@@ -252,7 +278,7 @@ export function processDevices(
     }
 
     // 1. Manufacturer filter
-    if (filter.manufacturer && (d.manufacturer || 'Unknown') !== filter.manufacturer) {
+    if (filter.manufacturer && (dManufacturer || 'Unknown') !== filter.manufacturer) {
       cacheDeviceEvaluation(
         deviceCache,
         deviceId,
@@ -269,9 +295,11 @@ export function processDevices(
 
     // 2. Area filter
     if (filter.area) {
-      const areaId = d.area_id;
-      const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
-      if (areaName !== filter.area && areaId !== filter.area) {
+      const areaName =
+        dAreaId && hasOwn.call(areaLookup, dAreaId) && typeof areaLookup[dAreaId] === 'string'
+          ? areaLookup[dAreaId]
+          : dAreaId || 'No Area';
+      if (areaName !== filter.area && dAreaId !== filter.area) {
         cacheDeviceEvaluation(
           deviceCache,
           deviceId,
@@ -291,8 +319,17 @@ export function processDevices(
       continue;
     }
 
+    const firstEnt = deviceEntitiesRaw[0];
+    const entPlatform =
+      firstEnt &&
+      typeof firstEnt === 'object' &&
+      hasOwn.call(firstEnt, 'platform') &&
+      typeof firstEnt.platform === 'string'
+        ? firstEnt.platform
+        : undefined;
+
     // 3. Integration filter (using the first entity's platform as proxy for device integration)
-    if (filter.integration && (deviceEntitiesRaw[0].platform || 'Unknown') !== filter.integration) {
+    if (filter.integration && (entPlatform || 'Unknown') !== filter.integration) {
       cacheDeviceEvaluation(
         deviceCache,
         deviceId,
@@ -392,14 +429,16 @@ export function processDevices(
 
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
-    const areaId = d.area_id;
-    const areaName = areaId ? areaLookup[areaId] || areaId : 'No Area';
-    const manufacturer = d.manufacturer || 'Unknown';
-    const integration = deviceEntitiesRaw[0].platform || 'Unknown';
+    const areaName =
+      dAreaId && hasOwn.call(areaLookup, dAreaId) && typeof areaLookup[dAreaId] === 'string'
+        ? areaLookup[dAreaId]
+        : dAreaId || 'No Area';
+    const manufacturer = dManufacturer || 'Unknown';
+    const integration = entPlatform || 'Unknown';
 
     const deviceData: DeviceData = {
       id: deviceId,
-      name: d.name_by_user || d.name || 'Unknown Device',
+      name: dNameByUser || dName || 'Unknown Device',
       area: areaName,
       integration: integration,
       manufacturer: manufacturer,
@@ -416,7 +455,8 @@ export function processDevices(
       else if (strategy === 'integration') deviceData[key] = deviceData.integration;
       else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
       else if (strategy === 'allowed') {
-        deviceData[key] = d[m.prop] || '-';
+        const val = hasOwn.call(d, m.prop) ? d[m.prop] : undefined;
+        deviceData[key] = val !== undefined && val !== null ? String(val) : '-';
       } else {
         deviceData[key] = '-';
       }

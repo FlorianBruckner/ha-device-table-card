@@ -1206,6 +1206,65 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card device object prototype pollution protection', () => {
+    it('should ignore prototype polluted properties on device object during processing', async () => {
+      // Create device object with prototype polluted properties
+      const pollutedDeviceProto = {
+        name_by_user: 'Polluted User Name',
+        name: 'Polluted Name',
+        manufacturer: 'Polluted Manufacturer',
+        area_id: 'polluted_area',
+      };
+      const rawDevice = Object.create(pollutedDeviceProto);
+      rawDevice.id = 'dev_proto_polluted';
+
+      const mockHass = {
+        states: {
+          'sensor.test_battery': {
+            entity_id: 'sensor.test_battery',
+            state: '90',
+            attributes: { device_class: 'battery' },
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [rawDevice];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test_battery', device_id: 'dev_proto_polluted' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          { type: 'device', prop: 'name', label: 'Device Name' },
+          { type: 'device', prop: 'manufacturer', label: 'Manufacturer' },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const rows = el.shadowRoot?.querySelectorAll('tbody tr');
+      expect(rows?.length).to.equal(1);
+      const cells = rows![0].querySelectorAll('td');
+
+      // Since prototype properties are ignored, default fallbacks ("Unknown Device" and "Unknown") should be rendered.
+      expect(cells[0].textContent?.trim()).to.equal('Unknown Device');
+      expect(cells[1].textContent?.trim()).to.equal('Unknown');
+    });
+  });
+
   describe('ha-device-table-card configuration size limits DoS prevention', () => {
     it('should reject configurations with arrays exceeding 5000 elements', async () => {
       const elCard = await fixture<DeviceTableCard>(html`
