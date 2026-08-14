@@ -326,32 +326,34 @@ export function processDevices(
 
       if (typeof stateObj !== 'object') continue;
 
-      // Match by Device Class
-      let dClass: any = undefined;
-      if (stateObj.attributes && typeof stateObj.attributes === 'object') {
-        if (hasOwn.call(stateObj.attributes, 'device_class')) {
-          const val = stateObj.attributes.device_class;
-          if (typeof val === 'string') {
-            dClass = val;
+      // Match by Device Class (Performance Optimization: Skip attribute/property extraction if all required classes and anchor are already matched)
+      if (matchedClassesCount < requiredClasses.size || !hasAnchor) {
+        let dClass: any = undefined;
+        if (stateObj.attributes && typeof stateObj.attributes === 'object') {
+          if (hasOwn.call(stateObj.attributes, 'device_class')) {
+            const val = stateObj.attributes.device_class;
+            if (typeof val === 'string') {
+              dClass = val;
+            }
           }
         }
-      }
-      if (dClass === undefined && ent && typeof ent === 'object') {
-        if (hasOwn.call(ent, 'device_class')) {
-          const val = ent.device_class;
-          if (typeof val === 'string') {
-            dClass = val;
+        if (dClass === undefined && ent && typeof ent === 'object') {
+          if (hasOwn.call(ent, 'device_class')) {
+            const val = ent.device_class;
+            if (typeof val === 'string') {
+              dClass = val;
+            }
           }
         }
-      }
 
-      if (dClass && typeof dClass === 'string' && requiredClasses.has(dClass)) {
-        if (entitiesByClass[dClass] === undefined) {
-          entitiesByClass[dClass] = stateObj;
-          matchedClassesCount++;
-        }
-        if (!hasAnchor && dClass === anchorClass) {
-          hasAnchor = true;
+        if (dClass && typeof dClass === 'string' && requiredClasses.has(dClass)) {
+          if (entitiesByClass[dClass] === undefined) {
+            entitiesByClass[dClass] = stateObj;
+            matchedClassesCount++;
+          }
+          if (!hasAnchor && dClass === anchorClass) {
+            hasAnchor = true;
+          }
         }
       }
 
