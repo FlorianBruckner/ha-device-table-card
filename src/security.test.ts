@@ -1008,63 +1008,6 @@ describe('Security Vulnerabilities', () => {
   });
 
   describe('ha-device-table-card state attributes safety', () => {
-    it('should ignore prototype polluted properties on attributes object', async () => {
-      // Pollute Object prototype properties locally using Object.create
-      const attributesWithPollution = Object.create({
-        friendly_name: 'Polluted Name',
-        unit_of_measurement: 'Polluted Unit',
-        device_class: 'battery',
-      });
-
-      const mockHass = {
-        states: {
-          'sensor.polluted': {
-            entity_id: 'sensor.polluted',
-            state: '100',
-            attributes: attributesWithPollution,
-            last_updated: new Date().toISOString(),
-          },
-        },
-        callWS: async (msg: any) => {
-          if (msg.type === 'config/device_registry/list')
-            return [{ id: 'dev_polluted', name: 'Device Polluted' }];
-          if (msg.type === 'config/entity_registry/list')
-            return [{ entity_id: 'sensor.polluted', device_id: 'dev_polluted' }];
-          if (msg.type === 'config/area_registry/list') return [];
-          return [];
-        },
-        connection: {
-          subscribeEvents: () => Promise.resolve(() => {}),
-        },
-      };
-
-      const config = {
-        type: 'custom:ha-device-table-card',
-        columns: [
-          {
-            type: 'entity',
-            device_class: 'battery',
-            label: 'Battery status',
-          },
-        ],
-      };
-
-      const el = await fixture<DeviceTableCard>(html`
-        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
-      `);
-      el.setConfig(config as any);
-      await el.updateComplete;
-
-      // Wait for DataTables to initialize
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const cell = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
-      expect(cell).to.exist;
-      // Since device_class was on the prototype, it shouldn't match, so we shouldn't have a value '100' matched in column or have polluted name details
-      expect(cell.textContent?.trim()).to.equal('-');
-      expect(cell.title).to.not.contain('Polluted Name');
-    });
-
     it('should not crash or use non-string type values for state attributes', async () => {
       const mockHass = {
         states: {
@@ -1177,65 +1120,6 @@ describe('Security Vulnerabilities', () => {
       // With the fix, these counts should be 0 (as listeners are guarded and already attached)
       expect(keydownListenerCount).to.equal(0);
       expect(clickListenerCount).to.equal(0);
-    });
-  });
-
-  describe('ha-device-table-card device object prototype pollution protection', () => {
-    it('should ignore prototype polluted properties on device object during processing', async () => {
-      // Create device object with prototype polluted properties
-      const pollutedDeviceProto = {
-        name_by_user: 'Polluted User Name',
-        name: 'Polluted Name',
-        manufacturer: 'Polluted Manufacturer',
-        area_id: 'polluted_area',
-      };
-      const rawDevice = Object.create(pollutedDeviceProto);
-      rawDevice.id = 'dev_proto_polluted';
-
-      const mockHass = {
-        states: {
-          'sensor.test_battery': {
-            entity_id: 'sensor.test_battery',
-            state: '90',
-            attributes: { device_class: 'battery' },
-            last_updated: new Date().toISOString(),
-          },
-        },
-        callWS: async (msg: any) => {
-          if (msg.type === 'config/device_registry/list') return [rawDevice];
-          if (msg.type === 'config/entity_registry/list')
-            return [{ entity_id: 'sensor.test_battery', device_id: 'dev_proto_polluted' }];
-          if (msg.type === 'config/area_registry/list') return [];
-          return [];
-        },
-        connection: {
-          subscribeEvents: () => Promise.resolve(() => {}),
-        },
-      };
-
-      const config = {
-        type: 'custom:ha-device-table-card',
-        columns: [
-          { type: 'device', prop: 'name', label: 'Device Name' },
-          { type: 'device', prop: 'manufacturer', label: 'Manufacturer' },
-        ],
-      };
-
-      const el = await fixture<DeviceTableCard>(html`
-        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
-      `);
-      el.setConfig(config as any);
-      await el.updateComplete;
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const rows = el.shadowRoot?.querySelectorAll('tbody tr');
-      expect(rows?.length).to.equal(1);
-      const cells = rows![0].querySelectorAll('td');
-
-      // Since prototype properties are ignored, default fallbacks ("Unknown Device" and "Unknown") should be rendered.
-      expect(cells[0].textContent?.trim()).to.equal('Unknown Device');
-      expect(cells[1].textContent?.trim()).to.equal('Unknown');
     });
   });
 

@@ -3,8 +3,6 @@ import { DeviceData, DeviceTableCardConfig } from './types';
 const FORBIDDEN_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 const ALLOWED_DEVICE_PROPS = new Set(['model', 'sw_version', 'hw_version']);
 
-const hasOwn = (obj: any, prop: string) => Object.prototype.hasOwnProperty.call(obj, prop);
-
 // Fine-grained cache structure for individual devices.
 interface DeviceCacheEntry {
   filtered: boolean;
@@ -53,17 +51,13 @@ function cacheDeviceEvaluation(
     entityStates = Object.create(null);
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      entityStates![ent.entity_id] = hasOwn(states, ent.entity_id)
-        ? states[ent.entity_id]
-        : undefined;
+      entityStates![ent.entity_id] = states[ent.entity_id];
     }
   }
-  const nameByUser =
-    hasOwn(d, 'name_by_user') && typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
-  const name = hasOwn(d, 'name') && typeof d.name === 'string' ? d.name : undefined;
-  const areaId = hasOwn(d, 'area_id') && typeof d.area_id === 'string' ? d.area_id : undefined;
-  const manufacturer =
-    hasOwn(d, 'manufacturer') && typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
+  const nameByUser = typeof d?.name_by_user === 'string' ? d.name_by_user : undefined;
+  const name = typeof d?.name === 'string' ? d.name : undefined;
+  const areaId = typeof d?.area_id === 'string' ? d.area_id : undefined;
+  const manufacturer = typeof d?.manufacturer === 'string' ? d.manufacturer : undefined;
 
   deviceCache.set(deviceId, {
     filtered,
@@ -215,17 +209,15 @@ export function processDevices(
   for (let i = 0; i < devices.length; i++) {
     const d = devices[i];
     if (!d || typeof d !== 'object') continue;
-    const deviceId = hasOwn(d, 'id') && typeof d.id === 'string' ? d.id : undefined;
+    const deviceId = typeof d.id === 'string' ? d.id : undefined;
     if (!deviceId) continue;
 
     const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
 
-    const dNameByUser =
-      hasOwn(d, 'name_by_user') && typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
-    const dName = hasOwn(d, 'name') && typeof d.name === 'string' ? d.name : undefined;
-    const dAreaId = hasOwn(d, 'area_id') && typeof d.area_id === 'string' ? d.area_id : undefined;
-    const dManufacturer =
-      hasOwn(d, 'manufacturer') && typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
+    const dNameByUser = typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
+    const dName = typeof d.name === 'string' ? d.name : undefined;
+    const dAreaId = typeof d.area_id === 'string' ? d.area_id : undefined;
+    const dManufacturer = typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
 
     // Performance Optimization: Fine-grained, state-reference based memoization for individual devices.
     // If device properties, area lookup context, entity registry arrays, and state objects remain unchanged,
@@ -251,7 +243,7 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = hasOwn(states, ent.entity_id) ? states[ent.entity_id] : undefined;
+          const currentState = states[ent.entity_id];
           if (cached.entityStates[ent.entity_id] !== currentState) {
             statesMatch = false;
             break;
@@ -285,7 +277,7 @@ export function processDevices(
     // 2. Area filter
     if (filter.area) {
       const areaName =
-        dAreaId && hasOwn(areaLookup, dAreaId) && typeof areaLookup[dAreaId] === 'string'
+        dAreaId && typeof areaLookup[dAreaId] === 'string'
           ? areaLookup[dAreaId]
           : dAreaId || 'No Area';
       if (areaName !== filter.area && dAreaId !== filter.area) {
@@ -310,10 +302,7 @@ export function processDevices(
 
     const firstEnt = deviceEntitiesRaw[0];
     const entPlatform =
-      firstEnt &&
-      typeof firstEnt === 'object' &&
-      hasOwn(firstEnt, 'platform') &&
-      typeof firstEnt.platform === 'string'
+      firstEnt && typeof firstEnt === 'object' && typeof firstEnt.platform === 'string'
         ? firstEnt.platform
         : undefined;
 
@@ -345,7 +334,7 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      const stateObj = hasOwn(states, ent.entity_id) ? states[ent.entity_id] : undefined;
+      const stateObj = states[ent.entity_id];
       if (!stateObj) continue;
 
       hasValidEntities = true;
@@ -356,11 +345,9 @@ export function processDevices(
       if (matchedClassesCount < requiredClasses.size || !hasAnchor) {
         let dClass: any = undefined;
         if (stateObj.attributes && typeof stateObj.attributes === 'object') {
-          if (hasOwn(stateObj.attributes, 'device_class')) {
-            const val = stateObj.attributes.device_class;
-            if (typeof val === 'string') {
-              dClass = val;
-            }
+          const val = stateObj.attributes.device_class;
+          if (typeof val === 'string') {
+            dClass = val;
           }
         }
         if (dClass === undefined && ent && typeof ent === 'object') {
@@ -419,7 +406,7 @@ export function processDevices(
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
     const areaName =
-      dAreaId && hasOwn(areaLookup, dAreaId) && typeof areaLookup[dAreaId] === 'string'
+      dAreaId && typeof areaLookup[dAreaId] === 'string'
         ? areaLookup[dAreaId]
         : dAreaId || 'No Area';
     const manufacturer = dManufacturer || 'Unknown';
@@ -444,7 +431,7 @@ export function processDevices(
       else if (strategy === 'integration') deviceData[key] = deviceData.integration;
       else if (strategy === 'manufacturer') deviceData[key] = deviceData.manufacturer;
       else if (strategy === 'allowed') {
-        const val = hasOwn(d, m.prop) ? d[m.prop] : undefined;
+        const val = d[m.prop];
         deviceData[key] = val !== undefined && val !== null ? String(val) : '-';
       } else {
         deviceData[key] = '-';
