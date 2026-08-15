@@ -8,6 +8,7 @@ import { escape } from 'html-escaper';
 import { DeviceTableCardConfig } from './types';
 import { styles } from './styles';
 import { processDevices } from './data-processor';
+import { sanitizeColor, sanitizeConfig } from './security-utils';
 import './ha-device-table-card-editor';
 
 // Performance Optimization: Fast-path HTML escaping to avoid regex overhead on safe strings & numbers
@@ -77,41 +78,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>(), depth = 0): T {
-    if (depth > 20) {
-      throw new Error('Configuration depth limit exceeded');
-    }
-    if (obj === null || typeof obj !== 'object') {
-      if (typeof obj === 'string') {
-        // Enforce maximum 1000 characters on configuration strings to prevent memory-consumption DoS
-        return (obj.length > 1000 ? obj.slice(0, 1000) : obj) as any;
-      }
-      return obj;
-    }
-    if (seen.has(obj)) {
-      return obj;
-    }
-    seen.add(obj);
-    if (Array.isArray(obj)) {
-      if (obj.length > 5000) {
-        throw new Error('Configuration array size limit exceeded');
-      }
-      return obj.map((item) => this._sanitizeConfig(item, seen, depth + 1)) as any;
-    }
-    const keys = Object.keys(obj);
-    if (keys.length > 5000) {
-      throw new Error('Configuration object size limit exceeded');
-    }
-    const sanitized: any = {};
-    for (const key of keys) {
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-        continue;
-      }
-      sanitized[key] = this._sanitizeConfig((obj as any)[key], seen, depth + 1);
-    }
-    return sanitized;
-  }
-
   private _getDeepActiveElement(): Element | null {
     let el = document.activeElement;
     while (el && el.shadowRoot && el.shadowRoot.activeElement) {
@@ -155,7 +121,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     if (!config) {
       throw new Error('Invalid configuration');
     }
-    this._config = this._sanitizeConfig(config);
+    this._config = sanitizeConfig(config);
   }
 
   public getCardSize(): number {
@@ -385,11 +351,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       if (da === db) continue;
       if (!da || !db) return false;
 
-      // Fast-path check: If device IDs do not match (e.g. order changed, or devices added/removed),
-      // we can immediately return false without doing heavy nested property lookups.
       if (da.id !== db.id) return false;
 
-      // Fast check: compare properties in da
       for (const key in da) {
         if (key === '_entities') continue;
         if (da[key] !== db[key]) return false;
@@ -429,7 +392,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
     this._lastProcessedData = data;
     this._dataTable.clear();
     this._dataTable.rows.add(data);
-    this._dataTable.draw(false); // Use false to keep current paging
+    this._dataTable.draw(false);
   }
 
   private _initDataTable(): void {
@@ -602,13 +565,11 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
           if (cell.classList.contains('cell-entity')) {
             const entityId = cell.getAttribute('data-entity-id');
-            // Security Hardening: strictly validate entityId before firing more-info action
             if (entityId && /^[a-zA-Z0-9_.-]+$/.test(entityId)) {
               fireEvent(this, 'hass-more-info', { entityId });
             }
           } else if (cell.classList.contains('cell-device')) {
             const deviceId = cell.getAttribute('data-device-id');
-            // Security Hardening: strictly validate deviceId before triggering navigation
             if (deviceId && /^[a-zA-Z0-9_-]+$/.test(deviceId)) {
               navigate(this, `/config/devices/device/${deviceId}`);
             }
@@ -618,36 +579,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         (tableElement as any).__listenersAttached = true;
       }
     }
-  }
-
-  // Cache sanitized color results to avoid repeating regex replacement and testing
-  private _colorCache = new Map<string, string>();
-
-  private _sanitizeColor(color: string): string {
-    if (typeof color !== 'string' || !color || color.length > 100) return '';
-
-    const cached = this._colorCache.get(color);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
-    const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
-
-    // Block potential CSS function injections like url(), expression(), image(), image-set(), etc.
-    if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
-      if (this._colorCache.size >= 500) {
-        this._colorCache.clear();
-      }
-      this._colorCache.set(color, '');
-      return '';
-    }
-
-    if (this._colorCache.size >= 500) {
-      this._colorCache.clear();
-    }
-    this._colorCache.set(color, sanitized);
-    return sanitized;
   }
 
   private _getColumns(): any[] {
@@ -691,7 +622,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
       }
       const colKey = `col_${index}`;
 
-      // Pre-parse and pre-sanitize highlight rules once per column configuration update.
       const parsedRules: Array<{
         below?: number;
         above?: number;
@@ -715,7 +645,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             below: ruleBelow !== undefined && !isNaN(ruleBelow) ? ruleBelow : undefined,
             above: ruleAbove !== undefined && !isNaN(ruleAbove) ? ruleAbove : undefined,
             color: rule.color || '',
-            sanitizedColor: this._sanitizeColor(rule.color || ''),
+            sanitizedColor: sanitizeColor(rule.color || ''),
           });
         }
       }
@@ -740,8 +670,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
               td.setAttribute('data-entity-id', stateObj.entity_id);
               let friendlyName: string | undefined = undefined;
               if (stateObj.attributes && typeof stateObj.attributes === 'object') {
-                const hasOwnProp = Object.prototype.hasOwnProperty;
-                if (hasOwnProp.call(stateObj.attributes, 'friendly_name')) {
+                if (Object.prototype.hasOwnProperty.call(stateObj.attributes, 'friendly_name')) {
                   const val = stateObj.attributes.friendly_name;
                   if (typeof val === 'string') {
                     friendlyName = val;
@@ -792,8 +721,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (stateObj) {
               let uom: string | undefined = undefined;
               if (stateObj.attributes && typeof stateObj.attributes === 'object') {
-                const hasOwnProp = Object.prototype.hasOwnProperty;
-                if (hasOwnProp.call(stateObj.attributes, 'unit_of_measurement')) {
+                if (
+                  Object.prototype.hasOwnProperty.call(stateObj.attributes, 'unit_of_measurement')
+                ) {
                   const val = stateObj.attributes.unit_of_measurement;
                   if (typeof val === 'string') {
                     uom = val;
@@ -804,7 +734,6 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                 displayValue = `${displayValue} ${fastEscape(uom)}`;
               }
 
-              // Highlighting using pre-parsed threshold rules to avoid parseFloat/sanitization overhead in hot path
               if (parsedRules.length > 0) {
                 const numericValue = parseFloat(data);
                 if (!isNaN(numericValue)) {
