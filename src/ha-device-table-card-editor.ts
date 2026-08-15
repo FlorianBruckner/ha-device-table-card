@@ -1387,7 +1387,7 @@ export class DeviceTableCardEditor extends LitElement {
       let current: any = newConfig;
       for (let i = 0; i < parts.length - 1; i++) {
         const part = parts[i];
-        if (!Object.prototype.hasOwnProperty.call(current, part) || !current[part]) {
+        if (!current[part]) {
           current[part] = {};
         }
         current[part] = { ...current[part] };
