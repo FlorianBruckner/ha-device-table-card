@@ -268,14 +268,42 @@ describe('ha-device-table-card-editor', () => {
     };
 
     try {
-      const template = (el as any)._renderInput('Test Label', 'test-val', 'test-config', () => {});
-      const container = await fixture(html`<div>${template}</div>`);
-      const nativeInput = container.querySelector('input.native-input');
-      const label = container.querySelector('label');
-      expect(nativeInput).to.exist;
+      const template1 = (el as any)._renderInput(
+        'Below',
+        '10',
+        undefined,
+        () => {},
+        '100',
+        'Trigger value below',
+        false,
+        undefined,
+        'col-0-hl-0-below',
+      );
+      const template2 = (el as any)._renderInput(
+        'Below',
+        '10',
+        undefined,
+        () => {},
+        '100',
+        'Trigger value below',
+        false,
+        undefined,
+        'col-0-hl-0-below',
+      );
+      const container1 = await fixture(html`<div>${template1}</div>`);
+      const container2 = await fixture(html`<div>${template2}</div>`);
+      const nativeInput1 = container1.querySelector('input.native-input');
+      const nativeInput2 = container2.querySelector('input.native-input');
+      const label = container1.querySelector('label');
+
+      expect(nativeInput1).to.exist;
+      expect(nativeInput2).to.exist;
       expect(label).to.exist;
-      expect(nativeInput?.id).to.equal(label?.getAttribute('for'));
-      expect((nativeInput as any).value).to.equal('test-val');
+      expect(nativeInput1?.id).to.equal(label?.getAttribute('for'));
+      expect(nativeInput1?.id).to.equal('input-below-col-0-hl-0-below');
+      // Verify deterministic ID generation across multiple calls/renders
+      expect(nativeInput1?.id).to.equal(nativeInput2?.id);
+      expect((nativeInput1 as any).value).to.equal('10');
     } finally {
       customElements.get = originalGet;
     }
@@ -376,7 +404,7 @@ describe('ha-device-table-card-editor', () => {
       const swatch = el.shadowRoot?.querySelector('.color-preview-swatch') as HTMLElement;
       expect(swatch).to.exist;
       expect(swatch.style.backgroundColor).to.equal('red');
-      expect(swatch.getAttribute('title')).to.equal('Color preview');
+      expect(swatch.getAttribute('title')).to.equal('Color preview: red');
     });
 
     it('sanitizes unsafe color values in the preview swatch', async () => {

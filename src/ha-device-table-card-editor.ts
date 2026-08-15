@@ -777,6 +777,9 @@ export class DeviceTableCardEditor extends LitElement {
                     (e: any) => this._updateColumnProperty(index, 'label', e.target.value),
                     '100',
                     'Custom header text to display for this column',
+                    false,
+                    undefined,
+                    `col-${index}-label`,
                   )}
 
                   <!-- Conditional inputs based on type -->
@@ -836,6 +839,9 @@ export class DeviceTableCardEditor extends LitElement {
                               this._updateColumnProperty(index, 'device_class', e.target.value),
                             '100',
                             'Match an entity by its device class',
+                            false,
+                            undefined,
+                            `col-${index}-device-class`,
                           )}
                           ${this._renderInput(
                             'Entity ID Suffix (optional, e.g. _voltage)',
@@ -844,6 +850,9 @@ export class DeviceTableCardEditor extends LitElement {
                             (e: any) => this._updateColumnProperty(index, 'suffix', e.target.value),
                             '100',
                             'Find entity with an entity ID ending with this suffix',
+                            false,
+                            undefined,
+                            `col-${index}-suffix`,
                           )}
                         `
                       : ''
@@ -898,6 +907,7 @@ export class DeviceTableCardEditor extends LitElement {
                                     'Trigger value below',
                                     belowInvalid,
                                     belowInvalid ? 'Must be a valid number' : undefined,
+                                    `col-${index}-hl-${hlIndex}-below`,
                                   )}
                                   ${this._renderInput(
                                     'Above',
@@ -914,6 +924,7 @@ export class DeviceTableCardEditor extends LitElement {
                                     'Trigger value above',
                                     aboveInvalid,
                                     aboveInvalid ? 'Must be a valid number' : undefined,
+                                    `col-${index}-hl-${hlIndex}-above`,
                                   )}
                                   ${this._renderInput(
                                     'Color',
@@ -928,11 +939,15 @@ export class DeviceTableCardEditor extends LitElement {
                                       ),
                                     '50',
                                     'CSS color name or hex',
+                                    false,
+                                    undefined,
+                                    `col-${index}-hl-${hlIndex}-color`,
                                   )}
                                   <div
                                     class="color-preview-swatch"
                                     style="background-color: ${sanitizeColor(hl.color || 'transparent')};"
-                                    title="Color preview"
+                                    title="Color preview: ${hl.color || 'transparent'}"
+                                    aria-label="Color preview: ${hl.color || 'transparent'}"
                                   ></div>
                                   <button
                                     class="btn-icon btn-danger"
@@ -1024,6 +1039,7 @@ export class DeviceTableCardEditor extends LitElement {
     helperText?: string,
     invalid = false,
     errorMessage?: string,
+    idSuffix?: string,
   ): TemplateResult {
     const displayedHelper = invalid && errorMessage ? errorMessage : helperText || '';
     if (customElements.get('ha-input')) {
@@ -1054,7 +1070,9 @@ export class DeviceTableCardEditor extends LitElement {
         ></ha-textfield>
       `;
     }
-    const inputId = `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${configValue?.replace(/\./g, '-') || Math.random().toString(36).substring(2, 7)}`;
+    const cleanLabel = label.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const cleanKey = configValue ? configValue.replace(/\./g, '-') : idSuffix || 'field';
+    const inputId = `input-${cleanLabel}-${cleanKey}`;
     return html`
       <div class="native-input-container">
         <label for=${inputId}>${label}</label>
