@@ -2,6 +2,7 @@ import { LitElement, html, TemplateResult, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { fireEvent } from 'custom-card-helpers';
 import { DeviceTableCardConfig, ColumnConfig } from './types';
+import { sanitizeColor, sanitizeConfig } from './security-utils';
 
 @customElement('ha-device-table-card-editor')
 export class DeviceTableCardEditor extends LitElement {
@@ -406,52 +407,8 @@ export class DeviceTableCardEditor extends LitElement {
     return isNaN(Number(trimmed));
   }
 
-  private _sanitizeColor(color: string): string {
-    if (typeof color !== 'string' || !color || color.length > 100) return '';
-    const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
-    if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
-      return '';
-    }
-    return sanitized;
-  }
-
-  private _sanitizeConfig<T>(obj: T, seen = new WeakSet<any>(), depth = 0): T {
-    if (depth > 20) {
-      throw new Error('Configuration depth limit exceeded');
-    }
-    if (obj === null || typeof obj !== 'object') {
-      if (typeof obj === 'string') {
-        // Enforce maximum 1000 characters on configuration strings to prevent memory-consumption DoS
-        return (obj.length > 1000 ? obj.slice(0, 1000) : obj) as any;
-      }
-      return obj;
-    }
-    if (seen.has(obj)) {
-      return obj;
-    }
-    seen.add(obj);
-    if (Array.isArray(obj)) {
-      if (obj.length > 5000) {
-        throw new Error('Configuration array size limit exceeded');
-      }
-      return obj.map((item) => this._sanitizeConfig(item, seen, depth + 1)) as any;
-    }
-    const keys = Object.keys(obj);
-    if (keys.length > 5000) {
-      throw new Error('Configuration object size limit exceeded');
-    }
-    const sanitized: any = {};
-    for (const key of keys) {
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-        continue;
-      }
-      sanitized[key] = this._sanitizeConfig((obj as any)[key], seen, depth + 1);
-    }
-    return sanitized;
-  }
-
   public setConfig(config: DeviceTableCardConfig): void {
-    this._config = this._sanitizeConfig(config);
+    this._config = sanitizeConfig(config);
   }
 
   protected render(): TemplateResult {
@@ -974,7 +931,7 @@ export class DeviceTableCardEditor extends LitElement {
                                   )}
                                   <div
                                     class="color-preview-swatch"
-                                    style="background-color: ${this._sanitizeColor(hl.color || 'transparent')};"
+                                    style="background-color: ${sanitizeColor(hl.color || 'transparent')};"
                                     title="Color preview"
                                   ></div>
                                   <button
@@ -1270,9 +1227,7 @@ export class DeviceTableCardEditor extends LitElement {
     const columns = this._config.columns;
     if (index < 0 || index >= columns.length) return;
 
-    // Security check: block prototype pollution
-    const forbidden = ['__proto__', 'constructor', 'prototype'];
-    if (forbidden.includes(prop)) {
+    if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
       return;
     }
 
@@ -1388,9 +1343,7 @@ export class DeviceTableCardEditor extends LitElement {
     const highlight = col.highlight || [];
     if (ruleIndex < 0 || ruleIndex >= highlight.length) return;
 
-    // Security check: block prototype pollution
-    const forbidden = ['__proto__', 'constructor', 'prototype'];
-    if (forbidden.includes(prop)) {
+    if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
       return;
     }
 
@@ -1419,9 +1372,11 @@ export class DeviceTableCardEditor extends LitElement {
       return;
     }
 
-    // Security check: block prototype pollution
-    const forbidden = ['__proto__', 'constructor', 'prototype'];
-    if (forbidden.some((key) => configValue.includes(key))) {
+    if (
+      configValue.includes('__proto__') ||
+      configValue.includes('constructor') ||
+      configValue.includes('prototype')
+    ) {
       return;
     }
 
@@ -1432,20 +1387,16 @@ export class DeviceTableCardEditor extends LitElement {
       let current: any = newConfig;
       for (let i = 0; i < parts.length - 1; i++) {
         const part = parts[i];
-        if (!Object.prototype.hasOwnProperty.call(current, part) || !current[part]) {
+        if (!current[part]) {
           current[part] = {};
         }
         current[part] = { ...current[part] };
         current = current[part];
       }
       const lastPart = parts[parts.length - 1];
-      if (!forbidden.includes(lastPart)) {
-        current[lastPart] = value;
-      }
+      current[lastPart] = value;
     } else {
-      if (!forbidden.includes(configValue)) {
-        newConfig[configValue] = value;
-      }
+      newConfig[configValue] = value;
     }
 
     fireEvent(this, 'config-changed', { config: newConfig });

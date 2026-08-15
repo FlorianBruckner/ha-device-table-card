@@ -1,3 +1,12 @@
+## 2026-08-02 - [Centralized Boundary Sanitization Architecture]
+**Strategy:** Boundary-Based Security & Consolidated Sanitization.
+**Learning:** Cluttering the codebase with hundreds of repeated inline `__proto__`/`constructor`/`prototype` checks, manual property guards, and duplicate private sanitizers creates maintenance complexity and degrades code readability. In Home Assistant dashboard components, inputs entering at boundaries (`setConfig()` for configs, `sanitizeColor()` for style rules) must be sanitized centrally in `src/security-utils.ts`.
+**Guidelines:**
+- Centralize all config deep-sanitization (`sanitizeConfig`) and color string sanitization (`sanitizeColor`) in `src/security-utils.ts`.
+- Perform deep sanitization at entry points (e.g. `setConfig()`).
+- Avoid adding redundant, scattered inline prototype checks or duplicate sanitization functions in component methods (`_valueChanged`, `_updateColumnProperty`, etc.) when boundary sanitization is already enforced.
+- Maintain test coverage for security boundaries without adding micro-level inline checks that clutter business logic.
+
 ## 2026-07-06 - [Enhanced XSS Protection with html-escaper]
 **Vulnerability:** Manual HTML escaping was used in DataTables rendering, which is error-prone and can lead to XSS if edge cases are missed.
 **Learning:** Replaced manual regex-based escaping with the robust `html-escaper` library as recommended by architectural guidelines.
