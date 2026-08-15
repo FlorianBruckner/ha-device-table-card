@@ -294,11 +294,16 @@ describe('ha-device-table-card UX', () => {
     pagingButtons?.forEach((btn) => {
       const text = (btn.textContent || '').trim();
       const isCurrent = btn.classList.contains('current');
+      const isDisabled = btn.classList.contains('disabled');
       if (text === '1') {
         expect(btn.getAttribute('aria-label')).to.equal(
           isCurrent ? 'Page 1 (current page)' : 'Page 1',
         );
         expect(btn.getAttribute('title')).to.equal(isCurrent ? 'Page 1 (current page)' : 'Page 1');
+      }
+      if (isDisabled) {
+        expect(btn.getAttribute('aria-disabled')).to.equal('true');
+        expect(btn.getAttribute('aria-label')).to.contain('(disabled)');
       }
     });
   });

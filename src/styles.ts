@@ -248,6 +248,14 @@ export const styles = css`
     padding: 4px 8px;
     margin: 0 8px;
     outline: none;
+    transition: border-bottom-color 0.2s;
+  }
+
+  .dt-length select:focus,
+  .dataTables_wrapper .dataTables_length select:focus,
+  .dt-length select:focus-visible,
+  .dataTables_wrapper .dataTables_length select:focus-visible {
+    border-bottom: 2px solid var(--primary-color);
   }
 
   .dt-info,

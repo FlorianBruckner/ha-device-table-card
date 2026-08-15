@@ -488,6 +488,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           pagingButtons.forEach((btn) => {
             const text = (btn.textContent || '').trim();
             const isCurrent = btn.classList.contains('current');
+            const isDisabled = btn.classList.contains('disabled');
             let label = '';
 
             if (text === '‹' || btn.classList.contains('previous')) {
@@ -505,9 +506,16 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
             if (label) {
               if (isCurrent) {
                 label += ' (current page)';
+              } else if (isDisabled) {
+                label += ' (disabled)';
               }
               btn.setAttribute('aria-label', label);
               btn.setAttribute('title', label);
+              if (isDisabled) {
+                btn.setAttribute('aria-disabled', 'true');
+              } else {
+                btn.removeAttribute('aria-disabled');
+              }
             }
           });
         },

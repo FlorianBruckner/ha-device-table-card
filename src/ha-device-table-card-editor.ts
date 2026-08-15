@@ -644,6 +644,8 @@ export class DeviceTableCardEditor extends LitElement {
                       id="add-column-btn"
                       class="btn btn-secondary"
                       style="width: 100%;"
+                      title="Add a new custom column"
+                      aria-label="Add a new custom column"
                       @click=${() => this._addColumn()}
                     >
                       + Add Custom Column
@@ -901,6 +903,8 @@ export class DeviceTableCardEditor extends LitElement {
                                 class="btn btn-secondary btn-icon"
                                 style="width: auto; height: auto; border-radius: 4px; padding: 4px 8px;"
                                 data-add-rule-col-index=${index}
+                                title="Add threshold highlight rule"
+                                aria-label="Add threshold highlight rule"
                                 @click=${() => this._addHighlightRule(index)}
                               >
                                 + Add Rule
