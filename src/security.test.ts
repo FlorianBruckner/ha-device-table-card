@@ -464,6 +464,30 @@ describe('Security Vulnerabilities', () => {
       expect(eventFired).to.be.false;
       expect((Object.prototype as any).polluted_nested).to.be.undefined;
     });
+
+    it('should safely handle inherited Object.prototype property names in nested config paths without function collisions', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor></ha-device-table-card-editor>
+      `);
+      el.setConfig({ type: 'custom:ha-device-table-card' } as any);
+      el.hass = { states: {} };
+      await el.updateComplete;
+
+      let updatedConfig: any = null;
+      el.addEventListener('config-changed', (e: any) => {
+        updatedConfig = e.detail.config;
+      });
+
+      const input = document.createElement('ha-textfield') as any;
+      input.configValue = 'toString.subProperty';
+      input.value = 'safeValue';
+
+      (el as any)._valueChanged({ target: input });
+
+      expect(updatedConfig).to.exist;
+      expect(updatedConfig.toString).to.be.an('object');
+      expect(updatedConfig.toString.subProperty).to.equal('safeValue');
+    });
   });
 
   describe('ha-device-table-card-editor circular references DoS prevention', () => {

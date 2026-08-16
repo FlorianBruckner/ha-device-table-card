@@ -1405,10 +1405,15 @@ export class DeviceTableCardEditor extends LitElement {
       let current: any = newConfig;
       for (let i = 0; i < parts.length - 1; i++) {
         const part = parts[i];
-        if (!current[part]) {
+        if (
+          !Object.prototype.hasOwnProperty.call(current, part) ||
+          typeof current[part] !== 'object' ||
+          current[part] === null
+        ) {
           current[part] = {};
+        } else {
+          current[part] = { ...current[part] };
         }
-        current[part] = { ...current[part] };
         current = current[part];
       }
       const lastPart = parts[parts.length - 1];
