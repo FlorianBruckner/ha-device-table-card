@@ -51,9 +51,7 @@ function cacheDeviceEvaluation(
     entityStates = Object.create(null);
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      entityStates![ent.entity_id] = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
-        ? states[ent.entity_id]
-        : undefined;
+      entityStates![ent.entity_id] = states[ent.entity_id];
     }
   }
   const nameByUser = typeof d?.name_by_user === 'string' ? d.name_by_user : undefined;
@@ -245,9 +243,7 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = Object.prototype.hasOwnProperty.call(states, ent.entity_id)
-            ? states[ent.entity_id]
-            : undefined;
+          const currentState = states[ent.entity_id];
           if (cached.entityStates[ent.entity_id] !== currentState) {
             statesMatch = false;
             break;
@@ -338,7 +334,6 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      if (!Object.prototype.hasOwnProperty.call(states, ent.entity_id)) continue;
       const stateObj = states[ent.entity_id];
       if (!stateObj) continue;
 
