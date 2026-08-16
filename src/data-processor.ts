@@ -214,11 +214,6 @@ export function processDevices(
 
     const deviceEntitiesRaw = entitiesByDevice.get(deviceId);
 
-    const dNameByUser = typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
-    const dName = typeof d.name === 'string' ? d.name : undefined;
-    const dAreaId = typeof d.area_id === 'string' ? d.area_id : undefined;
-    const dManufacturer = typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
-
     // Performance Optimization: Fine-grained, state-reference based memoization for individual devices.
     // If device properties, area lookup context, entity registry arrays, and state objects remain unchanged,
     // we bypass all processing, calculations, filtering, and allocations for this device.
@@ -227,10 +222,12 @@ export function processDevices(
       if (
         cached &&
         (d === cached.deviceRef ||
-          (dNameByUser === cached.nameByUser &&
-            dName === cached.name &&
-            dAreaId === cached.areaId &&
-            dManufacturer === cached.manufacturer)) &&
+          ((typeof d.name_by_user === 'string' ? d.name_by_user : undefined) ===
+            cached.nameByUser &&
+            (typeof d.name === 'string' ? d.name : undefined) === cached.name &&
+            (typeof d.area_id === 'string' ? d.area_id : undefined) === cached.areaId &&
+            (typeof d.manufacturer === 'string' ? d.manufacturer : undefined) ===
+              cached.manufacturer)) &&
         areaLookup === cached.areaLookupRef &&
         deviceEntitiesRaw === cached.entitiesRawRef
       ) {
@@ -257,6 +254,11 @@ export function processDevices(
         }
       }
     }
+
+    const dNameByUser = typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
+    const dName = typeof d.name === 'string' ? d.name : undefined;
+    const dAreaId = typeof d.area_id === 'string' ? d.area_id : undefined;
+    const dManufacturer = typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
 
     // 1. Manufacturer filter
     if (filter.manufacturer && (dManufacturer || 'Unknown') !== filter.manufacturer) {
