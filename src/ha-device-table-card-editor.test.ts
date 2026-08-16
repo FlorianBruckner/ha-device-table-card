@@ -349,14 +349,30 @@ describe('ha-device-table-card-editor', () => {
     (el as any)._expandedColumnIndex = 0;
     await el.updateComplete;
 
-    // Check collapsible section header aria-controls and aria-expanded
+    // Check collapsible section header aria-controls, aria-expanded, title, aria-label and section .expanded visual class
     const generalHeader = el.shadowRoot?.querySelector('.section-header');
     expect(generalHeader?.getAttribute('aria-controls')).to.equal('general-section-content');
     expect(generalHeader?.getAttribute('aria-expanded')).to.equal('true');
+    expect(generalHeader?.getAttribute('title')).to.equal('Collapse General & Filters section');
+    expect(generalHeader?.getAttribute('aria-label')).to.equal(
+      'Collapse General & Filters section',
+    );
+
+    const sections = el.shadowRoot?.querySelectorAll('.section');
+    expect(sections![0].classList.contains('expanded')).to.be.true;
 
     const columnItemHeader = el.shadowRoot?.querySelector('.column-header-title');
     expect(columnItemHeader?.getAttribute('aria-controls')).to.equal('column-body-0');
     expect(columnItemHeader?.getAttribute('aria-expanded')).to.equal('true');
+    expect(columnItemHeader?.getAttribute('title')).to.equal(
+      'Collapse column details for Device Name',
+    );
+    expect(columnItemHeader?.getAttribute('aria-label')).to.equal(
+      'Collapse column details for Device Name',
+    );
+
+    const columnItems = el.shadowRoot?.querySelectorAll('.column-item');
+    expect(columnItems![0].classList.contains('expanded')).to.be.true;
 
     // Check decorative SVGs have aria-hidden="true"
     const svgs = el.shadowRoot?.querySelectorAll('svg');

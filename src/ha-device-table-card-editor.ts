@@ -64,6 +64,13 @@ export class DeviceTableCardEditor extends LitElement {
         border-radius: 4px;
         background-color: var(--card-background-color, #fff);
         overflow: hidden;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .section.expanded {
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .section-header {
         display: flex;
@@ -101,6 +108,10 @@ export class DeviceTableCardEditor extends LitElement {
         transition:
           border-color 0.2s,
           box-shadow 0.2s;
+      }
+      .column-item.expanded {
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .column-item.confirm-delete {
         border-color: var(--error-color, #e53935);
@@ -421,13 +432,15 @@ export class DeviceTableCardEditor extends LitElement {
     return html`
       <div class="card-config">
         <!-- Section 1: General & Filters -->
-        <div class="section">
+        <div class="section ${this._generalExpanded ? 'expanded' : ''}">
           <div
             class="section-header"
             @click=${() => (this._generalExpanded = !this._generalExpanded)}
             @keydown=${this._handleKeyDown}
             tabindex="0"
             role="button"
+            title=${this._generalExpanded ? 'Collapse General & Filters section' : 'Expand General & Filters section'}
+            aria-label=${this._generalExpanded ? 'Collapse General & Filters section' : 'Expand General & Filters section'}
             aria-expanded=${this._generalExpanded ? 'true' : 'false'}
             aria-controls="general-section-content"
           >
@@ -500,13 +513,15 @@ export class DeviceTableCardEditor extends LitElement {
         </div>
 
         <!-- Section 2: Columns -->
-        <div class="section">
+        <div class="section ${this._columnsExpanded ? 'expanded' : ''}">
           <div
             class="section-header"
             @click=${() => (this._columnsExpanded = !this._columnsExpanded)}
             @keydown=${this._handleKeyDown}
             tabindex="0"
             role="button"
+            title=${this._columnsExpanded ? 'Collapse Table Columns section' : 'Expand Table Columns section'}
+            aria-label=${this._columnsExpanded ? 'Collapse Table Columns section' : 'Expand Table Columns section'}
             aria-expanded=${this._columnsExpanded ? 'true' : 'false'}
             aria-controls="columns-section-content"
           >
@@ -620,9 +635,15 @@ export class DeviceTableCardEditor extends LitElement {
     const isExpanded = this._expandedColumnIndex === index;
     const columnsCount = Array.isArray(this._config?.columns) ? this._config.columns.length : 0;
     const isConfirmDelete = this._confirmDeleteColumnIndex === index;
+    const colName = col.label || col.prop || col.device_class || `Column ${index + 1}`;
+    const headerTitle = isExpanded
+      ? `Collapse column details for ${colName}`
+      : `Expand column details for ${colName}`;
 
     return html`
-      <div class="column-item ${isConfirmDelete ? 'confirm-delete' : ''}">
+      <div
+        class="column-item ${isExpanded ? 'expanded' : ''} ${isConfirmDelete ? 'confirm-delete' : ''}"
+      >
         <div class="column-header">
           <div
             class="column-header-title"
@@ -631,6 +652,8 @@ export class DeviceTableCardEditor extends LitElement {
             @keydown=${this._handleKeyDown}
             tabindex="0"
             role="button"
+            title=${headerTitle}
+            aria-label=${headerTitle}
             aria-expanded=${isExpanded ? 'true' : 'false'}
             aria-controls="column-body-${index}"
           >
