@@ -136,8 +136,11 @@ export function processDevices(
           m.resolveType = 'suffix';
           m.resolveKey = `col_${i}`;
         }
+        if (col.suffix) {
+          m.suffix = col.suffix;
+          suffixCols.push(m);
+        }
         entityCols.push(m);
-        if (col.suffix) suffixCols.push(m);
         if (col.device_class) requiredClasses.add(col.device_class);
       } else if (col.type === 'device') {
         const prop = col.prop;
@@ -255,8 +258,6 @@ export function processDevices(
       }
     }
 
-    const dNameByUser = typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
-    const dName = typeof d.name === 'string' ? d.name : undefined;
     const dAreaId = typeof d.area_id === 'string' ? d.area_id : undefined;
     const dManufacturer = typeof d.manufacturer === 'string' ? d.manufacturer : undefined;
 
@@ -373,8 +374,9 @@ export function processDevices(
       // Match by Suffix (pre-calculated columns)
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
-          const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          const { key, suffix } = suffixCols[k];
+          if (entitiesBySuffix[key] !== undefined) continue;
+          if (ent.entity_id.endsWith(suffix)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
@@ -407,6 +409,8 @@ export function processDevices(
 
     const lastChanged = needsLastChanged && latestIso ? Date.parse(latestIso) : null;
 
+    const dNameByUser = typeof d.name_by_user === 'string' ? d.name_by_user : undefined;
+    const dName = typeof d.name === 'string' ? d.name : undefined;
     const areaName =
       dAreaId && typeof areaLookup[dAreaId] === 'string'
         ? areaLookup[dAreaId]
