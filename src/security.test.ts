@@ -1065,6 +1065,55 @@ describe('Security Vulnerabilities', () => {
     });
   });
 
+  describe('ha-device-table-card connection lifecycle and subscription protection', () => {
+    it('should unsubscribe from previous WebSocket connection when hass.connection updates', async () => {
+      let oldUnsubscribed = false;
+      const oldConn = {
+        subscribeEvents: () =>
+          Promise.resolve(() => {
+            oldUnsubscribed = true;
+          }),
+      };
+
+      let newSubscribed = false;
+      const newConn = {
+        subscribeEvents: () => {
+          newSubscribed = true;
+          return Promise.resolve(() => {});
+        },
+      };
+
+      const mockHassOld = {
+        states: {},
+        callWS: async () => [],
+        connection: oldConn,
+      };
+
+      const mockHassNew = {
+        states: {},
+        callWS: async () => [],
+        connection: newConn,
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHassOld}></ha-device-table-card>
+      `);
+
+      el.setConfig({
+        type: 'custom:ha-device-table-card',
+        columns: [],
+      });
+      await el.updateComplete;
+
+      // Updating hass with new connection reference
+      el.hass = mockHassNew;
+      await el.updateComplete;
+
+      expect(oldUnsubscribed).to.be.true;
+      expect(newSubscribed).to.be.true;
+    });
+  });
+
   describe('ha-device-table-card event listener leak and accumulation protection', () => {
     it('should not register duplicate table-level keydown and click listeners across configuration updates', async () => {
       const mockHass = {
