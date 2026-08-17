@@ -430,6 +430,8 @@ export class DeviceTableCardEditor extends LitElement {
             role="button"
             aria-expanded=${this._generalExpanded ? 'true' : 'false'}
             aria-controls="general-section-content"
+            title="${this._generalExpanded ? 'Collapse' : 'Expand'} General & Filters section"
+            aria-label="${this._generalExpanded ? 'Collapse' : 'Expand'} General & Filters section"
           >
             <span>General & Filters</span>
             <svg
@@ -509,6 +511,8 @@ export class DeviceTableCardEditor extends LitElement {
             role="button"
             aria-expanded=${this._columnsExpanded ? 'true' : 'false'}
             aria-controls="columns-section-content"
+            title="${this._columnsExpanded ? 'Collapse' : 'Expand'} Table Columns section"
+            aria-label="${this._columnsExpanded ? 'Collapse' : 'Expand'} Table Columns section"
           >
             <span>Table Columns</span>
             <svg
@@ -620,6 +624,7 @@ export class DeviceTableCardEditor extends LitElement {
     const isExpanded = this._expandedColumnIndex === index;
     const columnsCount = Array.isArray(this._config?.columns) ? this._config.columns.length : 0;
     const isConfirmDelete = this._confirmDeleteColumnIndex === index;
+    const colName = col.label || col.prop || col.device_class || `Column ${index + 1}`;
 
     return html`
       <div class="column-item ${isConfirmDelete ? 'confirm-delete' : ''}">
@@ -633,6 +638,8 @@ export class DeviceTableCardEditor extends LitElement {
             role="button"
             aria-expanded=${isExpanded ? 'true' : 'false'}
             aria-controls="column-body-${index}"
+            title="${isExpanded ? 'Collapse' : 'Expand'} settings for ${colName} column"
+            aria-label="${isExpanded ? 'Collapse' : 'Expand'} settings for ${colName} column"
           >
             <svg
               class="expand-icon ${isExpanded ? 'expanded' : ''}"
@@ -648,14 +655,14 @@ export class DeviceTableCardEditor extends LitElement {
             >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-            <span>${col.label || col.prop || col.device_class || `Column ${index + 1}`}</span>
+            <span>${colName}</span>
             <span class="column-badge">${col.type}</span>
           </div>
           <div class="column-actions">
             <button
               class="btn-icon"
-              title=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
-              aria-label=${index === 0 ? 'Cannot move up (already at top)' : 'Move Up'}
+              title=${index === 0 ? `Cannot move "${colName}" up (already at top)` : `Move "${colName}" column up`}
+              aria-label=${index === 0 ? `Cannot move "${colName}" up (already at top)` : `Move "${colName}" column up`}
               .disabled=${index === 0}
               @click=${() => this._moveColumn(index, 'up')}
             >
@@ -676,8 +683,8 @@ export class DeviceTableCardEditor extends LitElement {
             </button>
             <button
               class="btn-icon"
-              title=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
-              aria-label=${index === columnsCount - 1 ? 'Cannot move down (already at bottom)' : 'Move Down'}
+              title=${index === columnsCount - 1 ? `Cannot move "${colName}" down (already at bottom)` : `Move "${colName}" column down`}
+              aria-label=${index === columnsCount - 1 ? `Cannot move "${colName}" down (already at bottom)` : `Move "${colName}" column down`}
               .disabled=${index === columnsCount - 1}
               @click=${() => this._moveColumn(index, 'down')}
             >
@@ -703,8 +710,8 @@ export class DeviceTableCardEditor extends LitElement {
                   ? 'background-color: var(--error-color, #e53935); color: #fff;'
                   : 'color: var(--error-color, #e53935);'
               }
-              title=${this._confirmDeleteColumnIndex === index ? 'Confirm Delete Column' : 'Delete Column'}
-              aria-label=${this._confirmDeleteColumnIndex === index ? 'Confirm Delete Column' : 'Delete Column'}
+              title=${this._confirmDeleteColumnIndex === index ? `Confirm delete "${colName}" column` : `Delete "${colName}" column`}
+              aria-label=${this._confirmDeleteColumnIndex === index ? `Confirm delete "${colName}" column` : `Delete "${colName}" column`}
               @click=${() => this._deleteColumn(index)}
             >
               ${
@@ -869,8 +876,8 @@ export class DeviceTableCardEditor extends LitElement {
                                 class="btn btn-secondary btn-icon"
                                 style="width: auto; height: auto; border-radius: 4px; padding: 4px 8px;"
                                 data-add-rule-col-index=${index}
-                                title="Add threshold highlight rule"
-                                aria-label="Add threshold highlight rule"
+                                title="Add threshold highlight rule for ${colName}"
+                                aria-label="Add threshold highlight rule for ${colName}"
                                 @click=${() => this._addHighlightRule(index)}
                               >
                                 + Add Rule
@@ -952,25 +959,19 @@ export class DeviceTableCardEditor extends LitElement {
                                   <button
                                     class="btn-icon btn-danger"
                                     style=${
-                                      this._confirmDeleteHighlightIndex &&
-                                      this._confirmDeleteHighlightIndex.colIndex === index &&
-                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                      isConfirmDeleteRule
                                         ? 'background-color: var(--error-color, #e53935); color: #fff;'
                                         : 'color: var(--error-color, #e53935);'
                                     }
                                     title=${
-                                      this._confirmDeleteHighlightIndex &&
-                                      this._confirmDeleteHighlightIndex.colIndex === index &&
-                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
-                                        ? 'Confirm Delete Rule'
-                                        : 'Delete Rule'
+                                      isConfirmDeleteRule
+                                        ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                        : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
                                     }
                                     aria-label=${
-                                      this._confirmDeleteHighlightIndex &&
-                                      this._confirmDeleteHighlightIndex.colIndex === index &&
-                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
-                                        ? 'Confirm Delete Rule'
-                                        : 'Delete Rule'
+                                      isConfirmDeleteRule
+                                        ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                        : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
                                     }
                                     @click=${() => this._deleteHighlightRule(index, hlIndex)}
                                   >
