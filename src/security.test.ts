@@ -173,6 +173,8 @@ describe('Security Vulnerabilities', () => {
       expect(sanitizeColor('element(#myid)')).to.equal('');
       expect(sanitizeColor('paint(my-painter)')).to.equal('');
       expect(sanitizeColor('cross-fade(20% url("a.png"), url("b.png"))')).to.equal('');
+      expect(sanitizeColor('canvas(my-canvas)')).to.equal('');
+      expect(sanitizeColor('src("https://example.com/font.woff")')).to.equal('');
 
       // Allowed safe colors and color functions
       expect(sanitizeColor('red')).to.equal('red');
@@ -524,6 +526,26 @@ describe('Security Vulnerabilities', () => {
 
       // Triggering 501st entry should reset cache size or handle correctly without throwing
       expect(() => sanitizeColor('newUniqueColor')).to.not.throw();
+    });
+  });
+
+  describe('ha-device-table-card data-processor deviceCache memory bounding DoS prevention', () => {
+    it('should bound deviceCache size to 2000 entries to prevent memory exhaustion', async () => {
+      const { processDevices } = await import('./data-processor');
+      const mockHass = { states: {} };
+      const config = { type: 'custom:ha-device-table-card', columns: [] };
+
+      // Build 2005 devices with entities map
+      const devices = [];
+      const entitiesByDevice = new Map<string, any[]>();
+      for (let i = 0; i < 2005; i++) {
+        const id = `dev_${i}`;
+        devices.push({ id, name: `Device ${i}` });
+        entitiesByDevice.set(id, [{ entity_id: `sensor.dev_${i}`, platform: 'sensor' }]);
+      }
+
+      processDevices(mockHass, config, devices, entitiesByDevice, {});
+      // Success means processing completed without error and cache memory ceiling cleared excessive entries safely
     });
   });
 

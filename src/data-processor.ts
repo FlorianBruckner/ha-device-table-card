@@ -59,6 +59,9 @@ function cacheDeviceEvaluation(
   const areaId = typeof d?.area_id === 'string' ? d.area_id : undefined;
   const manufacturer = typeof d?.manufacturer === 'string' ? d.manufacturer : undefined;
 
+  if (deviceCache.size >= 2000) {
+    deviceCache.clear();
+  }
   deviceCache.set(deviceId, {
     filtered,
     deviceData,
