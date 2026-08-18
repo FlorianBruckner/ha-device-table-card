@@ -372,12 +372,16 @@ describe('ha-device-table-card-editor', () => {
 
     const buttons = firstColActions![0].querySelectorAll('button');
     // Button 0 is Move Up
-    expect(buttons[0].getAttribute('title')).to.equal('Cannot move up (already at top)');
-    expect(buttons[0].getAttribute('aria-label')).to.equal('Cannot move up (already at top)');
+    expect(buttons[0].getAttribute('title')).to.equal(
+      'Cannot move "Device Name" up (already at top)',
+    );
+    expect(buttons[0].getAttribute('aria-label')).to.equal(
+      'Cannot move "Device Name" up (already at top)',
+    );
 
     // Button 1 is Move Down (since columns count is 2, and we are at index 0, it should be enabled)
-    expect(buttons[1].getAttribute('title')).to.equal('Move Down');
-    expect(buttons[1].getAttribute('aria-label')).to.equal('Move Down');
+    expect(buttons[1].getAttribute('title')).to.equal('Move "Device Name" column down');
+    expect(buttons[1].getAttribute('aria-label')).to.equal('Move "Device Name" column down');
   });
 
   describe('color preview swatch', () => {
