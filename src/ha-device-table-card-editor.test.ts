@@ -537,6 +537,46 @@ describe('ha-device-table-card-editor', () => {
     });
   });
 
+  describe('section header badges and threshold empty states', () => {
+    it('renders column count badge in section header', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      await el.updateComplete;
+
+      const badge = el.shadowRoot?.querySelector('.column-count-badge');
+      expect(badge).to.exist;
+      expect(badge?.textContent?.trim()).to.equal('(2)');
+    });
+
+    it('renders threshold highlights guidance hint when no rules exist', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      // columns[1] is an entity column without highlight rules
+      el.setConfig(config);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 1;
+      await el.updateComplete;
+
+      const hint = el.shadowRoot?.querySelector('.empty-highlights-hint');
+      expect(hint).to.exist;
+      expect(hint?.textContent?.trim()).to.contain('No threshold rules configured');
+
+      el.addEventListener('config-changed', (ev: any) => {
+        el.setConfig(ev.detail.config);
+      });
+
+      // Now add a rule and verify hint disappears
+      (el as any)._addHighlightRule(1);
+      await el.updateComplete;
+
+      const updatedHint = el.shadowRoot?.querySelector('.empty-highlights-hint');
+      expect(updatedHint).to.not.exist;
+    });
+  });
+
   describe('numeric threshold input validation', () => {
     it('correctly evaluates _isInvalidNumber for various inputs', async () => {
       const el = await fixture<DeviceTableCardEditor>(html`
