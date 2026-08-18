@@ -76,3 +76,8 @@
 **Vulnerability:** Repeatedly registering keydown and click listeners on `#deviceTable` inside `_initDataTable` upon configuration/state updates resulted in listener accumulation, duplicate handler execution, memory leaks, and performance degradation (DoS).
 **Learning:** Using an instance-level flag can cause regressions if the target element is recreated but the flag remains true. Instead, checking a custom DOM property `__listenersAttached` on the element itself ensures proper state binding.
 **Prevention:** Always map event listener tracking state directly to the life of the target DOM element using custom element properties or robust removal/addition cycles.
+
+## 2026-07-19 - [Data Processor Cache Memory Ceiling Bounding]
+**Vulnerability:** Fine-grained memoization caches like `deviceCache` in `src/data-processor.ts` store per-device evaluation entries across state updates. In long-running Home Assistant dashboards with high device churn or dynamic device list changes, the unbounded `Map` structure could grow indefinitely, leading to browser memory exhaustion and client-side Denial of Service (DoS).
+**Learning:** Enforcing a hard size threshold (e.g. `deviceCache.size >= 2000`) before insertions and clearing stale entries guarantees a bounded memory footprint without degrading memoization performance for typical dashboard sizes.
+**Prevention:** Always impose upper limits on unbounded Map or Object caches used in long-lived client-side data processing pipelines.

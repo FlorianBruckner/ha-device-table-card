@@ -17,8 +17,10 @@ export function sanitizeColor(color: string): string {
   // Allow alphanumeric, hex, and basic CSS color functions/characters, but block ; : and others
   const sanitized = color.replace(/[^a-zA-Z0-9#(), \-./]/g, '');
 
-  // Block potential CSS function injections like url(), expression(), image(), etc.
-  if (/\b(url|expression|image|image-set|element|paint|cross-fade)\s*\(/i.test(sanitized)) {
+  // Block potential CSS function injections like url(), expression(), image(), canvas(), src(), etc.
+  if (
+    /\b(url|expression|image|image-set|element|paint|cross-fade|canvas|src)\s*\(/i.test(sanitized)
+  ) {
     if (colorCache.size >= 500) {
       colorCache.clear();
     }
