@@ -46,6 +46,9 @@ function cacheDeviceEvaluation(
   isStaticFilter = false,
 ): void {
   if (!deviceEntitiesRaw) return;
+  if (deviceCache.size >= 2000) {
+    deviceCache.clear();
+  }
   let entityStates: Record<string, any> | undefined = undefined;
   if (!isStaticFilter) {
     entityStates = Object.create(null);
@@ -135,6 +138,7 @@ export function processDevices(
         } else if (col.suffix) {
           m.resolveType = 'suffix';
           m.resolveKey = `col_${i}`;
+          m.suffix = col.suffix;
         }
         entityCols.push(m);
         if (col.suffix) suffixCols.push(m);
@@ -221,15 +225,15 @@ export function processDevices(
       const cached = deviceCache.get(deviceId);
       if (
         cached &&
+        areaLookup === cached.areaLookupRef &&
+        deviceEntitiesRaw === cached.entitiesRawRef &&
         (d === cached.deviceRef ||
           ((typeof d.name_by_user === 'string' ? d.name_by_user : undefined) ===
             cached.nameByUser &&
             (typeof d.name === 'string' ? d.name : undefined) === cached.name &&
             (typeof d.area_id === 'string' ? d.area_id : undefined) === cached.areaId &&
             (typeof d.manufacturer === 'string' ? d.manufacturer : undefined) ===
-              cached.manufacturer)) &&
-        areaLookup === cached.areaLookupRef &&
-        deviceEntitiesRaw === cached.entitiesRawRef
+              cached.manufacturer))
       ) {
         if (!cached.entityStates) {
           if (!cached.filtered && cached.deviceData) {
@@ -373,8 +377,9 @@ export function processDevices(
       // Match by Suffix (pre-calculated columns)
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
-          const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          const { col, key, suffix } = suffixCols[k];
+          const suffixStr = suffix !== undefined ? suffix : col.suffix;
+          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(suffixStr!)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }

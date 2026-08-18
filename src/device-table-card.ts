@@ -702,12 +702,12 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
         render: (data: any, type: any, row: any) => {
           if (type === 'sort') {
             if (data === '-') return Infinity;
+            if (typeof data === 'number') return data;
             if (col.type === 'entity') {
               const num = parseFloat(data);
               return isNaN(num) ? Infinity : num;
             }
             if (col.type === 'meta' && col.prop === 'last_changed') {
-              if (typeof data === 'number') return data;
               const num = parseFloat(data);
               return isNaN(num) ? Infinity : num;
             }
