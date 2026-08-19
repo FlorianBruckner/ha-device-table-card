@@ -127,6 +127,49 @@ describe('ha-device-table-card UX', () => {
     expect(emptyMsg?.textContent).to.equal('No devices available');
   });
 
+  it('renders interactive clear link on search zero records empty state and handles Escape key blur', async () => {
+    const config: DeviceTableCardConfig = {
+      type: 'custom:ha-device-table-card',
+      title: 'UX Test',
+      columns: [{ type: 'device', prop: 'name', label: 'Device' }],
+    };
+
+    const el = await fixture<DeviceTableCard>(html`
+      <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+    `);
+    el.setConfig(config);
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const searchInput = el.shadowRoot?.querySelector(
+      '.dt-search input, .dataTables_filter input',
+    ) as HTMLInputElement;
+    expect(searchInput).to.exist;
+
+    // Filter table by non-matching query
+    searchInput.value = 'nonexistentdevice12345';
+    searchInput.dispatchEvent(new Event('input'));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const clearLink = el.shadowRoot?.querySelector('.dt-zero-clear-link') as HTMLElement;
+    expect(clearLink).to.exist;
+    expect(clearLink.getAttribute('role')).to.equal('button');
+
+    // Click interactive clear link in empty state
+    clearLink.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(searchInput.value).to.equal('');
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+
+    // Test pressing Escape on empty search input blurs focus
+    searchInput.focus();
+    expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(el.shadowRoot?.activeElement).to.not.equal(searchInput);
+  });
+
   it('has correct keyboard accessibility attributes on interactive cells', async () => {
     const config: DeviceTableCardConfig = {
       type: 'custom:ha-device-table-card',
