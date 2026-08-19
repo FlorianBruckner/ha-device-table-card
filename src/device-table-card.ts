@@ -433,10 +433,37 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           infoEmpty: 'Showing 0 to 0 of 0 devices',
           infoFiltered: '(filtered from _MAX_ total devices)',
           lengthMenu: 'Show _MENU_ devices',
-          zeroRecords: 'No matching devices found',
+          zeroRecords:
+            'No matching devices found. <a role="button" tabindex="0" class="dt-zero-clear-link" style="color: var(--primary-color); cursor: pointer; text-decoration: underline; margin-left: 6px;">Clear search</a>',
           emptyTable: 'No devices available',
         },
         drawCallback: () => {
+          const clearLink = this.renderRoot.querySelector(
+            '.dt-zero-clear-link',
+          ) as HTMLElement | null;
+          if (clearLink && !(clearLink as any).__bound) {
+            (clearLink as any).__bound = true;
+            const searchInput = this.renderRoot.querySelector(
+              '.dt-search input, .dataTables_filter input',
+            ) as HTMLInputElement | null;
+            const doClear = (ev: Event) => {
+              ev.preventDefault();
+              if (searchInput && this._dataTable) {
+                searchInput.value = '';
+                this._dataTable.search('').draw();
+                const clearBtn = this.renderRoot.querySelector('.dt-search-clear') as HTMLElement;
+                if (clearBtn) clearBtn.style.display = 'none';
+                searchInput.focus();
+              }
+            };
+            clearLink.addEventListener('click', doClear);
+            clearLink.addEventListener('keydown', (e: KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                doClear(e);
+              }
+            });
+          }
+
           const headers = this.renderRoot.querySelectorAll('table.dataTable thead th');
           headers.forEach((th) => {
             const titleSpan = th.querySelector('.dt-column-title');
@@ -523,11 +550,13 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
 
               searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
+                  e.preventDefault();
                   if (searchInput.value) {
-                    e.preventDefault();
                     searchInput.value = '';
                     this._dataTable.search('').draw();
                     updateClearBtn();
+                  } else {
+                    searchInput.blur();
                   }
                 }
               });
