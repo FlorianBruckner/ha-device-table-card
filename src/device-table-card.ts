@@ -528,6 +528,8 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                     searchInput.value = '';
                     this._dataTable.search('').draw();
                     updateClearBtn();
+                  } else {
+                    searchInput.blur();
                   }
                 }
               });
@@ -603,7 +605,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = `Navigate to ${rowData.name} details`;
+            const label = `Navigate to ${rowData.name} details`;
+            td.title = label;
+            td.setAttribute('aria-label', label);
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
@@ -616,7 +620,9 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           className: 'cell-device',
           createdCell: (td: HTMLElement, _cellData: any, rowData: any) => {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = `Navigate to ${rowData.name} details`;
+            const label = `Navigate to ${rowData.name} details`;
+            td.title = label;
+            td.setAttribute('aria-label', label);
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           },
@@ -683,19 +689,25 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
                   friendlyName = val;
                 }
               }
-              td.title = `View ${friendlyName || stateObj.entity_id} details`;
+              const label = `View ${friendlyName || stateObj.entity_id} details`;
+              td.title = label;
+              td.setAttribute('aria-label', label);
               td.tabIndex = 0;
               td.setAttribute('role', 'button');
             }
           } else if (col.type === 'device') {
             td.setAttribute('data-device-id', rowData.id);
-            td.title = `Navigate to ${rowData.name} details`;
+            const label = `Navigate to ${rowData.name} details`;
+            td.title = label;
+            td.setAttribute('aria-label', label);
             td.tabIndex = 0;
             td.setAttribute('role', 'button');
           } else if (col.type === 'meta' && col.prop === 'last_changed') {
             const rawTimestamp = rowData[colKey];
             if (typeof rawTimestamp === 'number' && !isNaN(rawTimestamp)) {
-              td.title = `Last updated: ${new Date(rawTimestamp).toLocaleString()}`;
+              const label = `Last updated: ${new Date(rawTimestamp).toLocaleString()}`;
+              td.title = label;
+              td.setAttribute('aria-label', label);
             }
           }
         },
