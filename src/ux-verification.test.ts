@@ -150,10 +150,12 @@ describe('ha-device-table-card UX', () => {
     // Column 0: Device Name
     expect(cells[0].tabIndex).to.equal(0);
     expect(cells[0].getAttribute('role')).to.equal('button');
+    expect(cells[0].getAttribute('aria-label')).to.equal('Navigate to Device 1 details');
 
     // Column 1: Battery Entity
     expect(cells[1].tabIndex).to.equal(0);
     expect(cells[1].getAttribute('role')).to.equal('button');
+    expect(cells[1].getAttribute('aria-label')).to.equal('View sensor.battery details');
   });
 
   it('shows tooltips for threshold highlights', async () => {
@@ -219,6 +221,10 @@ describe('ha-device-table-card UX', () => {
     expect(searchInput.value).to.equal('');
     expect(clearBtn.style.display).to.equal('none');
     expect(el.shadowRoot?.activeElement).to.equal(searchInput);
+
+    // Press Escape key when input is empty to blur search input
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(el.shadowRoot?.activeElement).to.not.equal(searchInput);
   });
 
   it('focuses search input when / keyboard shortcut is pressed while hovering', async () => {
