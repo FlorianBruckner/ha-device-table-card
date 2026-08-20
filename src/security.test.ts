@@ -1222,4 +1222,57 @@ describe('Security Vulnerabilities', () => {
       );
     });
   });
+
+  describe('ha-device-table-card data-processor type safety hardening', () => {
+    it('should gracefully handle non-string suffix and filter values without crashing or throwing TypeError', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test_voltage': {
+            entity_id: 'sensor.test_voltage',
+            state: '12',
+            attributes: {},
+            last_updated: new Date().toISOString(),
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [{ entity_id: 'sensor.test_voltage', device_id: 'dev1' }];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const malformedConfig = {
+        type: 'custom:ha-device-table-card',
+        filter: {
+          manufacturer: 12345, // non-string
+          anchor_entity_class: { invalid: true }, // non-string
+        },
+        columns: [
+          {
+            type: 'entity',
+            suffix: 99999, // non-string suffix
+            label: 'Voltage',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+
+      expect(() => el.setConfig(malformedConfig as any)).to.not.throw();
+      await el.updateComplete;
+
+      // Wait for DataTables initialization and ensure processing completes safely
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const table = el.shadowRoot?.querySelector('#deviceTable');
+      expect(table).to.exist;
+    });
+  });
 });
