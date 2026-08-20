@@ -51,7 +51,8 @@ function cacheDeviceEvaluation(
     entityStates = Object.create(null);
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      entityStates![ent.entity_id] = states[ent.entity_id];
+      const entId = ent.entity_id;
+      entityStates![entId] = states[entId];
     }
   }
   const nameByUser = typeof d?.name_by_user === 'string' ? d.name_by_user : undefined;
@@ -137,7 +138,10 @@ export function processDevices(
           m.resolveKey = `col_${i}`;
         }
         entityCols.push(m);
-        if (col.suffix) suffixCols.push(m);
+        if (col.suffix) {
+          m.suffix = col.suffix;
+          suffixCols.push(m);
+        }
         if (col.device_class) requiredClasses.add(col.device_class);
       } else if (col.type === 'device') {
         const prop = col.prop;
@@ -240,8 +244,8 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = states[ent.entity_id];
-          if (cached.entityStates[ent.entity_id] !== currentState) {
+          const entId = ent.entity_id;
+          if (cached.entityStates[entId] !== states[entId]) {
             statesMatch = false;
             break;
           }
@@ -373,8 +377,9 @@ export function processDevices(
       // Match by Suffix (pre-calculated columns)
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
-          const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          const { key, suffix } = suffixCols[k];
+          if (entitiesBySuffix[key] !== undefined) continue;
+          if (ent.entity_id.endsWith(suffix!)) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
