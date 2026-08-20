@@ -96,8 +96,9 @@ export function processDevices(
   const filter: any = {};
   if (config.filter && typeof config.filter === 'object') {
     for (const key of ['manufacturer', 'area', 'integration', 'anchor_entity_class']) {
-      if ((config.filter as any)[key] !== undefined) {
-        filter[key] = (config.filter as any)[key];
+      const val = (config.filter as any)[key];
+      if (typeof val === 'string' && val.length > 0) {
+        filter[key] = val;
       }
     }
   }
@@ -121,7 +122,7 @@ export function processDevices(
     const requiredClasses = new Set<string>();
     let needsLastChanged = false;
 
-    if (filter.anchor_entity_class) {
+    if (typeof filter.anchor_entity_class === 'string' && filter.anchor_entity_class) {
       requiredClasses.add(filter.anchor_entity_class);
     }
 
@@ -129,16 +130,19 @@ export function processDevices(
       const col = columns[i];
       const m: any = { col, key: `col_${i}` };
       if (col.type === 'entity') {
-        if (col.device_class) {
+        const deviceClass = typeof col.device_class === 'string' ? col.device_class : undefined;
+        const suffix = typeof col.suffix === 'string' ? col.suffix : undefined;
+
+        if (deviceClass) {
           m.resolveType = 'class';
-          m.resolveKey = col.device_class;
-        } else if (col.suffix) {
+          m.resolveKey = deviceClass;
+        } else if (suffix) {
           m.resolveType = 'suffix';
           m.resolveKey = `col_${i}`;
         }
         entityCols.push(m);
-        if (col.suffix) suffixCols.push(m);
-        if (col.device_class) requiredClasses.add(col.device_class);
+        if (suffix) suffixCols.push(m);
+        if (deviceClass) requiredClasses.add(deviceClass);
       } else if (col.type === 'device') {
         const prop = col.prop;
         if (typeof prop === 'string' && FORBIDDEN_PROPS.has(prop)) {
@@ -374,7 +378,13 @@ export function processDevices(
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
           const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          const suffixStr = typeof col.suffix === 'string' ? col.suffix : '';
+          if (
+            suffixStr &&
+            entitiesBySuffix[key] === undefined &&
+            typeof ent.entity_id === 'string' &&
+            ent.entity_id.endsWith(suffixStr)
+          ) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
