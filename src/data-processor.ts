@@ -51,7 +51,8 @@ function cacheDeviceEvaluation(
     entityStates = Object.create(null);
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      entityStates![ent.entity_id] = states[ent.entity_id];
+      const entId = ent.entity_id;
+      entityStates![entId] = states[entId];
     }
   }
   const nameByUser = typeof d?.name_by_user === 'string' ? d.name_by_user : undefined;
@@ -135,6 +136,7 @@ export function processDevices(
         } else if (col.suffix) {
           m.resolveType = 'suffix';
           m.resolveKey = `col_${i}`;
+          m.suffix = col.suffix;
         }
         entityCols.push(m);
         if (col.suffix) suffixCols.push(m);
@@ -221,15 +223,15 @@ export function processDevices(
       const cached = deviceCache.get(deviceId);
       if (
         cached &&
+        areaLookup === cached.areaLookupRef &&
+        deviceEntitiesRaw === cached.entitiesRawRef &&
         (d === cached.deviceRef ||
           ((typeof d.name_by_user === 'string' ? d.name_by_user : undefined) ===
             cached.nameByUser &&
             (typeof d.name === 'string' ? d.name : undefined) === cached.name &&
             (typeof d.area_id === 'string' ? d.area_id : undefined) === cached.areaId &&
             (typeof d.manufacturer === 'string' ? d.manufacturer : undefined) ===
-              cached.manufacturer)) &&
-        areaLookup === cached.areaLookupRef &&
-        deviceEntitiesRaw === cached.entitiesRawRef
+              cached.manufacturer))
       ) {
         if (!cached.entityStates) {
           if (!cached.filtered && cached.deviceData) {
@@ -240,8 +242,8 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = states[ent.entity_id];
-          if (cached.entityStates[ent.entity_id] !== currentState) {
+          const entId = ent.entity_id;
+          if (cached.entityStates[entId] !== states[entId]) {
             statesMatch = false;
             break;
           }
@@ -336,7 +338,8 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      const stateObj = states[ent.entity_id];
+      const entId = ent.entity_id;
+      const stateObj = states[entId];
       if (!stateObj) continue;
 
       hasValidEntities = true;
@@ -373,8 +376,12 @@ export function processDevices(
       // Match by Suffix (pre-calculated columns)
       if (matchedSuffixesCount < suffixCols.length) {
         for (let k = 0; k < suffixCols.length; k++) {
-          const { col, key } = suffixCols[k];
-          if (entitiesBySuffix[key] === undefined && ent.entity_id.endsWith(col.suffix!)) {
+          const { suffix, key } = suffixCols[k];
+          if (
+            entitiesBySuffix[key] === undefined &&
+            typeof suffix === 'string' &&
+            entId.endsWith(suffix)
+          ) {
             entitiesBySuffix[key] = stateObj;
             matchedSuffixesCount++;
           }
