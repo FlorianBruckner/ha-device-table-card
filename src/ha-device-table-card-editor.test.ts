@@ -535,6 +535,23 @@ describe('ha-device-table-card-editor', () => {
         'Add a Moisture column preset with dry moisture highlight (below 30%)',
       );
     });
+
+    it('displays column count in header and guidance hint when no threshold rules exist', async () => {
+      const el = await fixture<DeviceTableCardEditor>(html`
+        <ha-device-table-card-editor .hass=${mockHass}></ha-device-table-card-editor>
+      `);
+      el.setConfig(config);
+      (el as any)._columnsExpanded = true;
+      (el as any)._expandedColumnIndex = 1; // index 1 is 'entity' column with no highlight rules
+      await el.updateComplete;
+
+      const columnsHeader = el.shadowRoot?.querySelectorAll('.section-header')[1];
+      expect(columnsHeader?.textContent).to.contain('Table Columns (2)');
+
+      const emptyHint = el.shadowRoot?.querySelector('.highlight-empty-hint');
+      expect(emptyHint).to.exist;
+      expect(emptyHint?.textContent?.trim()).to.contain('No threshold rules configured');
+    });
   });
 
   describe('numeric threshold input validation', () => {

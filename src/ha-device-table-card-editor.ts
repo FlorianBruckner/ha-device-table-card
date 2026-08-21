@@ -514,7 +514,7 @@ export class DeviceTableCardEditor extends LitElement {
             title="${this._columnsExpanded ? 'Collapse' : 'Expand'} Table Columns section"
             aria-label="${this._columnsExpanded ? 'Collapse' : 'Expand'} Table Columns section"
           >
-            <span>Table Columns</span>
+            <span>Table Columns (${columns.length})</span>
             <svg
               class="expand-icon ${this._columnsExpanded ? 'expanded' : ''}"
               width="18"
@@ -883,142 +883,154 @@ export class DeviceTableCardEditor extends LitElement {
                                 + Add Rule
                               </button>
                             </div>
-                            ${(col.highlight || []).map((hl, hlIndex) => {
-                              const belowVal = hl.below !== undefined ? String(hl.below) : '';
-                              const aboveVal = hl.above !== undefined ? String(hl.above) : '';
-                              const belowInvalid = this._isInvalidNumber(belowVal);
-                              const aboveInvalid = this._isInvalidNumber(aboveVal);
-                              const isConfirmDeleteRule =
-                                this._confirmDeleteHighlightIndex &&
-                                this._confirmDeleteHighlightIndex.colIndex === index &&
-                                this._confirmDeleteHighlightIndex.hlIndex === hlIndex;
-
-                              return html`
-                                <div
-                                  class="highlight-rule-row ${isConfirmDeleteRule ? 'confirm-delete' : ''}"
-                                  data-col-index=${index}
-                                  data-hl-index=${hlIndex}
-                                >
-                                  ${this._renderInput(
-                                    'Below',
-                                    belowVal,
-                                    undefined,
-                                    (e: any) =>
-                                      this._updateHighlightRule(
-                                        index,
-                                        hlIndex,
-                                        'below',
-                                        e.target.value === '' ? undefined : e.target.value,
-                                      ),
-                                    '100',
-                                    'Trigger value below',
-                                    belowInvalid,
-                                    belowInvalid ? 'Must be a valid number' : undefined,
-                                    `col-${index}-hl-${hlIndex}-below`,
-                                  )}
-                                  ${this._renderInput(
-                                    'Above',
-                                    aboveVal,
-                                    undefined,
-                                    (e: any) =>
-                                      this._updateHighlightRule(
-                                        index,
-                                        hlIndex,
-                                        'above',
-                                        e.target.value === '' ? undefined : e.target.value,
-                                      ),
-                                    '100',
-                                    'Trigger value above',
-                                    aboveInvalid,
-                                    aboveInvalid ? 'Must be a valid number' : undefined,
-                                    `col-${index}-hl-${hlIndex}-above`,
-                                  )}
-                                  ${this._renderInput(
-                                    'Color',
-                                    hl.color || '',
-                                    undefined,
-                                    (e: any) =>
-                                      this._updateHighlightRule(
-                                        index,
-                                        hlIndex,
-                                        'color',
-                                        e.target.value,
-                                      ),
-                                    '50',
-                                    'CSS color name or hex',
-                                    false,
-                                    undefined,
-                                    `col-${index}-hl-${hlIndex}-color`,
-                                  )}
-                                  <div
-                                    class="color-preview-swatch"
-                                    style="background-color: ${sanitizeColor(hl.color || 'transparent')};"
-                                    title="Color preview: ${hl.color || 'transparent'}"
-                                    aria-label="Color preview: ${hl.color || 'transparent'}"
-                                  ></div>
-                                  <button
-                                    class="btn-icon btn-danger"
-                                    style=${
-                                      isConfirmDeleteRule
-                                        ? 'background-color: var(--error-color, #e53935); color: #fff;'
-                                        : 'color: var(--error-color, #e53935);'
-                                    }
-                                    title=${
-                                      isConfirmDeleteRule
-                                        ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
-                                        : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
-                                    }
-                                    aria-label=${
-                                      isConfirmDeleteRule
-                                        ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
-                                        : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
-                                    }
-                                    @click=${() => this._deleteHighlightRule(index, hlIndex)}
-                                  >
-                                    ${
+                            ${
+                              !col.highlight || col.highlight.length === 0
+                                ? html`
+                                    <p
+                                      class="highlight-empty-hint"
+                                      style="font-style: italic; color: var(--secondary-text-color, #727272); margin-bottom: 4px;"
+                                    >
+                                      No threshold rules configured. Click "+ Add Rule" to highlight
+                                      cell values when conditions are met.
+                                    </p>
+                                  `
+                                : (col.highlight || []).map((hl, hlIndex) => {
+                                    const belowVal = hl.below !== undefined ? String(hl.below) : '';
+                                    const aboveVal = hl.above !== undefined ? String(hl.above) : '';
+                                    const belowInvalid = this._isInvalidNumber(belowVal);
+                                    const aboveInvalid = this._isInvalidNumber(aboveVal);
+                                    const isConfirmDeleteRule =
                                       this._confirmDeleteHighlightIndex &&
                                       this._confirmDeleteHighlightIndex.colIndex === index &&
-                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex
-                                        ? html`
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              stroke-width="2.5"
-                                              stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              aria-hidden="true"
-                                            >
-                                              <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                          `
-                                        : html`
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              stroke-width="2"
-                                              stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              aria-hidden="true"
-                                            >
-                                              <polyline points="3 6 5 6 21 6"></polyline>
-                                              <path
-                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                                              ></path>
-                                              <line x1="10" y1="11" x2="10" y2="17"></line>
-                                              <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                          `
-                                    }
-                                  </button>
-                                </div>
-                              `;
-                            })}
+                                      this._confirmDeleteHighlightIndex.hlIndex === hlIndex;
+
+                                    return html`
+                                      <div
+                                        class="highlight-rule-row ${isConfirmDeleteRule ? 'confirm-delete' : ''}"
+                                        data-col-index=${index}
+                                        data-hl-index=${hlIndex}
+                                      >
+                                        ${this._renderInput(
+                                          'Below',
+                                          belowVal,
+                                          undefined,
+                                          (e: any) =>
+                                            this._updateHighlightRule(
+                                              index,
+                                              hlIndex,
+                                              'below',
+                                              e.target.value === '' ? undefined : e.target.value,
+                                            ),
+                                          '100',
+                                          'Trigger value below',
+                                          belowInvalid,
+                                          belowInvalid ? 'Must be a valid number' : undefined,
+                                          `col-${index}-hl-${hlIndex}-below`,
+                                        )}
+                                        ${this._renderInput(
+                                          'Above',
+                                          aboveVal,
+                                          undefined,
+                                          (e: any) =>
+                                            this._updateHighlightRule(
+                                              index,
+                                              hlIndex,
+                                              'above',
+                                              e.target.value === '' ? undefined : e.target.value,
+                                            ),
+                                          '100',
+                                          'Trigger value above',
+                                          aboveInvalid,
+                                          aboveInvalid ? 'Must be a valid number' : undefined,
+                                          `col-${index}-hl-${hlIndex}-above`,
+                                        )}
+                                        ${this._renderInput(
+                                          'Color',
+                                          hl.color || '',
+                                          undefined,
+                                          (e: any) =>
+                                            this._updateHighlightRule(
+                                              index,
+                                              hlIndex,
+                                              'color',
+                                              e.target.value,
+                                            ),
+                                          '50',
+                                          'CSS color name or hex',
+                                          false,
+                                          undefined,
+                                          `col-${index}-hl-${hlIndex}-color`,
+                                        )}
+                                        <div
+                                          class="color-preview-swatch"
+                                          style="background-color: ${sanitizeColor(hl.color || 'transparent')};"
+                                          title="Color preview: ${hl.color || 'transparent'}"
+                                          aria-label="Color preview: ${hl.color || 'transparent'}"
+                                        ></div>
+                                        <button
+                                          class="btn-icon btn-danger"
+                                          style=${
+                                            isConfirmDeleteRule
+                                              ? 'background-color: var(--error-color, #e53935); color: #fff;'
+                                              : 'color: var(--error-color, #e53935);'
+                                          }
+                                          title=${
+                                            isConfirmDeleteRule
+                                              ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                              : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                          }
+                                          aria-label=${
+                                            isConfirmDeleteRule
+                                              ? `Confirm delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                              : `Delete threshold highlight rule ${hlIndex + 1} for ${colName}`
+                                          }
+                                          @click=${() => this._deleteHighlightRule(index, hlIndex)}
+                                        >
+                                          ${
+                                            this._confirmDeleteHighlightIndex &&
+                                            this._confirmDeleteHighlightIndex.colIndex === index &&
+                                            this._confirmDeleteHighlightIndex.hlIndex === hlIndex
+                                              ? html`
+                                                  <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2.5"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    aria-hidden="true"
+                                                  >
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                  </svg>
+                                                `
+                                              : html`
+                                                  <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    aria-hidden="true"
+                                                  >
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path
+                                                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                                    ></path>
+                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                  </svg>
+                                                `
+                                          }
+                                        </button>
+                                      </div>
+                                    `;
+                                  })
+                            }
                           </div>
                         `
                       : ''
