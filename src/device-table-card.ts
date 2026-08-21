@@ -703,6 +703,7 @@ export class DeviceTableCard extends LitElement implements LovelaceCard {
           if (type === 'sort') {
             if (data === '-') return Infinity;
             if (col.type === 'entity') {
+              if (typeof data === 'number') return data;
               const num = parseFloat(data);
               return isNaN(num) ? Infinity : num;
             }
