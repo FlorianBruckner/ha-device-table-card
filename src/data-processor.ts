@@ -46,12 +46,17 @@ function cacheDeviceEvaluation(
   isStaticFilter = false,
 ): void {
   if (!deviceEntitiesRaw) return;
+  if (deviceCache.size >= 2000) {
+    deviceCache.clear();
+  }
   let entityStates: Record<string, any> | undefined = undefined;
   if (!isStaticFilter) {
     entityStates = Object.create(null);
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
-      entityStates![ent.entity_id] = states[ent.entity_id];
+      if (ent && typeof ent.entity_id === 'string') {
+        entityStates![ent.entity_id] = states[ent.entity_id];
+      }
     }
   }
   const nameByUser = typeof d?.name_by_user === 'string' ? d.name_by_user : undefined;
@@ -240,10 +245,12 @@ export function processDevices(
         let statesMatch = true;
         for (let j = 0; j < deviceEntitiesRaw.length; j++) {
           const ent = deviceEntitiesRaw[j];
-          const currentState = states[ent.entity_id];
-          if (cached.entityStates[ent.entity_id] !== currentState) {
-            statesMatch = false;
-            break;
+          if (ent && typeof ent.entity_id === 'string') {
+            const currentState = states[ent.entity_id];
+            if (cached.entityStates[ent.entity_id] !== currentState) {
+              statesMatch = false;
+              break;
+            }
           }
         }
         if (statesMatch) {
@@ -336,6 +343,7 @@ export function processDevices(
 
     for (let j = 0; j < deviceEntitiesRaw.length; j++) {
       const ent = deviceEntitiesRaw[j];
+      if (!ent || typeof ent.entity_id !== 'string') continue;
       const stateObj = states[ent.entity_id];
       if (!stateObj) continue;
 

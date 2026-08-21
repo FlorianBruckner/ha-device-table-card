@@ -173,6 +173,8 @@ describe('Security Vulnerabilities', () => {
       expect(sanitizeColor('element(#myid)')).to.equal('');
       expect(sanitizeColor('paint(my-painter)')).to.equal('');
       expect(sanitizeColor('cross-fade(20% url("a.png"), url("b.png"))')).to.equal('');
+      expect(sanitizeColor('canvas(my-canvas)')).to.equal('');
+      expect(sanitizeColor('src("https://example.com/font.woff")')).to.equal('');
 
       // Allowed safe colors and color functions
       expect(sanitizeColor('red')).to.equal('red');
@@ -597,6 +599,56 @@ describe('Security Vulnerabilities', () => {
       expect((el as any)._devices).to.deep.equal([]);
       expect((el as any)._entities).to.deep.equal([]);
       expect((el as any)._areas).to.deep.equal([]);
+    });
+
+    it('should handle malformed entity registry items without string entity_id gracefully', async () => {
+      const mockHass = {
+        states: {
+          'sensor.test': {
+            entity_id: 'sensor.test',
+            state: '10',
+            attributes: { device_class: 'battery' },
+          },
+        },
+        callWS: async (msg: any) => {
+          if (msg.type === 'config/device_registry/list') return [{ id: 'dev1', name: 'Device 1' }];
+          if (msg.type === 'config/entity_registry/list')
+            return [
+              null,
+              { entity_id: null, device_id: 'dev1' },
+              { entity_id: 123, device_id: 'dev1' },
+              { entity_id: 'sensor.test', device_id: 'dev1' },
+            ];
+          if (msg.type === 'config/area_registry/list') return [];
+          return [];
+        },
+        connection: {
+          subscribeEvents: () => Promise.resolve(() => {}),
+        },
+      };
+
+      const config = {
+        type: 'custom:ha-device-table-card',
+        columns: [
+          {
+            type: 'entity',
+            device_class: 'battery',
+            label: 'Battery',
+          },
+        ],
+      };
+
+      const el = await fixture<DeviceTableCard>(html`
+        <ha-device-table-card .hass=${mockHass}></ha-device-table-card>
+      `);
+      el.setConfig(config as any);
+      await el.updateComplete;
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const span = el.shadowRoot?.querySelector('tbody td.cell-entity') as HTMLElement;
+      expect(span).to.exist;
+      expect(span.textContent?.trim()).to.equal('10');
     });
 
     it('should enforce 1000 character limits on all configuration string parameters', async () => {
